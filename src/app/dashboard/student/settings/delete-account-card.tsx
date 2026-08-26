@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { TriangleAlert } from "lucide-react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
@@ -98,7 +98,7 @@ export function DeleteAccountCard() {
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="delete-password">Password</Label>
-                <Input id="delete-password" type="password" {...register("password")} />
+                <PasswordInput id="delete-password" {...register("password")} />
                 {errors.password && (
                   <p className="text-destructive text-xs">{errors.password.message}</p>
                 )}

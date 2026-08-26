@@ -1,10 +1,17 @@
 import Link from "next/link";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { resolveEffectivePrice } from "@/lib/pricing";
 import { thumbnailUrlFor } from "@/lib/thumbnail";
-import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { QuestionBankCard } from "@/features/question-banks/question-bank-card";
+
+const filterPillClass =
+  "rounded-full border px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors";
+const filterPillActive = "border-primary bg-primary text-primary-foreground shadow-sm";
+const filterPillInactive =
+  "border-border bg-card text-muted-foreground hover:border-primary/40 hover:bg-accent hover:text-foreground";
 
 export default async function QuestionBankCatalogPage({
   searchParams,
@@ -12,7 +19,8 @@ export default async function QuestionBankCatalogPage({
   const { category } = await searchParams;
   const categorySlug = typeof category === "string" ? category : undefined;
 
-  const [banks, categories] = await Promise.all([
+  const [session, banks, categories] = await Promise.all([
+    auth(),
     prisma.questionBank.findMany({
       where: {
         isPublished: true,
@@ -24,8 +32,10 @@ export default async function QuestionBankCatalogPage({
     prisma.category.findMany({ orderBy: { name: "asc" } }),
   ]);
 
+  const dashboardHref = session?.user?.role === "ADMIN" ? "/dashboard/admin" : "/dashboard/student";
+
   return (
-    <div className="mx-auto max-w-6xl px-6 py-10">
+    <div className="mx-auto w-full max-w-6xl px-7 py-10 2xl:max-w-[1440px]">
       <nav className="mb-8 flex items-center justify-between">
         <Link href="/" className="font-heading flex items-center gap-2.5 font-semibold">
           <span className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-primary-light to-primary-dark text-xs font-bold text-white">
@@ -33,7 +43,15 @@ export default async function QuestionBankCatalogPage({
           </span>
           Decode with Shakti
         </Link>
-        <Button variant="ghost" size="sm" render={<Link href="/login">Log in</Link>} />
+        {session?.user ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            render={<Link href={dashboardHref}>{session.user.name ?? "Dashboard"}</Link>}
+          />
+        ) : (
+          <Button variant="ghost" size="sm" render={<Link href="/login">Log in</Link>} />
+        )}
       </nav>
 
       <h1 className="font-heading text-3xl font-bold">Browse Question Banks</h1>
@@ -41,15 +59,30 @@ export default async function QuestionBankCatalogPage({
         {banks.length} question bank{banks.length === 1 ? "" : "s"} available right now.
       </p>
 
-      <div className="mt-6 flex flex-wrap gap-2">
-        <Link href="/question-banks">
-          <Badge variant={!categorySlug ? "default" : "secondary"}>All Categories</Badge>
-        </Link>
-        {categories.map((c) => (
-          <Link key={c.id} href={`/question-banks?category=${c.slug}`}>
-            <Badge variant={categorySlug === c.slug ? "default" : "secondary"}>{c.name}</Badge>
+      <div className="mt-7">
+        <p className="mb-3 font-mono text-[11px] font-semibold tracking-wide text-muted-foreground/80 uppercase">
+          Filter by category
+        </p>
+        <div className="flex flex-wrap gap-2.5">
+          <Link
+            href="/question-banks"
+            className={cn(filterPillClass, !categorySlug ? filterPillActive : filterPillInactive)}
+          >
+            All Categories
           </Link>
-        ))}
+          {categories.map((c) => (
+            <Link
+              key={c.id}
+              href={`/question-banks?category=${c.slug}`}
+              className={cn(
+                filterPillClass,
+                categorySlug === c.slug ? filterPillActive : filterPillInactive,
+              )}
+            >
+              {c.name}
+            </Link>
+          ))}
+        </div>
       </div>
 
       {banks.length === 0 ? (

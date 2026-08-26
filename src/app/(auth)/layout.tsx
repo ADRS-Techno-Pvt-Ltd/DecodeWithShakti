@@ -55,18 +55,32 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <p className="relative text-[13px] text-white/60">Mentored by CA Shakti Tiwari</p>
       </div>
 
-      <div className="flex flex-1 flex-col">
+      <div className="relative flex flex-1 flex-col overflow-hidden">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-32 -right-24 h-96 w-96 rounded-full bg-accent/80 blur-3xl"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -bottom-24 -left-20 h-72 w-72 rounded-full bg-gold-pale/70 blur-3xl"
+        />
+
         <Link
           href="/"
-          className="font-heading flex items-center gap-2.5 px-6 pt-6 text-[17px] font-semibold lg:hidden"
+          className="font-heading relative flex items-center gap-2.5 px-6 pt-6 text-[17px] font-semibold lg:hidden"
         >
           <span className="flex h-7.5 w-7.5 items-center justify-center rounded-lg bg-gradient-to-br from-primary-light to-primary-dark text-[14px] font-bold text-white">
             D
           </span>
           Decode with Shakti
         </Link>
-        <div className="flex flex-1 items-center justify-center px-4 py-10">
+
+        <div className="relative flex flex-1 flex-col items-center justify-center px-4 py-10">
           <AuthCardMotion>{children}</AuthCardMotion>
+          <div className="mt-6 flex items-center gap-2 text-[13px] text-muted-foreground">
+            <ShieldCheck className="h-3.5 w-3.5 text-success" />
+            Your details are encrypted and never shared.
+          </div>
         </div>
       </div>
     </div>

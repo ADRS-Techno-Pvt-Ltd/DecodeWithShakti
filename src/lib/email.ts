@@ -25,3 +25,19 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string): Prom
     html: `<p>Reset your password using the link below (valid for 1 hour):</p><p><a href="${resetUrl}">${resetUrl}</a></p>`,
   });
 }
+
+export async function sendContactMessage(input: {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+}): Promise<void> {
+  await getTransporter().sendMail({
+    from: process.env.SMTP_FROM ?? "no-reply@example.com",
+    to: process.env.ADMIN_EMAIL,
+    replyTo: input.email,
+    subject: `[Contact] ${input.subject}`,
+    text: `From: ${input.name} <${input.email}>\n\n${input.message}`,
+    html: `<p><strong>From:</strong> ${input.name} &lt;${input.email}&gt;</p><p>${input.message.replace(/\n/g, "<br />")}</p>`,
+  });
+}

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { motion, type Variants } from "motion/react";
 import {
   ArrowRight,
@@ -188,10 +189,13 @@ const heroItem: Variants = {
 };
 
 export default function LandingPage() {
+  const { data: session } = useSession();
+  const dashboardHref = session?.user?.role === "ADMIN" ? "/dashboard/admin" : "/dashboard/student";
+
   return (
     <>
       <header className="sticky top-0 z-50 border-b border-border bg-background/85 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-7 py-4">
+        <div className="mx-auto flex max-w-6xl 2xl:max-w-[1440px] items-center justify-between px-7 py-4">
           <Link href="/" className="font-heading flex items-center gap-2.5 text-[19px] font-semibold">
             <span className="flex h-7.5 w-7.5 items-center justify-center rounded-lg bg-gradient-to-br from-primary-light to-primary-dark text-[15px] font-bold text-white">
               D
@@ -206,9 +210,17 @@ export default function LandingPage() {
             <Link href="#testimonials" className="hover:text-primary">Results</Link>
             <Link href="#faq" className="hover:text-primary">FAQ</Link>
           </nav>
-          <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" render={<Link href="/login">Log in</Link>} />
-            <Button size="sm" render={<Link href="/question-banks">Browse banks</Link>} />
+          <div className="flex items-center gap-2.5">
+            {session?.user ? (
+              <Button
+                variant="ghost"
+                className="h-9 px-4"
+                render={<Link href={dashboardHref}>{session.user.name ?? "Dashboard"}</Link>}
+              />
+            ) : (
+              <Button variant="ghost" className="h-9 px-4" render={<Link href="/login">Log in</Link>} />
+            )}
+            <Button className="h-9 px-5 shadow-sm" render={<Link href="/question-banks">Browse banks</Link>} />
           </div>
         </div>
       </header>
@@ -216,7 +228,7 @@ export default function LandingPage() {
       <main>
         {/* HERO */}
         <section className="border-b border-border bg-gradient-to-b from-[#fcfcfe] to-background py-22">
-          <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-14 px-7 md:grid-cols-[1.05fr_0.95fr]">
+          <div className="mx-auto grid max-w-6xl 2xl:max-w-[1440px] grid-cols-1 items-center gap-14 px-7 md:grid-cols-[1.05fr_0.95fr]">
             <motion.div variants={heroContainer} initial="hidden" animate="show">
               <motion.div variants={heroItem}>
                 <Eyebrow>Used by 12,400+ aspirants this season</Eyebrow>
@@ -330,7 +342,7 @@ export default function LandingPage() {
 
         {/* TRUST BAR */}
         <section className="border-b border-border py-11">
-          <div className="mx-auto max-w-6xl px-7">
+          <div className="mx-auto max-w-6xl 2xl:max-w-[1440px] px-7">
             <p className="mb-5 text-center font-mono text-[11.5px] tracking-wide text-muted-foreground/80 uppercase">
               Question banks mapped to
             </p>
@@ -351,7 +363,7 @@ export default function LandingPage() {
 
         {/* FEATURES */}
         <section id="features" className="py-22">
-          <div className="mx-auto max-w-6xl px-7">
+          <div className="mx-auto max-w-6xl 2xl:max-w-[1440px] px-7">
             <Reveal className="mx-auto mb-14 max-w-xl text-center">
               <Eyebrow>Why aspirants choose us</Eyebrow>
               <h2 className="font-heading mt-4 text-[2rem] leading-tight font-semibold tracking-tight">
@@ -387,7 +399,7 @@ export default function LandingPage() {
 
         {/* HOW IT WORKS */}
         <section id="how" className="border-y border-border bg-secondary py-22">
-          <div className="mx-auto max-w-6xl px-7">
+          <div className="mx-auto max-w-6xl 2xl:max-w-[1440px] px-7">
             <Reveal className="mb-14 max-w-xl">
               <Eyebrow>From browse to download</Eyebrow>
               <h2 className="font-heading mt-4 text-[2rem] leading-tight font-semibold tracking-tight">
@@ -415,7 +427,7 @@ export default function LandingPage() {
 
         {/* PRICING */}
         <section id="pricing" className="py-22">
-          <div className="mx-auto max-w-6xl px-7">
+          <div className="mx-auto max-w-6xl 2xl:max-w-[1440px] px-7">
             <Reveal className="mx-auto mb-14 max-w-xl text-center">
               <Eyebrow>This week&apos;s featured banks</Eyebrow>
               <h2 className="font-heading mt-4 text-[2rem] leading-tight font-semibold tracking-tight">
@@ -507,7 +519,7 @@ export default function LandingPage() {
 
         {/* TESTIMONIALS */}
         <section id="testimonials" className="py-22">
-          <div className="mx-auto max-w-6xl px-7">
+          <div className="mx-auto max-w-6xl 2xl:max-w-[1440px] px-7">
             <Reveal>
               <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-primary-dark to-[#1b1660] px-2 py-16">
                 <div className="mx-auto mb-12 max-w-xl px-6 text-center">
@@ -575,7 +587,7 @@ export default function LandingPage() {
 
         {/* FINAL CTA */}
         <section className="pb-22">
-          <div className="mx-auto max-w-6xl px-7">
+          <div className="mx-auto max-w-6xl 2xl:max-w-[1440px] px-7">
             <Reveal>
               <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-primary to-primary-dark px-8 py-18 text-center text-white">
                 <h2 className="font-heading relative mx-auto max-w-2xl text-[2rem] leading-tight font-semibold text-white md:text-[2.25rem]">
@@ -597,7 +609,7 @@ export default function LandingPage() {
                     <Button
                       size="lg"
                       variant="outline"
-                      className="border-white/35 bg-transparent text-white hover:border-white hover:bg-white/10"
+                      className="border-white/35 bg-transparent text-white hover:border-white hover:bg-white/10 hover:text-white"
                       render={<Link href="/register">Create a free account</Link>}
                     />
                   </MotionButton>
@@ -609,7 +621,7 @@ export default function LandingPage() {
       </main>
 
       <footer className="border-t border-border py-13">
-        <div className="mx-auto max-w-6xl px-7">
+        <div className="mx-auto max-w-6xl 2xl:max-w-[1440px] px-7">
           <div className="grid grid-cols-2 gap-8 md:grid-cols-[1.6fr_1fr_1fr_1fr]">
             <div>
               <Link href="/" className="font-heading flex items-center gap-2.5 text-[19px] font-semibold">
@@ -650,7 +662,7 @@ export default function LandingPage() {
                 Support
               </h4>
               <ul className="flex flex-col gap-2.5 text-sm text-muted-foreground">
-                <li><Link href="#" className="hover:text-primary">Contact us</Link></li>
+                <li><Link href="/contact" className="hover:text-primary">Contact us</Link></li>
                 <li><Link href="/terms" className="hover:text-primary">Terms of use</Link></li>
                 <li><Link href="/privacy" className="hover:text-primary">Privacy</Link></li>
               </ul>

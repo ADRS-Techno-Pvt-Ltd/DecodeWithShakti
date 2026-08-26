@@ -37,25 +37,25 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <Card className="w-full max-w-sm shadow-sm">
-      <CardHeader>
-        <CardTitle className="text-xl">Reset your password</CardTitle>
+    <Card className="w-full shadow-md">
+      <CardHeader className="px-7 pt-7">
+        <CardTitle className="text-2xl">Reset your password</CardTitle>
         <CardDescription>We&apos;ll email you a link to reset it.</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-7 pb-7">
         {sent ? (
           <p className="text-sm">
             If an account exists for that email, a reset link has been sent. It expires in 1
             hour.
           </p>
         ) : (
-          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" {...register("email")} />
+              <Input id="email" type="email" className="h-11 px-3.5 text-[15px]" {...register("email")} />
               {errors.email && <p className="text-destructive text-xs">{errors.email.message}</p>}
             </div>
-            <Button type="submit" disabled={submitting} className="w-full">
+            <Button type="submit" disabled={submitting} className="h-11 w-full text-[15px]">
               {submitting ? "Sending…" : "Send reset link"}
             </Button>
           </form>

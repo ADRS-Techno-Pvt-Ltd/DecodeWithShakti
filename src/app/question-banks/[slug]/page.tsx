@@ -40,7 +40,7 @@ export default async function QuestionBankDetailPage({
   const earlyBirdActive = effectivePrice < bank.price;
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-10">
+    <div className="mx-auto w-full max-w-6xl px-7 py-10 2xl:max-w-[1440px]">
       <nav className="mb-8">
         <Link
           href="/question-banks"

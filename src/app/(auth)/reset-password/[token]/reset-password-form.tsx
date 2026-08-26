@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
@@ -45,21 +45,21 @@ export function ResetPasswordForm({ token }: { token: string }) {
   }
 
   return (
-    <Card className="w-full max-w-sm shadow-sm">
-      <CardHeader>
-        <CardTitle className="text-xl">Set a new password</CardTitle>
+    <Card className="w-full shadow-md">
+      <CardHeader className="px-7 pt-7">
+        <CardTitle className="text-2xl">Set a new password</CardTitle>
         <CardDescription>Choose a strong password for your account.</CardDescription>
       </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+      <CardContent className="px-7 pb-7">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="password">New password</Label>
-            <Input id="password" type="password" {...register("password")} />
+            <PasswordInput id="password" className="h-11 px-3.5 text-[15px]" {...register("password")} />
             {errors.password && (
               <p className="text-destructive text-xs">{errors.password.message}</p>
             )}
           </div>
-          <Button type="submit" disabled={submitting} className="w-full">
+          <Button type="submit" disabled={submitting} className="h-11 w-full text-[15px]">
             {submitting ? "Updating…" : "Update password"}
           </Button>
         </form>
