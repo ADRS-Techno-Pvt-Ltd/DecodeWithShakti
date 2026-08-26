@@ -26,7 +26,7 @@ export async function generateInvoicePdf(data: InvoiceData): Promise<Uint8Array>
     doc.on("end", () => resolve(new Uint8Array(Buffer.concat(chunks))));
   });
 
-  const companyName = process.env.INVOICE_COMPANY_NAME ?? "CA ExamBank";
+  const companyName = process.env.INVOICE_COMPANY_NAME ?? "Decode with Shakti";
 
   doc.fontSize(20).text(companyName, { continued: false });
   doc.moveDown(0.5);

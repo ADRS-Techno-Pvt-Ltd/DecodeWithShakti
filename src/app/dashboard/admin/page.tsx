@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
+import { Reveal } from "@/components/landing/reveal";
 
 function formatRupees(paise: number): string {
   return `₹${(paise / 100).toLocaleString("en-IN")}`;
@@ -30,16 +31,18 @@ export default async function AdminOverviewPage() {
   return (
     <div>
       <h1 className="font-heading text-2xl font-bold">Overview</h1>
-      <p className="text-muted-foreground text-sm">CA ExamBank admin dashboard.</p>
+      <p className="text-muted-foreground text-sm">Decode with Shakti admin dashboard.</p>
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((s) => (
-          <Card key={s.label}>
-            <CardContent className="p-5">
-              <div className="text-muted-foreground text-xs font-semibold">{s.label}</div>
-              <div className="font-heading mt-1.5 text-2xl font-bold">{s.value}</div>
-            </CardContent>
-          </Card>
+        {stats.map((s, i) => (
+          <Reveal key={s.label} delay={i * 60}>
+            <Card>
+              <CardContent className="p-5">
+                <div className="text-muted-foreground text-xs font-semibold">{s.label}</div>
+                <div className="font-heading mt-1.5 text-2xl font-bold">{s.value}</div>
+              </CardContent>
+            </Card>
+          </Reveal>
         ))}
       </div>
     </div>

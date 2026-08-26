@@ -37,39 +37,35 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="bg-neutral-50 flex min-h-screen items-center justify-center px-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>Reset your password</CardTitle>
-          <CardDescription>We&apos;ll email you a link to reset it.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {sent ? (
-            <p className="text-sm">
-              If an account exists for that email, a reset link has been sent. It expires in 1
-              hour.
-            </p>
-          ) : (
-            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" {...register("email")} />
-                {errors.email && (
-                  <p className="text-destructive text-xs">{errors.email.message}</p>
-                )}
-              </div>
-              <Button type="submit" disabled={submitting} className="w-full">
-                {submitting ? "Sending…" : "Send reset link"}
-              </Button>
-            </form>
-          )}
-          <p className="text-muted-foreground mt-5 text-center text-sm">
-            <Link href="/login" className="text-primary hover:underline">
-              Back to log in
-            </Link>
+    <Card className="w-full max-w-sm shadow-sm">
+      <CardHeader>
+        <CardTitle className="text-xl">Reset your password</CardTitle>
+        <CardDescription>We&apos;ll email you a link to reset it.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {sent ? (
+          <p className="text-sm">
+            If an account exists for that email, a reset link has been sent. It expires in 1
+            hour.
           </p>
-        </CardContent>
-      </Card>
-    </div>
+        ) : (
+          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" type="email" {...register("email")} />
+              {errors.email && <p className="text-destructive text-xs">{errors.email.message}</p>}
+            </div>
+            <Button type="submit" disabled={submitting} className="w-full">
+              {submitting ? "Sending…" : "Send reset link"}
+            </Button>
+          </form>
+        )}
+        <p className="text-muted-foreground mt-5 text-center text-sm">
+          <Link href="/login" className="text-primary hover:underline">
+            Back to log in
+          </Link>
+        </p>
+      </CardContent>
+    </Card>
   );
 }

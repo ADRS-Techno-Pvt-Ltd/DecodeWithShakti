@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { motion, type Variants } from "motion/react";
 import {
   ArrowRight,
   Eye,
@@ -155,6 +158,35 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** Wraps a Button (or anything) with a subtle press/lift on hover and tap. */
+function MotionButton({
+  children,
+  block = false,
+}: {
+  children: React.ReactNode;
+  block?: boolean;
+}) {
+  return (
+    <motion.div
+      className={block ? "block" : "inline-block"}
+      whileHover={{ scale: 1.035 }}
+      whileTap={{ scale: 0.965 }}
+      transition={{ duration: 0.15, ease: "easeOut" }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+const heroContainer: Variants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.12, delayChildren: 0.05 } },
+};
+const heroItem: Variants = {
+  hidden: { opacity: 0, y: 18 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.2, 0.65, 0.3, 0.9] } },
+};
+
 export default function LandingPage() {
   return (
     <>
@@ -185,21 +217,33 @@ export default function LandingPage() {
         {/* HERO */}
         <section className="border-b border-border bg-gradient-to-b from-[#fcfcfe] to-background py-22">
           <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-14 px-7 md:grid-cols-[1.05fr_0.95fr]">
-            <Reveal>
-              <Eyebrow>Used by 12,400+ aspirants this season</Eyebrow>
-              <h1 className="font-heading mt-5 text-[2.6rem] leading-[1.1] font-semibold tracking-tight text-foreground md:text-[3.4rem]">
+            <motion.div variants={heroContainer} initial="hidden" animate="show">
+              <motion.div variants={heroItem}>
+                <Eyebrow>Used by 12,400+ aspirants this season</Eyebrow>
+              </motion.div>
+              <motion.h1
+                variants={heroItem}
+                className="font-heading mt-5 text-[2.6rem] leading-[1.1] font-semibold tracking-tight text-foreground md:text-[3.4rem]"
+              >
                 Practice the questions that <span className="text-primary">actually show up</span> on exam day.
-              </h1>
-              <p className="mt-5 max-w-lg text-[17.5px] leading-relaxed text-muted-foreground">
+              </motion.h1>
+              <motion.p
+                variants={heroItem}
+                className="mt-5 max-w-lg text-[17.5px] leading-relaxed text-muted-foreground"
+              >
                 Exam-pattern question banks for CA, CS, CMA, Banking, SSC, Railways, UPSC and
                 State PSC — built by rank holders, previewed before you pay, and delivered the
                 moment you buy.
-              </p>
-              <div className="mt-8 flex flex-wrap gap-3.5">
-                <Button size="lg" render={<Link href="#pricing">Browse question banks <ArrowRight className="ml-1 h-4 w-4" /></Link>} />
-                <Button size="lg" variant="outline" render={<Link href="#how">See how it works</Link>} />
-              </div>
-              <div className="mt-9 flex items-center gap-3.5">
+              </motion.p>
+              <motion.div variants={heroItem} className="mt-8 flex flex-wrap gap-3.5">
+                <MotionButton>
+                  <Button size="lg" render={<Link href="#pricing">Browse question banks <ArrowRight className="ml-1 h-4 w-4" /></Link>} />
+                </MotionButton>
+                <MotionButton>
+                  <Button size="lg" variant="outline" render={<Link href="#how">See how it works</Link>} />
+                </MotionButton>
+              </motion.div>
+              <motion.div variants={heroItem} className="mt-9 flex items-center gap-3.5">
                 <div className="flex">
                   {["RK", "AS", "PM", "TN"].map((initials, i) => (
                     <span
@@ -218,11 +262,19 @@ export default function LandingPage() {
                   <strong className="text-foreground">4.8/5</strong> average rating across
                   3,100+ verified purchases
                 </p>
-              </div>
-            </Reveal>
+              </motion.div>
+            </motion.div>
 
-            <Reveal delay={100}>
-              <div className="relative">
+            <motion.div
+              initial={{ opacity: 0, y: 26 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3, ease: [0.2, 0.65, 0.3, 0.9] }}
+            >
+              <motion.div
+                className="relative"
+                animate={{ y: [0, -9, 0] }}
+                transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+              >
                 <div className="relative -rotate-1 rounded-[14px] border border-border bg-card shadow-[0_4px_8px_rgba(27,27,47,0.05),0_24px_48px_-16px_rgba(27,27,47,0.18)]">
                   <div className="flex items-start justify-between gap-3 p-6 pb-4.5">
                     <div>
@@ -249,22 +301,30 @@ export default function LandingPage() {
                     </div>
                   </div>
                 </div>
-                <div className="absolute -top-6 -right-3.5 hidden items-center gap-2.5 rounded-xl border border-border bg-card p-3 px-3.5 shadow-md sm:flex">
+                <motion.div
+                  className="absolute -top-6 -right-3.5 hidden items-center gap-2.5 rounded-xl border border-border bg-card p-3 px-3.5 shadow-md sm:flex"
+                  animate={{ y: [0, -7, 0] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                >
                   <CheckCircle2 className="h-5 w-5 shrink-0 text-success" />
                   <div>
                     <div className="text-[12.5px] font-semibold">Watermarked to you</div>
                     <div className="text-[11px] text-muted-foreground">rahul.k@email.com</div>
                   </div>
-                </div>
-                <div className="absolute -bottom-5 -left-5 hidden items-center gap-2.5 rounded-xl border border-border bg-card p-2.5 px-3.5 shadow-md sm:flex">
+                </motion.div>
+                <motion.div
+                  className="absolute -bottom-5 -left-5 hidden items-center gap-2.5 rounded-xl border border-border bg-card p-2.5 px-3.5 shadow-md sm:flex"
+                  animate={{ y: [0, -6, 0] }}
+                  transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 0.6 }}
+                >
                   <FileText className="h-4.5 w-4.5 shrink-0 text-primary" />
                   <div>
                     <div className="text-xs font-semibold">12-page preview</div>
                     <div className="text-[11px] text-muted-foreground">before you buy</div>
                   </div>
-                </div>
-              </div>
-            </Reveal>
+                </motion.div>
+              </motion.div>
+            </motion.div>
           </div>
         </section>
 
@@ -306,7 +366,11 @@ export default function LandingPage() {
             <div className="grid grid-cols-1 gap-5.5 sm:grid-cols-2 lg:grid-cols-3">
               {features.map((f, i) => (
                 <Reveal key={f.title} delay={i * 40}>
-                  <div className="h-full rounded-[14px] border border-border bg-card p-6.5 transition hover:-translate-y-0.5 hover:border-primary-light/40 hover:shadow-sm">
+                  <motion.div
+                    whileHover={{ y: -5 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    className="h-full rounded-[14px] border border-border bg-card p-6.5 hover:border-primary-light/40 hover:shadow-sm"
+                  >
                     <div className="mb-4 flex h-10.5 w-10.5 items-center justify-center rounded-[10px] bg-accent text-primary">
                       <f.icon className="h-5 w-5" strokeWidth={1.8} />
                     </div>
@@ -314,7 +378,7 @@ export default function LandingPage() {
                     <p className="mt-2 text-[14.5px] leading-relaxed text-muted-foreground">
                       {f.body}
                     </p>
-                  </div>
+                  </motion.div>
                 </Reveal>
               ))}
             </div>
@@ -366,8 +430,10 @@ export default function LandingPage() {
             <div className="grid grid-cols-1 items-stretch gap-6 md:grid-cols-3">
               {featuredBanks.map((bank, i) => (
                 <Reveal key={bank.title} delay={i * 60}>
-                  <div
-                    className={`relative flex h-full flex-col rounded-[14px] border bg-card shadow-sm transition hover:-translate-y-1 hover:shadow-lg ${
+                  <motion.div
+                    whileHover={{ y: -6 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    className={`relative flex h-full flex-col rounded-[14px] border bg-card shadow-sm hover:shadow-lg ${
                       bank.popular ? "border-primary ring-1 ring-primary" : "border-border"
                     }`}
                   >
@@ -417,13 +483,15 @@ export default function LandingPage() {
                       ))}
                     </ul>
                     <div className="mt-auto p-6.5 pt-5.5">
-                      <Button
-                        variant={bank.popular ? "default" : "outline"}
-                        className="w-full"
-                        render={<Link href="/question-banks">{bank.popular ? "Buy this bank" : "Preview sample"}</Link>}
-                      />
+                      <MotionButton block>
+                        <Button
+                          variant={bank.popular ? "default" : "outline"}
+                          className="w-full"
+                          render={<Link href="/question-banks">{bank.popular ? "Buy this bank" : "Preview sample"}</Link>}
+                        />
+                      </MotionButton>
                     </div>
-                  </div>
+                  </motion.div>
                 </Reveal>
               ))}
             </div>
@@ -518,17 +586,21 @@ export default function LandingPage() {
                   moment you&apos;re ready.
                 </p>
                 <div className="relative mt-7 flex flex-wrap justify-center gap-3.5">
-                  <Button
-                    size="lg"
-                    className="bg-white text-primary-dark hover:bg-[#f1f0ff]"
-                    render={<Link href="#pricing">Browse question banks</Link>}
-                  />
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="border-white/35 text-white hover:border-white hover:bg-white/10"
-                    render={<Link href="/register">Create a free account</Link>}
-                  />
+                  <MotionButton>
+                    <Button
+                      size="lg"
+                      className="bg-white text-primary-dark hover:bg-[#f1f0ff]"
+                      render={<Link href="#pricing">Browse question banks</Link>}
+                    />
+                  </MotionButton>
+                  <MotionButton>
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="border-white/35 bg-transparent text-white hover:border-white hover:bg-white/10"
+                      render={<Link href="/register">Create a free account</Link>}
+                    />
+                  </MotionButton>
                 </div>
               </div>
             </Reveal>
@@ -579,9 +651,8 @@ export default function LandingPage() {
               </h4>
               <ul className="flex flex-col gap-2.5 text-sm text-muted-foreground">
                 <li><Link href="#" className="hover:text-primary">Contact us</Link></li>
-                <li><Link href="#" className="hover:text-primary">Refund policy</Link></li>
-                <li><Link href="#" className="hover:text-primary">Terms of use</Link></li>
-                <li><Link href="#" className="hover:text-primary">Privacy</Link></li>
+                <li><Link href="/terms" className="hover:text-primary">Terms of use</Link></li>
+                <li><Link href="/privacy" className="hover:text-primary">Privacy</Link></li>
               </ul>
             </div>
           </div>

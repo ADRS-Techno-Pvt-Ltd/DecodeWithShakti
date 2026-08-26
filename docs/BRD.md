@@ -59,6 +59,10 @@ Launch a question-bank marketplace where a single admin uploads downloadable exa
 - FR-18: Deployment on client-owned AWS/VPS environment.
 - FR-19: Basic system monitoring (health-check endpoint).
 
+### 3.9 Legal & Account Management *(client addition, beyond original quotation)*
+- FR-20: Public Terms &amp; Conditions and Privacy Policy pages, covering the digital-goods license, watermarking/anti-sharing terms, refund policy, and what happens to purchase/invoice data on account deletion.
+- FR-21: Student self-service account deletion — a student can permanently delete their own account (password re-entry required to confirm). An account with no purchase history is hard-deleted; an account with purchase history is anonymized (name/email/password scrubbed) while its `Purchase`/`Invoice` rows are retained, unattached to any identifiable profile, for admin sales records and tax/financial record-keeping. The single seeded admin account is not self-deletable.
+
 ## 4. Non-Functional Requirements
 
 - NFR-1: Responsive UI across mobile and desktop.

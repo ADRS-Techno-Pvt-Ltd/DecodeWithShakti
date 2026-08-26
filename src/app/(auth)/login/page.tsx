@@ -37,43 +37,41 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="bg-neutral-50 flex min-h-screen items-center justify-center px-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>Log in to CA ExamBank</CardTitle>
-          <CardDescription>Access your purchases and question banks.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" {...register("email")} />
-              {errors.email && <p className="text-destructive text-xs">{errors.email.message}</p>}
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" {...register("password")} />
-              {errors.password && (
-                <p className="text-destructive text-xs">{errors.password.message}</p>
-              )}
-            </div>
-            <div className="text-right text-sm">
-              <Link href="/forgot-password" className="text-primary hover:underline">
-                Forgot password?
-              </Link>
-            </div>
-            <Button type="submit" disabled={submitting} className="w-full">
-              {submitting ? "Logging in…" : "Log in"}
-            </Button>
-          </form>
-          <p className="text-muted-foreground mt-5 text-center text-sm">
-            Don&apos;t have an account?{" "}
-            <Link href="/register" className="text-primary hover:underline">
-              Sign up
+    <Card className="w-full max-w-sm shadow-sm">
+      <CardHeader>
+        <CardTitle className="text-xl">Log in to Decode with Shakti</CardTitle>
+        <CardDescription>Access your purchases and question banks.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="email">Email</Label>
+            <Input id="email" type="email" {...register("email")} />
+            {errors.email && <p className="text-destructive text-xs">{errors.email.message}</p>}
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="password">Password</Label>
+            <Input id="password" type="password" {...register("password")} />
+            {errors.password && (
+              <p className="text-destructive text-xs">{errors.password.message}</p>
+            )}
+          </div>
+          <div className="text-right text-sm">
+            <Link href="/forgot-password" className="text-primary hover:underline">
+              Forgot password?
             </Link>
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+          </div>
+          <Button type="submit" disabled={submitting} className="w-full">
+            {submitting ? "Logging in…" : "Log in"}
+          </Button>
+        </form>
+        <p className="text-muted-foreground mt-5 text-center text-sm">
+          Don&apos;t have an account?{" "}
+          <Link href="/register" className="text-primary hover:underline">
+            Sign up
+          </Link>
+        </p>
+      </CardContent>
+    </Card>
   );
 }

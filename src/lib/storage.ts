@@ -23,6 +23,10 @@ export function previewFilePath(questionBankId: string): string {
   return resolvePath("questionbanks", questionBankId, "preview.pdf");
 }
 
+export function thumbnailFilePath(questionBankId: string, ext: string): string {
+  return resolvePath("questionbanks", questionBankId, `thumbnail.${ext}`);
+}
+
 export function invoiceFilePath(invoiceNumber: string): string {
   return resolvePath("invoices", `${invoiceNumber}.pdf`);
 }
@@ -37,6 +41,17 @@ export async function saveOriginalFile(questionBankId: string, bytes: Buffer): P
 export async function savePreviewFile(questionBankId: string, bytes: Uint8Array): Promise<string> {
   await mkdir(questionBankDir(questionBankId), { recursive: true });
   const filePath = previewFilePath(questionBankId);
+  await writeFile(filePath, bytes);
+  return filePath;
+}
+
+export async function saveThumbnailFile(
+  questionBankId: string,
+  bytes: Buffer,
+  ext: string,
+): Promise<string> {
+  await mkdir(questionBankDir(questionBankId), { recursive: true });
+  const filePath = thumbnailFilePath(questionBankId, ext);
   await writeFile(filePath, bytes);
   return filePath;
 }

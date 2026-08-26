@@ -24,7 +24,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Category, QuestionBank } from "@/features/question-banks/types";
-import { createQuestionBank, updateQuestionBank } from "@/features/question-banks/api";
+import {
+  createQuestionBank,
+  updateQuestionBank,
+  replaceQuestionBankThumbnail,
+} from "@/features/question-banks/api";
 
 type FormValues = {
   title: string;
@@ -38,6 +42,7 @@ type FormValues = {
   earlyBirdEndsAt: string;
   isPublished: boolean;
   file: FileList | null;
+  thumbnail: FileList | null;
 };
 
 function toDatetimeLocal(iso: string | null): string {
@@ -59,7 +64,14 @@ export function QuestionBankSheet({
   onSaved: () => void;
 }) {
   const [submitting, setSubmitting] = useState(false);
-  const { register, handleSubmit, watch, reset, setValue } = useForm<FormValues>({
+  const {
+    register,
+    handleSubmit,
+    watch,
+    reset,
+    setValue,
+    formState: { errors },
+  } = useForm<FormValues>({
     defaultValues: {
       title: "",
       description: "",
@@ -72,6 +84,7 @@ export function QuestionBankSheet({
       earlyBirdEndsAt: "",
       isPublished: true,
       file: null,
+      thumbnail: null,
     },
   });
 
@@ -89,6 +102,7 @@ export function QuestionBankSheet({
         earlyBirdEndsAt: toDatetimeLocal(editing.earlyBirdEndsAt),
         isPublished: editing.isPublished,
         file: null,
+        thumbnail: null,
       });
     } else {
       reset({
@@ -103,6 +117,7 @@ export function QuestionBankSheet({
         earlyBirdEndsAt: "",
         isPublished: true,
         file: null,
+        thumbnail: null,
       });
     }
   }, [editing, categories, reset, open]);
@@ -127,6 +142,9 @@ export function QuestionBankSheet({
             : undefined,
           isPublished: values.isPublished,
         });
+        if (values.thumbnail && values.thumbnail.length > 0) {
+          await replaceQuestionBankThumbnail(editing.id, values.thumbnail[0]);
+        }
         toast.success("Question bank updated.");
       } else {
         if (!values.file || values.file.length === 0) {
@@ -147,6 +165,9 @@ export function QuestionBankSheet({
         }
         formData.set("isPublished", String(values.isPublished));
         formData.set("file", values.file[0]);
+        if (values.thumbnail && values.thumbnail.length > 0) {
+          formData.set("thumbnail", values.thumbnail[0]);
+        }
         await createQuestionBank(formData);
         toast.success("Question bank uploaded.");
       }
@@ -212,6 +233,25 @@ export function QuestionBankSheet({
             </div>
           )}
 
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="thumbnail">
+              Thumbnail {editing ? "(replace)" : "(optional)"} — shown to students while browsing
+            </Label>
+            {editing?.thumbnailUrl && (
+              <img
+                src={editing.thumbnailUrl}
+                alt=""
+                className="h-20 w-32 rounded-md border object-cover"
+              />
+            )}
+            <Input
+              id="thumbnail"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              {...register("thumbnail")}
+            />
+          </div>
+
           <div className="rounded-lg border p-3.5">
             <div className="flex items-center gap-2.5">
               <Switch
@@ -223,11 +263,22 @@ export function QuestionBankSheet({
             {previewEnabled && (
               <div className="mt-2.5 flex flex-col gap-1.5">
                 <Label htmlFor="previewPageCount">Preview page count</Label>
-                <Input id="previewPageCount" type="number" {...register("previewPageCount")} />
-                {editing?.totalPages && (
-                  <span className="text-muted-foreground text-xs">
-                    Max {editing.totalPages} pages
-                  </span>
+                <Input
+                  id="previewPageCount"
+                  type="number"
+                  {...register("previewPageCount", {
+                    validate: (v) =>
+                      !previewEnabled || (v.trim() !== "" && Number(v) > 0) || "Required when preview is enabled",
+                  })}
+                />
+                {errors.previewPageCount ? (
+                  <span className="text-destructive text-xs">{errors.previewPageCount.message}</span>
+                ) : (
+                  editing?.totalPages && (
+                    <span className="text-muted-foreground text-xs">
+                      Max {editing.totalPages} pages
+                    </span>
+                  )
                 )}
               </div>
             )}
@@ -245,11 +296,30 @@ export function QuestionBankSheet({
               <div className="mt-2.5 grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="earlyBirdPrice">Early bird price (paise)</Label>
-                  <Input id="earlyBirdPrice" type="number" {...register("earlyBirdPrice")} />
+                  <Input
+                    id="earlyBirdPrice"
+                    type="number"
+                    {...register("earlyBirdPrice", {
+                      validate: (v) =>
+                        !earlyBirdEnabled || (v.trim() !== "" && Number(v) > 0) || "Required when early bird pricing is enabled",
+                    })}
+                  />
+                  {errors.earlyBirdPrice && (
+                    <span className="text-destructive text-xs">{errors.earlyBirdPrice.message}</span>
+                  )}
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="earlyBirdEndsAt">Ends at</Label>
-                  <Input id="earlyBirdEndsAt" type="datetime-local" {...register("earlyBirdEndsAt")} />
+                  <Input
+                    id="earlyBirdEndsAt"
+                    type="datetime-local"
+                    {...register("earlyBirdEndsAt", {
+                      validate: (v) => !earlyBirdEnabled || v.trim() !== "" || "Required when early bird pricing is enabled",
+                    })}
+                  />
+                  {errors.earlyBirdEndsAt && (
+                    <span className="text-destructive text-xs">{errors.earlyBirdEndsAt.message}</span>
+                  )}
                 </div>
               </div>
             )}

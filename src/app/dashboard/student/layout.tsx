@@ -1,11 +1,12 @@
 import { redirect } from "next/navigation";
-import { Home, BookOpen, FileQuestion, GraduationCap } from "lucide-react";
+import { Home, BookOpen, FileQuestion, GraduationCap, Settings } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { DashboardShell, type NavItem } from "@/components/dashboard/dashboard-shell";
 
 const navItems: NavItem[] = [
   { href: "/dashboard/student", label: "My Purchases", icon: <Home /> },
   { href: "/question-banks", label: "Browse Question Banks", icon: <BookOpen /> },
+  { href: "/dashboard/student/settings", label: "Account Settings", icon: <Settings /> },
 ];
 
 const comingSoonItems: NavItem[] = [
@@ -19,7 +20,7 @@ export default async function StudentLayout({ children }: { children: React.Reac
 
   return (
     <DashboardShell
-      brand="CA ExamBank"
+      brand="Decode with Shakti"
       navItems={navItems}
       comingSoonItems={comingSoonItems}
       userName={session.user.name ?? "Student"}

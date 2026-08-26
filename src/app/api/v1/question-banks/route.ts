@@ -3,8 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin, toErrorResponse } from "@/lib/auth-guards";
 import { questionBankInputSchema } from "@/lib/validation/question-bank";
 import { uniqueSlug } from "@/lib/slug";
-import { saveOriginalFile, savePreviewFile } from "@/lib/storage";
+import { saveOriginalFile, savePreviewFile, saveThumbnailFile } from "@/lib/storage";
 import { getPageCount, buildPreview } from "@/lib/preview";
+import { extForThumbnailMime, thumbnailUrlFor, MAX_THUMBNAIL_BYTES } from "@/lib/thumbnail";
 
 const MAX_UPLOAD_BYTES = Number(process.env.MAX_UPLOAD_MB ?? 50) * 1024 * 1024;
 
@@ -27,7 +28,12 @@ export async function GET(request: Request) {
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json(banks);
+    return NextResponse.json(
+      banks.map(({ thumbnailPath, ...bank }) => ({
+        ...bank,
+        thumbnailUrl: thumbnailUrlFor(bank.id, thumbnailPath),
+      })),
+    );
   } catch (err) {
     return toErrorResponse(err);
   }
@@ -57,6 +63,21 @@ async function createQuestionBank(request: Request) {
       { error: `File exceeds the ${process.env.MAX_UPLOAD_MB ?? 50}MB limit.` },
       { status: 400 },
     );
+  }
+
+  const thumbnail = formData.get("thumbnail");
+  let thumbnailExt: string | null = null;
+  if (thumbnail instanceof File && thumbnail.size > 0) {
+    thumbnailExt = extForThumbnailMime(thumbnail.type);
+    if (!thumbnailExt) {
+      return NextResponse.json(
+        { error: "Thumbnail must be a JPEG, PNG, or WebP image." },
+        { status: 400 },
+      );
+    }
+    if (thumbnail.size > MAX_THUMBNAIL_BYTES) {
+      return NextResponse.json({ error: "Thumbnail exceeds the 5MB limit." }, { status: 400 });
+    }
   }
 
   const raw = Object.fromEntries(formData.entries());
@@ -105,11 +126,21 @@ async function createQuestionBank(request: Request) {
     previewFilePathValue = await savePreviewFile(bank.id, previewBytes);
   }
 
+  let thumbnailPathValue: string | null = null;
+  if (thumbnail instanceof File && thumbnailExt) {
+    const thumbnailBytes = Buffer.from(await thumbnail.arrayBuffer());
+    thumbnailPathValue = await saveThumbnailFile(bank.id, thumbnailBytes, thumbnailExt);
+  }
+
   const updated = await prisma.questionBank.update({
     where: { id: bank.id },
-    data: { filePath, previewFilePath: previewFilePathValue },
+    data: { filePath, previewFilePath: previewFilePathValue, thumbnailPath: thumbnailPathValue },
     include: { category: true },
   });
 
-  return NextResponse.json(updated, { status: 201 });
+  const { thumbnailPath, ...bankDto } = updated;
+  return NextResponse.json(
+    { ...bankDto, thumbnailUrl: thumbnailUrlFor(updated.id, thumbnailPath) },
+    { status: 201 },
+  );
 }

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
+import { motion, AnimatePresence, MotionConfig } from "motion/react";
 import {
   Sidebar,
   SidebarContent,
@@ -46,14 +47,19 @@ export function DashboardShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const activeHref = navItems
+    .map((item) => item.href)
+    .filter((href) => pathname === href || pathname.startsWith(href + "/"))
+    .sort((a, b) => b.length - a.length)[0];
 
   return (
+    <MotionConfig reducedMotion="user">
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader>
           <div className="font-heading flex items-center gap-2 px-2 py-1.5 font-bold">
-            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground">
-              EB
+            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-primary-light to-primary-dark text-xs font-bold text-white">
+              D
             </span>
             {brand}
           </div>
@@ -65,7 +71,7 @@ export function DashboardShell({
                 {navItems.map((item) => (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
-                      isActive={pathname === item.href || pathname.startsWith(item.href + "/")}
+                      isActive={item.href === activeHref}
                       render={
                         <Link href={item.href}>
                           {item.icon}
@@ -99,7 +105,7 @@ export function DashboardShell({
         <SidebarFooter />
       </Sidebar>
       <SidebarInset>
-        <header className="flex h-16 items-center justify-between border-b bg-white px-6">
+        <header className="flex h-16 items-center justify-between border-b bg-card px-6">
           <SidebarTrigger />
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-muted">
@@ -125,8 +131,20 @@ export function DashboardShell({
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
-        <main className="bg-neutral-50 flex-1 p-7">{children}</main>
+        <main className="bg-background flex-1 p-7">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={pathname}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+            >
+              {children}
+            </motion.div>
+          </AnimatePresence>
+        </main>
       </SidebarInset>
     </SidebarProvider>
+    </MotionConfig>
   );
 }

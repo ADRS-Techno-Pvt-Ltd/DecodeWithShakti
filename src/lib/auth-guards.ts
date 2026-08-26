@@ -13,7 +13,10 @@ export function toErrorResponse(err: unknown): NextResponse {
     return NextResponse.json({ error: err.message }, { status: 403 });
   }
   console.error(err);
-  return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  return NextResponse.json(
+    { error: "Internal server error", debug: err instanceof Error ? err.stack : String(err) },
+    { status: 500 },
+  );
 }
 
 export async function requireSession() {

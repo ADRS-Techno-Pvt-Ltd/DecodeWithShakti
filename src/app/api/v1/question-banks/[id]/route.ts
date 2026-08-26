@@ -4,6 +4,7 @@ import { requireAdmin, toErrorResponse } from "@/lib/auth-guards";
 import { questionBankInputSchema } from "@/lib/validation/question-bank";
 import { deleteQuestionBankFiles, readStoredFile, savePreviewFile } from "@/lib/storage";
 import { buildPreview } from "@/lib/preview";
+import { thumbnailUrlFor } from "@/lib/thumbnail";
 
 export async function PATCH(
   request: Request,
@@ -54,7 +55,8 @@ export async function PATCH(
       include: { category: true },
     });
 
-    return NextResponse.json(updated);
+    const { thumbnailPath, ...bankDto } = updated;
+    return NextResponse.json({ ...bankDto, thumbnailUrl: thumbnailUrlFor(updated.id, thumbnailPath) });
   } catch (err) {
     return toErrorResponse(err);
   }

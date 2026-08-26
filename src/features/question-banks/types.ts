@@ -15,6 +15,7 @@ export type QuestionBank = {
   totalPages: number | null;
   previewEnabled: boolean;
   previewPageCount: number | null;
+  thumbnailUrl: string | null;
   isPublished: boolean;
   createdAt: string;
 };

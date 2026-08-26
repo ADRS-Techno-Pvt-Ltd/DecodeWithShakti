@@ -13,7 +13,11 @@ export type Coupon = {
 async function unwrap<T>(res: Response): Promise<T> {
   if (!res.ok) {
     const body = await res.json().catch(() => null);
-    throw new Error(body?.error?.formErrors?.[0] ?? body?.error ?? `Request failed (${res.status})`);
+    if (typeof body?.error === "string") {
+      throw new Error(body.error);
+    }
+    const fieldError = Object.values(body?.error?.fieldErrors ?? {}).flat()[0];
+    throw new Error(fieldError ?? body?.error?.formErrors?.[0] ?? `Request failed (${res.status})`);
   }
   return res.json();
 }

@@ -28,6 +28,8 @@
 | FR-19 | Basic system monitoring | Deployment Topology | `api/v1/health/route.ts` | Hit `/api/v1/health`, confirm DB ping | **Verified** (`{"status":"ok","db":"connected"}` against live Neon DB) |
 | NFR-3 | Scalable architecture (state mgmt, versioned API, feature folders) | State Management & Routing | `src/features/**`, `src/stores/**`, `/api/v1/**` | Code review against `docs/HLD.md` § 5 | Implemented |
 | NFR-4 | Downloads/invoices authorization-checked | Purchases | `api/v1/files/download`, `api/v1/files/invoice` | Attempt download as non-purchaser, confirm 403 | **Verified** — admin session correctly got 403 attempting a student's download |
+| FR-20 | Terms & Conditions / Privacy Policy pages | UI/Design System | `src/app/(marketing)/terms`, `src/app/(marketing)/privacy`, `src/components/landing/legal-layout.tsx` | Visual review; footer links on landing page point to both routes | **Verified** — both routes return 200, footer links updated from placeholder `#` hrefs |
+| FR-21 | Student self-service account deletion | Auth, Purchases | `api/v1/account/route.ts`, `dashboard/student/settings/**` | Delete an account with no purchases (hard delete) and one with purchases (anonymized, `Purchase`/`Invoice` rows retained); confirm unauthenticated `DELETE` is rejected | Implemented — password-gated deletion verified against unauth (401) and route-guard (redirect) cases; full hard-delete vs. anonymize branch not yet exercised against seeded purchase data |
 
 **Explicitly untraced (out of scope, per BRD § 5):** Phase 2 roadmap items, real Cashfree integration (tracked separately once its follow-up plan exists).
 

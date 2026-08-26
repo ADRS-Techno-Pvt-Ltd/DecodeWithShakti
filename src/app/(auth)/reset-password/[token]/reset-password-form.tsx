@@ -45,27 +45,25 @@ export function ResetPasswordForm({ token }: { token: string }) {
   }
 
   return (
-    <div className="bg-neutral-50 flex min-h-screen items-center justify-center px-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>Set a new password</CardTitle>
-          <CardDescription>Choose a strong password for your account.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="password">New password</Label>
-              <Input id="password" type="password" {...register("password")} />
-              {errors.password && (
-                <p className="text-destructive text-xs">{errors.password.message}</p>
-              )}
-            </div>
-            <Button type="submit" disabled={submitting} className="w-full">
-              {submitting ? "Updating…" : "Update password"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+    <Card className="w-full max-w-sm shadow-sm">
+      <CardHeader>
+        <CardTitle className="text-xl">Set a new password</CardTitle>
+        <CardDescription>Choose a strong password for your account.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="password">New password</Label>
+            <Input id="password" type="password" {...register("password")} />
+            {errors.password && (
+              <p className="text-destructive text-xs">{errors.password.message}</p>
+            )}
+          </div>
+          <Button type="submit" disabled={submitting} className="w-full">
+            {submitting ? "Updating…" : "Update password"}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

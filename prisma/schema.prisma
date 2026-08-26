@@ -59,6 +59,7 @@ model QuestionBank {
   previewEnabled   Boolean   @default(false)
   previewPageCount Int?
   previewFilePath  String?
+  thumbnailPath    String?
   isPublished      Boolean   @default(true)
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt

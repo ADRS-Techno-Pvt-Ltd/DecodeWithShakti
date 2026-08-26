@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { motion } from "motion/react";
 
-/** Fades content up into place once it scrolls into view. See globals.css `.reveal`. */
+/** Fades content up into place once it scrolls into view. */
 export function Reveal({
   children,
   delay = 0,
@@ -12,32 +12,15 @@ export function Reveal({
   delay?: number;
   className?: string;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          observer.unobserve(el);
-        }
-      },
-      { threshold: 0.12 },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
   return (
-    <div
-      ref={ref}
-      className={`reveal ${visible ? "in" : ""} ${className}`}
-      style={{ transitionDelay: delay ? `${delay}ms` : undefined }}
+    <motion.div
+      className={className}
+      initial={{ opacity: 0, y: 16 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-80px" }}
+      transition={{ duration: 0.5, delay: delay / 1000, ease: [0.2, 0.65, 0.3, 0.9] }}
     >
       {children}
-    </div>
+    </motion.div>
   );
 }

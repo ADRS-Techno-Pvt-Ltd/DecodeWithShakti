@@ -97,7 +97,8 @@ export function PurchaseCard({
         {earlyBirdActive && (
           <div className="flex justify-between py-2 text-sm text-green-700">
             <span>
-              Early bird discount <Badge className="ml-1 border-amber-200 bg-amber-50 text-amber-700">active</Badge>
+              Early bird discount{" "}
+              <Badge className="ml-1 border-gold/40 bg-gold-pale text-gold-ink">active</Badge>
             </span>
             <span>-{formatRupees(regularPrice - basePrice)}</span>
           </div>

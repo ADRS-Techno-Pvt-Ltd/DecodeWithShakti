@@ -55,43 +55,41 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="bg-neutral-50 flex min-h-screen items-center justify-center px-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>Create your student account</CardTitle>
-          <CardDescription>Browse, preview and purchase CA question banks.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="name">Full name</Label>
-              <Input id="name" {...register("name")} />
-              {errors.name && <p className="text-destructive text-xs">{errors.name.message}</p>}
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" {...register("email")} />
-              {errors.email && <p className="text-destructive text-xs">{errors.email.message}</p>}
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" {...register("password")} />
-              {errors.password && (
-                <p className="text-destructive text-xs">{errors.password.message}</p>
-              )}
-            </div>
-            <Button type="submit" disabled={submitting} className="w-full">
-              {submitting ? "Creating account…" : "Create account"}
-            </Button>
-          </form>
-          <p className="text-muted-foreground mt-5 text-center text-sm">
-            Already have an account?{" "}
-            <Link href="/login" className="text-primary hover:underline">
-              Log in
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+    <Card className="w-full max-w-sm shadow-sm">
+      <CardHeader>
+        <CardTitle className="text-xl">Create your student account</CardTitle>
+        <CardDescription>Browse, preview and purchase exam-pattern question banks.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="name">Full name</Label>
+            <Input id="name" {...register("name")} />
+            {errors.name && <p className="text-destructive text-xs">{errors.name.message}</p>}
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="email">Email</Label>
+            <Input id="email" type="email" {...register("email")} />
+            {errors.email && <p className="text-destructive text-xs">{errors.email.message}</p>}
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="password">Password</Label>
+            <Input id="password" type="password" {...register("password")} />
+            {errors.password && (
+              <p className="text-destructive text-xs">{errors.password.message}</p>
+            )}
+          </div>
+          <Button type="submit" disabled={submitting} className="w-full">
+            {submitting ? "Creating account…" : "Create account"}
+          </Button>
+        </form>
+        <p className="text-muted-foreground mt-5 text-center text-sm">
+          Already have an account?{" "}
+          <Link href="/login" className="text-primary hover:underline">
+            Log in
+          </Link>
+        </p>
+      </CardContent>
+    </Card>
   );
 }

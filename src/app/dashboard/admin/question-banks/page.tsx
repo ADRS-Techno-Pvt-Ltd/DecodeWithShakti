@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatusBadge } from "@/components/dashboard/status-badge";
+import { Reveal } from "@/components/landing/reveal";
 import { fetchAdminQuestionBanks, fetchCategories, deleteQuestionBank } from "@/features/question-banks/api";
 import type { QuestionBank } from "@/features/question-banks/types";
 import { QuestionBankSheet } from "./question-bank-sheet";
@@ -59,73 +61,73 @@ export default function AdminQuestionBanksPage() {
         <Button onClick={openCreate}>+ Upload Question Bank</Button>
       </div>
 
-      <div className="rounded-lg border bg-white">
-        {isLoading ? (
-          <div className="space-y-3 p-4">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-          </div>
-        ) : !banks || banks.length === 0 ? (
-          <p className="text-muted-foreground p-8 text-center text-sm">
-            No question banks yet — click &ldquo;Upload Question Bank&rdquo; to add your first one.
-          </p>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Preview</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {banks.map((bank) => (
-                <TableRow key={bank.id}>
-                  <TableCell className="font-semibold">{bank.title}</TableCell>
-                  <TableCell>{bank.category.name}</TableCell>
-                  <TableCell>
-                    {formatRupees(bank.price)}
-                    {bank.earlyBirdPrice != null && (
-                      <span className="text-muted-foreground text-xs">
-                        {" "}
-                        ({formatRupees(bank.earlyBirdPrice)} early bird)
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {bank.previewEnabled ? (
-                      <Badge className="border-green-200 bg-green-50 text-green-700">
-                        On · {bank.previewPageCount} pages
-                      </Badge>
-                    ) : (
-                      <Badge variant="secondary">Off</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {bank.isPublished ? (
-                      <Badge className="border-green-200 bg-green-50 text-green-700">Published</Badge>
-                    ) : (
-                      <Badge variant="secondary">Unpublished</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => openEdit(bank)}>
-                      Edit
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => handleDelete(bank)}>
-                      Delete
-                    </Button>
-                  </TableCell>
+      <Reveal delay={60}>
+        <div className="rounded-lg border bg-card">
+          {isLoading ? (
+            <div className="space-y-3 p-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ) : !banks || banks.length === 0 ? (
+            <p className="text-muted-foreground p-8 text-center text-sm">
+              No question banks yet — click &ldquo;Upload Question Bank&rdquo; to add your first one.
+            </p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Price</TableHead>
+                  <TableHead>Preview</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead></TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </div>
+              </TableHeader>
+              <TableBody>
+                {banks.map((bank) => (
+                  <TableRow key={bank.id}>
+                    <TableCell className="font-semibold">{bank.title}</TableCell>
+                    <TableCell>{bank.category.name}</TableCell>
+                    <TableCell>
+                      {formatRupees(bank.price)}
+                      {bank.earlyBirdPrice != null && (
+                        <span className="text-muted-foreground text-xs">
+                          {" "}
+                          ({formatRupees(bank.earlyBirdPrice)} early bird)
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {bank.previewEnabled ? (
+                        <StatusBadge tone="success">On · {bank.previewPageCount} pages</StatusBadge>
+                      ) : (
+                        <Badge variant="secondary">Off</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {bank.isPublished ? (
+                        <StatusBadge tone="success">Published</StatusBadge>
+                      ) : (
+                        <Badge variant="secondary">Unpublished</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => openEdit(bank)}>
+                        Edit
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleDelete(bank)}>
+                        Delete
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </div>
+      </Reveal>
 
       <QuestionBankSheet
         open={sheetOpen}

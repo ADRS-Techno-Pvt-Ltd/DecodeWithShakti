@@ -6,6 +6,8 @@ import { auth } from "@/lib/auth";
 import { resolveEffectivePrice } from "@/lib/pricing";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Reveal } from "@/components/landing/reveal";
+import { StatusBadge } from "@/components/dashboard/status-badge";
 import { PurchaseCard } from "./purchase-card";
 
 const included = [
@@ -53,7 +55,7 @@ export default async function QuestionBankDetailPage({
       <p className="mt-2.5 max-w-2xl text-muted-foreground">{bank.description}</p>
 
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[1.4fr_1fr]">
-        <div>
+        <Reveal>
           <Card>
             <CardHeader className="flex-row items-center justify-between">
               <CardTitle className="text-base">
@@ -61,11 +63,7 @@ export default async function QuestionBankDetailPage({
                   ? `Preview — first ${bank.previewPageCount} of ${bank.totalPages ?? "?"} pages`
                   : "Preview not available"}
               </CardTitle>
-              {bank.previewEnabled && (
-                <Badge className="border-green-200 bg-green-50 text-green-700">
-                  Preview enabled
-                </Badge>
-              )}
+              {bank.previewEnabled && <StatusBadge tone="success">Preview enabled</StatusBadge>}
             </CardHeader>
             <CardContent>
               {bank.previewEnabled ? (
@@ -99,15 +97,17 @@ export default async function QuestionBankDetailPage({
               ))}
             </CardContent>
           </Card>
-        </div>
+        </Reveal>
 
-        <PurchaseCard
-          questionBankId={bank.id}
-          basePrice={effectivePrice}
-          regularPrice={bank.price}
-          earlyBirdActive={earlyBirdActive}
-          alreadyOwned={alreadyOwned}
-        />
+        <Reveal delay={120}>
+          <PurchaseCard
+            questionBankId={bank.id}
+            basePrice={effectivePrice}
+            regularPrice={bank.price}
+            earlyBirdActive={earlyBirdActive}
+            alreadyOwned={alreadyOwned}
+          />
+        </Reveal>
       </div>
     </div>
   );
