@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, BookOpen, CheckCircle2, Eye } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { resolveEffectivePrice } from "@/lib/pricing";
+import { thumbnailUrlFor } from "@/lib/thumbnail";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Reveal } from "@/components/landing/reveal";
 import { StatusBadge } from "@/components/dashboard/status-badge";
@@ -38,6 +40,7 @@ export default async function QuestionBankDetailPage({
 
   const effectivePrice = resolveEffectivePrice(bank);
   const earlyBirdActive = effectivePrice < bank.price;
+  const thumbnailUrl = thumbnailUrlFor(bank.id, bank.thumbnailPath, bank.updatedAt);
 
   return (
     <div className="mx-auto w-full max-w-6xl px-7 py-10 2xl:max-w-[1440px]">
@@ -59,23 +62,29 @@ export default async function QuestionBankDetailPage({
           <Card>
             <CardHeader className="flex-row items-center justify-between">
               <CardTitle className="text-base">
-                {bank.previewEnabled
-                  ? `Preview — first ${bank.previewPageCount} of ${bank.totalPages ?? "?"} pages`
-                  : "Preview not available"}
+                {bank.previewEnabled ? "Preview" : "Preview not available"}
               </CardTitle>
               {bank.previewEnabled && <StatusBadge tone="success">Preview enabled</StatusBadge>}
             </CardHeader>
             <CardContent>
-              {bank.previewEnabled ? (
-                <iframe
-                  src={`/api/v1/files/preview/${bank.id}`}
-                  className="h-[520px] w-full rounded-md border"
-                  title="Question bank preview"
+              <div className="flex aspect-video items-center justify-center overflow-hidden rounded-md border bg-muted text-primary">
+                {thumbnailUrl ? (
+                  <img src={thumbnailUrl} alt="" className="h-full w-full object-contain" />
+                ) : (
+                  <BookOpen className="h-10 w-10" strokeWidth={1.5} />
+                )}
+              </div>
+              {bank.previewEnabled && (
+                <Button
+                  variant="outline"
+                  className="mt-4"
+                  render={
+                    <a href={`/api/v1/files/preview/${bank.id}`} target="_blank" rel="noopener noreferrer">
+                      <Eye className="h-4 w-4" />
+                      Preview first {bank.previewPageCount} of {bank.totalPages ?? "?"} pages
+                    </a>
+                  }
                 />
-              ) : (
-                <div className="flex h-64 items-center justify-center rounded-md border border-dashed text-sm text-muted-foreground">
-                  This question bank does not have a preview enabled.
-                </div>
               )}
             </CardContent>
           </Card>
@@ -85,6 +94,7 @@ export default async function QuestionBankDetailPage({
               <CardTitle className="text-base">What&apos;s included</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-2.5 text-sm">
+              <p className="text-muted-foreground">{bank.description}</p>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
                 {bank.totalPages ?? "—"}-page downloadable PDF

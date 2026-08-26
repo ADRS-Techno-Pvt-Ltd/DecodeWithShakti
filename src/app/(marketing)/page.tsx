@@ -25,7 +25,14 @@ import {
 import { MentorSection } from "@/components/landing/mentor-section";
 import { Reveal } from "@/components/landing/reveal";
 
-const examPills = ["CA", "CS", "CMA", "Banking", "SSC", "Railways", "UPSC", "State PSC"];
+const examPills = [
+  "CA Foundation",
+  "CA Inter — Accounts",
+  "CA Inter — Costing",
+  "CA Inter — Taxation",
+  "CA Final — Audit",
+  "CA Final — Law",
+];
 
 const features = [
   {
@@ -82,9 +89,9 @@ const featuredBanks = [
     popular: false,
   },
   {
-    category: "SSC CGL · Tier I",
-    title: "Quantitative Aptitude — 900 Question Bank",
-    desc: "Topic-wise sets plus 5 full-length mock papers with detailed solutions.",
+    category: "CA Inter · Costing",
+    title: "Costing & Financial Management — 900 Question Bank",
+    desc: "Topic-wise sets covering Marginal Costing, Standard Costing and Budgetary Control, plus 5 full-length mock papers.",
     oldPrice: null,
     price: "₹549",
     badge: { label: "Regular price", tone: "green" as const },
@@ -92,9 +99,9 @@ const featuredBanks = [
     popular: true,
   },
   {
-    category: "CS Executive · Module I",
-    title: "Company Law — 480 Question Bank",
-    desc: "Case-study based questions in the exact ICSI pattern, updated for the current syllabus.",
+    category: "CA Final · Audit",
+    title: "Advanced Auditing — 480 Question Bank",
+    desc: "Case-study based questions in the exact ICAI pattern, updated for the current syllabus.",
     oldPrice: "₹749",
     price: "₹579",
     badge: { label: "Early bird · ends in 5 days", tone: "gold" as const },
@@ -113,16 +120,16 @@ const testimonials = [
   },
   {
     quote:
-      "Grabbed the SSC quant bank during the early-bird window and it paid for itself in one mock score jump. Straightforward checkout, instant download.",
+      "Grabbed the costing bank during the early-bird window and it paid for itself in one mock score jump. Straightforward checkout, instant download.",
     name: "Anjali Sharma",
-    exam: "SSC CGL, 2026",
+    exam: "CA Inter, 2026",
     color: "bg-gold",
   },
   {
     quote:
-      "No bundled courses I'd never touch — just the Company Law bank I actually needed, priced fairly, with an invoice for my study budget.",
+      "No bundled courses I'd never touch — just the Audit bank I actually needed, priced fairly, with an invoice for my study budget.",
     name: "Priya Menon",
-    exam: "CS Executive, 2026",
+    exam: "CA Final, 2026",
     color: "bg-success",
   },
 ];
@@ -243,9 +250,8 @@ export default function LandingPage() {
                 variants={heroItem}
                 className="mt-5 max-w-lg text-[17.5px] leading-relaxed text-muted-foreground"
               >
-                Exam-pattern question banks for CA, CS, CMA, Banking, SSC, Railways, UPSC and
-                State PSC — built by rank holders, previewed before you pay, and delivered the
-                moment you buy.
+                Exam-pattern question banks for CA Foundation, Inter and Final — built by rank
+                holders, previewed before you pay, and delivered the moment you buy.
               </motion.p>
               <motion.div variants={heroItem} className="mt-8 flex flex-wrap gap-3.5">
                 <MotionButton>
@@ -631,7 +637,7 @@ export default function LandingPage() {
                 Decode with Shakti
               </Link>
               <p className="mt-3.5 max-w-[260px] text-[13.8px] leading-relaxed text-muted-foreground">
-                Exam-pattern question banks for India&apos;s toughest competitive exams —
+                Exam-pattern question banks for CA Foundation, Inter and Final —
                 previewed before you buy, yours the moment you pay.
               </p>
             </div>
@@ -648,13 +654,12 @@ export default function LandingPage() {
             </div>
             <div>
               <h4 className="mb-3.5 text-xs font-bold tracking-wide text-muted-foreground/80 uppercase">
-                Exams
+                Levels
               </h4>
               <ul className="flex flex-col gap-2.5 text-sm text-muted-foreground">
-                <li><span>CA · CS · CMA</span></li>
-                <li><span>Banking</span></li>
-                <li><span>SSC · Railways</span></li>
-                <li><span>UPSC · State PSC</span></li>
+                <li><span>CA Foundation</span></li>
+                <li><span>CA Intermediate</span></li>
+                <li><span>CA Final</span></li>
               </ul>
             </div>
             <div>

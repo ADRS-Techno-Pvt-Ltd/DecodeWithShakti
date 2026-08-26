@@ -44,9 +44,9 @@ export function QuestionBankCard({
       <Card className="h-full transition-shadow hover:shadow-md">
         <CardContent className="p-5">
           <Link href={href}>
-            <div className="mb-3 flex h-20 items-center justify-center overflow-hidden rounded-[10px] bg-accent text-primary">
+            <div className="mb-3 flex aspect-video items-center justify-center overflow-hidden rounded-[10px] bg-muted text-primary">
               {thumbnailUrl ? (
-                <img src={thumbnailUrl} alt="" className="h-full w-full object-cover" />
+                <img src={thumbnailUrl} alt="" className="h-full w-full object-contain" />
               ) : (
                 <BookOpen className="h-6 w-6" strokeWidth={1.5} />
               )}

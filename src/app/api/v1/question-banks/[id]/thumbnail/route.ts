@@ -41,7 +41,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     });
 
     const { thumbnailPath, ...bankDto } = updated;
-    return NextResponse.json({ ...bankDto, thumbnailUrl: thumbnailUrlFor(updated.id, thumbnailPath) });
+    return NextResponse.json({
+      ...bankDto,
+      thumbnailUrl: thumbnailUrlFor(updated.id, thumbnailPath, updated.updatedAt),
+    });
   } catch (err) {
     return toErrorResponse(err);
   }

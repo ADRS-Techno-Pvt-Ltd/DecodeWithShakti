@@ -103,7 +103,7 @@ export default async function QuestionBankCatalogPage({
                 price={bank.price}
                 effectivePrice={effectivePrice}
                 previewEnabled={bank.previewEnabled}
-                thumbnailUrl={thumbnailUrlFor(bank.id, bank.thumbnailPath)}
+                thumbnailUrl={thumbnailUrlFor(bank.id, bank.thumbnailPath, bank.updatedAt)}
               />
             );
           })}

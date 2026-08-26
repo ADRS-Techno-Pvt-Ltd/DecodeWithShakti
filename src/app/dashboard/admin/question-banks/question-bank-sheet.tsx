@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -50,6 +51,14 @@ function toDatetimeLocal(iso: string | null): string {
   return new Date(iso).toISOString().slice(0, 16);
 }
 
+function paiseToRupees(paise: number): string {
+  return String(paise / 100);
+}
+
+function rupeesToPaise(rupees: string): number {
+  return Math.round(Number(rupees) * 100);
+}
+
 export function QuestionBankSheet({
   open,
   onOpenChange,
@@ -94,11 +103,11 @@ export function QuestionBankSheet({
         title: editing.title,
         description: editing.description,
         categoryId: editing.categoryId,
-        price: String(editing.price),
+        price: paiseToRupees(editing.price),
         previewEnabled: editing.previewEnabled,
         previewPageCount: editing.previewPageCount ? String(editing.previewPageCount) : "",
         earlyBirdEnabled: editing.earlyBirdPrice != null,
-        earlyBirdPrice: editing.earlyBirdPrice ? String(editing.earlyBirdPrice) : "",
+        earlyBirdPrice: editing.earlyBirdPrice ? paiseToRupees(editing.earlyBirdPrice) : "",
         earlyBirdEndsAt: toDatetimeLocal(editing.earlyBirdEndsAt),
         isPublished: editing.isPublished,
         file: null,
@@ -124,6 +133,21 @@ export function QuestionBankSheet({
 
   const previewEnabled = watch("previewEnabled");
   const earlyBirdEnabled = watch("earlyBirdEnabled");
+  const thumbnailFile = watch("thumbnail");
+
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+  useEffect(() => {
+    const file = thumbnailFile?.[0];
+    if (!file) {
+      setThumbnailPreview(null);
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setThumbnailPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [thumbnailFile]);
+
+  const thumbnailUploading = submitting && !!thumbnailFile && thumbnailFile.length > 0;
 
   async function onSubmit(values: FormValues) {
     setSubmitting(true);
@@ -133,10 +157,10 @@ export function QuestionBankSheet({
           title: values.title,
           description: values.description,
           categoryId: values.categoryId,
-          price: Number(values.price),
+          price: rupeesToPaise(values.price),
           previewEnabled: values.previewEnabled,
           previewPageCount: values.previewEnabled ? Number(values.previewPageCount) : undefined,
-          earlyBirdPrice: values.earlyBirdEnabled ? Number(values.earlyBirdPrice) : undefined,
+          earlyBirdPrice: values.earlyBirdEnabled ? rupeesToPaise(values.earlyBirdPrice) : undefined,
           earlyBirdEndsAt: values.earlyBirdEnabled
             ? new Date(values.earlyBirdEndsAt).toISOString()
             : undefined,
@@ -156,11 +180,11 @@ export function QuestionBankSheet({
         formData.set("title", values.title);
         formData.set("description", values.description);
         formData.set("categoryId", values.categoryId);
-        formData.set("price", values.price);
+        formData.set("price", String(rupeesToPaise(values.price)));
         formData.set("previewEnabled", String(values.previewEnabled));
         if (values.previewEnabled) formData.set("previewPageCount", values.previewPageCount);
         if (values.earlyBirdEnabled) {
-          formData.set("earlyBirdPrice", values.earlyBirdPrice);
+          formData.set("earlyBirdPrice", String(rupeesToPaise(values.earlyBirdPrice)));
           formData.set("earlyBirdEndsAt", new Date(values.earlyBirdEndsAt).toISOString());
         }
         formData.set("isPublished", String(values.isPublished));
@@ -221,8 +245,14 @@ export function QuestionBankSheet({
               </Select>
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="price">Price (paise)</Label>
-              <Input id="price" type="number" {...register("price", { required: true })} />
+              <Label htmlFor="price">Price (₹)</Label>
+              <Input
+                id="price"
+                type="number"
+                step="0.01"
+                min="0"
+                {...register("price", { required: true })}
+              />
             </div>
           </div>
 
@@ -237,12 +267,19 @@ export function QuestionBankSheet({
             <Label htmlFor="thumbnail">
               Thumbnail {editing ? "(replace)" : "(optional)"} — shown to students while browsing
             </Label>
-            {editing?.thumbnailUrl && (
-              <img
-                src={editing.thumbnailUrl}
-                alt=""
-                className="h-20 w-32 rounded-md border object-cover"
-              />
+            {(thumbnailPreview ?? editing?.thumbnailUrl) && (
+              <div className="relative aspect-video w-48 bg-muted">
+                <img
+                  src={thumbnailPreview ?? editing?.thumbnailUrl ?? undefined}
+                  alt=""
+                  className="h-full w-full rounded-md border object-contain"
+                />
+                {thumbnailUploading && (
+                  <div className="bg-background/70 absolute inset-0 flex items-center justify-center rounded-md">
+                    <Loader2 className="text-muted-foreground h-5 w-5 animate-spin" />
+                  </div>
+                )}
+              </div>
             )}
             <Input
               id="thumbnail"
@@ -250,6 +287,12 @@ export function QuestionBankSheet({
               accept="image/jpeg,image/png,image/webp"
               {...register("thumbnail")}
             />
+            {thumbnailUploading && (
+              <span className="text-muted-foreground flex items-center gap-1.5 text-xs">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Uploading thumbnail…
+              </span>
+            )}
           </div>
 
           <div className="rounded-lg border p-3.5">
@@ -295,10 +338,12 @@ export function QuestionBankSheet({
             {earlyBirdEnabled && (
               <div className="mt-2.5 grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <Label htmlFor="earlyBirdPrice">Early bird price (paise)</Label>
+                  <Label htmlFor="earlyBirdPrice">Early bird price (₹)</Label>
                   <Input
                     id="earlyBirdPrice"
                     type="number"
+                    step="0.01"
+                    min="0"
                     {...register("earlyBirdPrice", {
                       validate: (v) =>
                         !earlyBirdEnabled || (v.trim() !== "" && Number(v) > 0) || "Required when early bird pricing is enabled",

@@ -59,8 +59,8 @@
 
 /*
   "Decode with Shakti" palette — indigo + gold, per the approved landing-page
-  design. Multi-exam competitive-exam platform (CA, CS, CMA, Banking, SSC,
-  Railways, UPSC, State PSC), mentored by CA Shakti Tiwari. See docs/HLD.md § 6.
+  design. CA (Chartered Accountancy) exam-prep platform — Foundation, Inter,
+  Final — mentored by CA Shakti Tiwari. See docs/HLD.md § 6.
 */
 :root {
   --background: #fafafd;

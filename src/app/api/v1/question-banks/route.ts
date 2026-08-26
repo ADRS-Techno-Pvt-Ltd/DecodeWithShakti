@@ -31,7 +31,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       banks.map(({ thumbnailPath, ...bank }) => ({
         ...bank,
-        thumbnailUrl: thumbnailUrlFor(bank.id, thumbnailPath),
+        thumbnailUrl: thumbnailUrlFor(bank.id, thumbnailPath, bank.updatedAt),
       })),
     );
   } catch (err) {
@@ -140,7 +140,7 @@ async function createQuestionBank(request: Request) {
 
   const { thumbnailPath, ...bankDto } = updated;
   return NextResponse.json(
-    { ...bankDto, thumbnailUrl: thumbnailUrlFor(updated.id, thumbnailPath) },
+    { ...bankDto, thumbnailUrl: thumbnailUrlFor(updated.id, thumbnailPath, updated.updatedAt) },
     { status: 201 },
   );
 }

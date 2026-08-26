@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
-import { Card, CardContent } from "@/components/ui/card";
+import { CheckCircle2 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -87,9 +88,33 @@ export function PurchaseCard({
     }
   }
 
+  if (alreadyOwned) {
+    return (
+      <Card className="sticky top-24">
+        <CardHeader>
+          <CardTitle className="text-base">You already own this</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-start gap-2.5 rounded-md bg-success/10 px-3.5 py-3 text-sm text-success">
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+            Purchased and ready to download anytime from your student dashboard.
+          </div>
+          <Button
+            className="mt-4 w-full"
+            size="lg"
+            render={<a href="/dashboard/student">Go to My Purchases</a>}
+          />
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="sticky top-24">
-      <CardContent className="p-6">
+      <CardHeader>
+        <CardTitle className="text-base">Order Summary</CardTitle>
+      </CardHeader>
+      <CardContent>
         <div className="flex justify-between py-2 text-sm">
           <span>Base price</span>
           <span>{formatRupees(regularPrice)}</span>
@@ -104,18 +129,16 @@ export function PurchaseCard({
           </div>
         )}
 
-        {!alreadyOwned && (
-          <div className="mt-2 flex gap-2">
-            <Input
-              placeholder="Coupon code"
-              value={couponCode}
-              onChange={(e) => setCouponCode(e.target.value)}
-            />
-            <Button variant="outline" size="sm" onClick={applyCoupon} disabled={validating}>
-              Apply
-            </Button>
-          </div>
-        )}
+        <div className="mt-2 flex gap-2">
+          <Input
+            placeholder="Coupon code"
+            value={couponCode}
+            onChange={(e) => setCouponCode(e.target.value)}
+          />
+          <Button variant="outline" size="sm" onClick={applyCoupon} disabled={validating}>
+            Apply
+          </Button>
+        </div>
         {validated && (
           <div className="flex justify-between py-2 text-sm text-green-700">
             <span>Coupon &ldquo;{validated.code}&rdquo;</span>
@@ -125,16 +148,12 @@ export function PurchaseCard({
 
         <div className="mt-1.5 flex justify-between border-t pt-3.5 text-base font-bold">
           <span>Total payable</span>
-          <span>{formatRupees(alreadyOwned ? regularPrice : finalAmount)}</span>
+          <span>{formatRupees(finalAmount)}</span>
         </div>
 
-        {alreadyOwned ? (
-          <Button className="mt-4 w-full" render={<a href="/dashboard/student">Go to My Purchases</a>} />
-        ) : (
-          <Button className="mt-4 w-full" size="lg" onClick={purchase} disabled={purchasing}>
-            {purchasing ? "Processing…" : "Purchase Now"}
-          </Button>
-        )}
+        <Button className="mt-4 w-full" size="lg" onClick={purchase} disabled={purchasing}>
+          {purchasing ? "Processing…" : "Purchase Now"}
+        </Button>
         <p className="text-muted-foreground mt-2.5 text-center text-xs">
           Secure checkout · Invoice generated automatically
         </p>

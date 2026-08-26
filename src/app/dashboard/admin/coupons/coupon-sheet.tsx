@@ -32,6 +32,14 @@ type FormValues = {
   isActive: boolean;
 };
 
+function paiseToRupees(paise: number): string {
+  return String(paise / 100);
+}
+
+function rupeesToPaise(rupees: string): number {
+  return Math.round(Number(rupees) * 100);
+}
+
 export function CouponSheet({
   open,
   onOpenChange,
@@ -60,7 +68,10 @@ export function CouponSheet({
       reset({
         code: editing.code,
         discountType: editing.discountType,
-        discountValue: String(editing.discountValue),
+        discountValue:
+          editing.discountType === "FLAT"
+            ? paiseToRupees(editing.discountValue)
+            : String(editing.discountValue),
         expiresAt: editing.expiresAt.slice(0, 16),
         usageLimit: String(editing.usageLimit),
         isActive: editing.isActive,
@@ -83,7 +94,10 @@ export function CouponSheet({
       const input = {
         code: values.code,
         discountType: values.discountType,
-        discountValue: Number(values.discountValue),
+        discountValue:
+          values.discountType === "FLAT"
+            ? rupeesToPaise(values.discountValue)
+            : Number(values.discountValue),
         expiresAt: new Date(values.expiresAt).toISOString(),
         usageLimit: Number(values.usageLimit),
         isActive: values.isActive,
@@ -126,14 +140,22 @@ export function CouponSheet({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="FLAT">Flat (paise)</SelectItem>
+                  <SelectItem value="FLAT">Flat (₹)</SelectItem>
                   <SelectItem value="PERCENT">Percent</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="discountValue">Value</Label>
-              <Input id="discountValue" type="number" {...register("discountValue", { required: true })} />
+              <Label htmlFor="discountValue">
+                Value {watch("discountType") === "FLAT" ? "(₹)" : "(%)"}
+              </Label>
+              <Input
+                id="discountValue"
+                type="number"
+                step={watch("discountType") === "FLAT" ? "0.01" : "1"}
+                min="0"
+                {...register("discountValue", { required: true })}
+              />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">

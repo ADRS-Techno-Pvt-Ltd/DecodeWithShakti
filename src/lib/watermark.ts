@@ -7,7 +7,7 @@ export async function watermarkPdf(pdfBytes: Buffer, label: string): Promise<Uin
 
   for (const page of doc.getPages()) {
     const { width, height } = page.getSize();
-    const fontSize = 22;
+    const fontSize = 36;
     const textWidth = font.widthOfTextAtSize(label, fontSize);
     page.drawText(label, {
       x: width / 2 - textWidth / 2,

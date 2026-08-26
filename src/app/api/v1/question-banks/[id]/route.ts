@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, toErrorResponse } from "@/lib/auth-guards";
-import { questionBankInputSchema } from "@/lib/validation/question-bank";
+import { questionBankUpdateSchema } from "@/lib/validation/question-bank";
 import { deleteQuestionBankFiles, readStoredFile, savePreviewFile } from "@/lib/storage";
 import { buildPreview } from "@/lib/preview";
 import { thumbnailUrlFor } from "@/lib/thumbnail";
@@ -20,7 +20,7 @@ export async function PATCH(
     }
 
     const raw = await request.json();
-    const parsed = questionBankInputSchema.partial().safeParse(raw);
+    const parsed = questionBankUpdateSchema.safeParse(raw);
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
@@ -56,7 +56,10 @@ export async function PATCH(
     });
 
     const { thumbnailPath, ...bankDto } = updated;
-    return NextResponse.json({ ...bankDto, thumbnailUrl: thumbnailUrlFor(updated.id, thumbnailPath) });
+    return NextResponse.json({
+      ...bankDto,
+      thumbnailUrl: thumbnailUrlFor(updated.id, thumbnailPath, updated.updatedAt),
+    });
   } catch (err) {
     return toErrorResponse(err);
   }

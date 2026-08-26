@@ -24,7 +24,7 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "Decode with Shakti",
   description:
-    "Exam-pattern question banks for CA, CS, CMA, Banking, SSC, Railways, UPSC and State PSC — mentored by CA Shakti Tiwari.",
+    "Exam-pattern question banks for CA Foundation, Inter and Final — mentored by CA Shakti Tiwari.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
