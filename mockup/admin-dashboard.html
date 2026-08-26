@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>CA ExamBank — Admin Dashboard (Mockup)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="dash">
+  <aside class="sidebar">
+    <div class="sidebar-brand"><span class="brand-mark">EB</span> CA ExamBank Admin</div>
+    <a class="sidebar-link"><span class="ico">📊</span> Overview</a>
+    <a class="sidebar-link active"><span class="ico">📚</span> Question Banks</a>
+    <a class="sidebar-link"><span class="ico">🏷️</span> Coupons</a>
+    <a class="sidebar-link"><span class="ico">💰</span> Sales</a>
+    <div class="sidebar-group-label">Coming in Phase 2</div>
+    <a class="sidebar-link" style="opacity:0.45;"><span class="ico">📈</span> Analytics</a>
+    <a class="sidebar-link" style="opacity:0.45;"><span class="ico">👥</span> Team / Sub-admins</a>
+  </aside>
+
+  <div class="dash-main">
+    <div class="topbar">
+      <div class="mock-note" style="margin:0;">Screen 5 of 6: <strong>Admin dashboard</strong> — question banks table + sales snapshot.</div>
+      <div class="userchip">
+        <div class="avatar" style="background:#eef2ff;">SA</div>
+        <div class="meta"><div class="name">Shakti (Admin)</div><div class="role">Administrator</div></div>
+      </div>
+    </div>
+
+    <div class="dash-content">
+      <div class="dash-header-row">
+        <div>
+          <h1 class="dash-title">Question Banks</h1>
+          <p class="dash-sub">12 published · 2 unpublished</p>
+        </div>
+        <button class="btn btn-primary" onclick="window.location='admin-question-bank-form.html'">+ Upload Question Bank</button>
+      </div>
+
+      <div class="stat-grid">
+        <div class="card stat-card">
+          <div class="stat-label">Total Revenue</div>
+          <div class="stat-value">₹1,84,300</div>
+          <div class="stat-delta" style="color:var(--success);">↑ 12% this month</div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-label">Purchases (30d)</div>
+          <div class="stat-value">312</div>
+          <div class="stat-delta" style="color:var(--success);">↑ 8%</div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-label">Active Coupons</div>
+          <div class="stat-value">4</div>
+          <div class="stat-delta">1 expiring soon</div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-label">Published Banks</div>
+          <div class="stat-value">12</div>
+          <div class="stat-delta">2 draft</div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Category</th>
+              <th>Price</th>
+              <th>Preview</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Costing &amp; Financial Management — 500 MCQs</strong></td>
+              <td>CA Inter · Costing</td>
+              <td>₹499 <span class="hint">(₹349 early bird)</span></td>
+              <td><span class="badge badge-success">On · 10 pages</span></td>
+              <td><span class="badge badge-success"><span class="badge-dot"></span>Published</span></td>
+              <td style="display:flex;gap:6px;"><button class="btn btn-outline btn-sm">Edit</button><button class="btn btn-ghost btn-sm">⋯</button></td>
+            </tr>
+            <tr>
+              <td><strong>Company Law — Complete Question Bank</strong></td>
+              <td>CS Executive</td>
+              <td>₹399</td>
+              <td><span class="badge badge-success">On · 6 pages</span></td>
+              <td><span class="badge badge-success"><span class="badge-dot"></span>Published</span></td>
+              <td style="display:flex;gap:6px;"><button class="btn btn-outline btn-sm">Edit</button><button class="btn btn-ghost btn-sm">⋯</button></td>
+            </tr>
+            <tr>
+              <td><strong>GST Case Studies — Draft</strong></td>
+              <td>CA Inter · Taxation</td>
+              <td>₹449</td>
+              <td><span class="badge badge-neutral">Off</span></td>
+              <td><span class="badge badge-neutral">Unpublished</span></td>
+              <td style="display:flex;gap:6px;"><button class="btn btn-outline btn-sm">Edit</button><button class="btn btn-ghost btn-sm">⋯</button></td>
+            </tr>
+            <tr>
+              <td><strong>Quantitative Aptitude — 1000 Questions</strong></td>
+              <td>Banking Exams</td>
+              <td>₹599 <span class="hint">(₹399 early bird)</span></td>
+              <td><span class="badge badge-success">On · 8 pages</span></td>
+              <td><span class="badge badge-success"><span class="badge-dot"></span>Published</span></td>
+              <td style="display:flex;gap:6px;"><button class="btn btn-outline btn-sm">Edit</button><button class="btn btn-ghost btn-sm">⋯</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="dash-header-row" style="margin-top:36px;">
+        <div>
+          <h2 style="font-size:1.15rem;">Coupons</h2>
+          <p class="dash-sub">Global codes — expiry + usage-limit only.</p>
+        </div>
+        <button class="btn btn-outline btn-sm">+ New Coupon</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Code</th><th>Discount</th><th>Usage</th><th>Expires</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>WELCOME50</strong></td>
+              <td>₹50 flat</td>
+              <td>142 / 200</td>
+              <td>15 Sep 2026</td>
+              <td><span class="badge badge-success"><span class="badge-dot"></span>Active</span></td>
+            </tr>
+            <tr>
+              <td><strong>EXAM10</strong></td>
+              <td>10% off</td>
+              <td>500 / 500</td>
+              <td>01 Aug 2026</td>
+              <td><span class="badge badge-destructive">Exhausted</span></td>
+            </tr>
+            <tr>
+              <td><strong>SEPT2026</strong></td>
+              <td>15% off</td>
+              <td>3 / 100</td>
+              <td>30 Sep 2026</td>
+              <td><span class="badge badge-success"><span class="badge-dot"></span>Active</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="screen-nav">
+  <a href="index.html">1. Landing</a>
+  <a href="catalog.html">2. Catalog</a>
+  <a href="detail.html">3. Detail/Checkout</a>
+  <a href="student-dashboard.html">4. Student</a>
+  <a href="admin-dashboard.html" class="current">5. Admin</a>
+  <a href="admin-question-bank-form.html">6. QB Form</a>
+</div>
+
+</body>
+</html>

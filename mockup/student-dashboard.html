@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>CA ExamBank — Student Dashboard (Mockup)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="dash">
+  <aside class="sidebar">
+    <div class="sidebar-brand"><span class="brand-mark">EB</span> CA ExamBank</div>
+    <a class="sidebar-link active"><span class="ico">🏠</span> My Purchases</a>
+    <a class="sidebar-link"><span class="ico">📚</span> Browse Question Banks</a>
+    <a class="sidebar-link"><span class="ico">👤</span> Account Settings</a>
+    <div class="sidebar-group-label">Coming in Phase 2</div>
+    <a class="sidebar-link" style="opacity:0.45;"><span class="ico">📝</span> My Quizzes</a>
+    <a class="sidebar-link" style="opacity:0.45;"><span class="ico">🎓</span> My Courses</a>
+  </aside>
+
+  <div class="dash-main">
+    <div class="topbar">
+      <div class="mock-note" style="margin:0;">Screen 4 of 6: <strong>Student dashboard</strong></div>
+      <div class="userchip">
+        <div class="avatar">RP</div>
+        <div class="meta"><div class="name">Riya Patel</div><div class="role">Student</div></div>
+      </div>
+    </div>
+
+    <div class="dash-content">
+      <div class="dash-header-row">
+        <div>
+          <h1 class="dash-title">My Purchases</h1>
+          <p class="dash-sub">3 question banks purchased · 3 available to download</p>
+        </div>
+        <a class="btn btn-primary" href="catalog.html">Browse More Question Banks</a>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Question Bank</th>
+              <th>Purchased On</th>
+              <th>Amount Paid</th>
+              <th>Status</th>
+              <th>Files</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Costing &amp; Financial Management — 500 MCQs</strong><div class="hint">CA Inter · Costing</div></td>
+              <td>12 Aug 2026</td>
+              <td>₹299</td>
+              <td><span class="badge badge-success"><span class="badge-dot"></span>Success</span></td>
+              <td style="display:flex;gap:8px;">
+                <button class="btn btn-outline btn-sm">⬇ Download</button>
+                <button class="btn btn-ghost btn-sm">🧾 Invoice</button>
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Company Law — Complete Question Bank</strong><div class="hint">CS Executive</div></td>
+              <td>03 Aug 2026</td>
+              <td>₹399</td>
+              <td><span class="badge badge-success"><span class="badge-dot"></span>Success</span></td>
+              <td style="display:flex;gap:8px;">
+                <button class="btn btn-outline btn-sm">⬇ Download</button>
+                <button class="btn btn-ghost btn-sm">🧾 Invoice</button>
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Quantitative Aptitude — 1000 Questions</strong><div class="hint">Banking Exams</div></td>
+              <td>26 Aug 2026</td>
+              <td>₹399</td>
+              <td><span class="badge badge-warning"><span class="badge-dot"></span>Pending</span></td>
+              <td><span class="hint">Available after payment confirms</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="screen-nav">
+  <a href="index.html">1. Landing</a>
+  <a href="catalog.html">2. Catalog</a>
+  <a href="detail.html">3. Detail/Checkout</a>
+  <a href="student-dashboard.html" class="current">4. Student</a>
+  <a href="admin-dashboard.html">5. Admin</a>
+  <a href="admin-question-bank-form.html">6. QB Form</a>
+</div>
+
+</body>
+</html>

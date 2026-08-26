@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  STUDENT
+}
+
+enum PurchaseStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum DiscountType {
+  PERCENT
+  FLAT
+}
+
+model User {
+  id                  String               @id @default(cuid())
+  name                String
+  email               String               @unique
+  passwordHash        String
+  role                Role                 @default(STUDENT)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  purchases           Purchase[]
+  passwordResetTokens PasswordResetToken[]
+}
+
+model Category {
+  id            String         @id @default(cuid())
+  name          String
+  slug          String         @unique
+  questionBanks QuestionBank[]
+}
+
+model QuestionBank {
+  id               String    @id @default(cuid())
+  title            String
+  slug             String    @unique
+  description      String
+  categoryId       String
+  category         Category  @relation(fields: [categoryId], references: [id])
+  price            Int
+  earlyBirdPrice   Int?
+  earlyBirdEndsAt  DateTime?
+  fileName         String
+  filePath         String
+  fileSizeBytes    Int
+  totalPages       Int?
+  previewEnabled   Boolean   @default(false)
+  previewPageCount Int?
+  previewFilePath  String?
+  isPublished      Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  purchases        Purchase[]
+}
+
+model Coupon {
+  id            String       @id @default(cuid())
+  code          String       @unique
+  discountType  DiscountType
+  discountValue Int
+  expiresAt     DateTime
+  usageLimit    Int
+  usedCount     Int          @default(0)
+  isActive      Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+  purchases     Purchase[]
+}
+
+model Purchase {
+  id                 String         @id @default(cuid())
+  userId             String
+  user               User           @relation(fields: [userId], references: [id])
+  questionBankId     String
+  questionBank       QuestionBank   @relation(fields: [questionBankId], references: [id], onDelete: Restrict)
+  basePriceSnapshot  Int
+  couponId           String?
+  coupon             Coupon?        @relation(fields: [couponId], references: [id])
+  couponCodeSnapshot String?
+  discountAmount     Int            @default(0)
+  amount             Int
+  status             PurchaseStatus @default(PENDING)
+  paymentProvider    String
+  providerOrderId    String         @unique
+  providerPaymentId  String?
+  paymentMethod      String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  invoice            Invoice?
+}
+
+model Invoice {
+  id            String   @id @default(cuid())
+  purchaseId    String   @unique
+  purchase      Purchase @relation(fields: [purchaseId], references: [id])
+  invoiceSeq    Int      @default(autoincrement())
+  invoiceNumber String   @unique
+  filePath      String
+  amount        Int
+  issuedAt      DateTime @default(now())
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+}

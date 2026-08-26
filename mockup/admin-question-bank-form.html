@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>CA ExamBank — Admin Question Bank Form (Mockup)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="dash">
+  <aside class="sidebar">
+    <div class="sidebar-brand"><span class="brand-mark">EB</span> CA ExamBank Admin</div>
+    <a class="sidebar-link"><span class="ico">📊</span> Overview</a>
+    <a class="sidebar-link active"><span class="ico">📚</span> Question Banks</a>
+    <a class="sidebar-link"><span class="ico">🏷️</span> Coupons</a>
+    <a class="sidebar-link"><span class="ico">💰</span> Sales</a>
+  </aside>
+
+  <div class="dash-main">
+    <div class="topbar">
+      <div class="mock-note" style="margin:0;">Screen 6 of 6: <strong>Admin upload/edit form</strong> — Sheet slide-over pattern.</div>
+      <div class="userchip">
+        <div class="avatar" style="background:#eef2ff;">SA</div>
+        <div class="meta"><div class="name">Shakti (Admin)</div><div class="role">Administrator</div></div>
+      </div>
+    </div>
+
+    <div class="dash-content" style="filter:saturate(0.6) opacity(0.5);pointer-events:none;">
+      <div class="dash-header-row">
+        <div>
+          <h1 class="dash-title">Question Banks</h1>
+          <p class="dash-sub">Sheet slide-over open (see right) →</p>
+        </div>
+      </div>
+      <div class="table-wrap"><table><thead><tr><th>Title</th><th>Category</th><th>Price</th></tr></thead>
+        <tbody><tr><td>Costing &amp; Financial Management</td><td>CA Inter</td><td>₹499</td></tr></tbody></table></div>
+    </div>
+  </div>
+</div>
+
+<div class="sheet-mock">
+  <div class="sheet-header">
+    <div>
+      <div class="card-title">Upload Question Bank</div>
+      <div class="card-desc">PDF only, max 50MB</div>
+    </div>
+    <button class="btn btn-ghost btn-sm">✕</button>
+  </div>
+  <div class="sheet-body">
+
+    <div class="field">
+      <label class="label">Title</label>
+      <input class="input" value="Costing &amp; Financial Management — 500 MCQs" />
+    </div>
+
+    <div class="field">
+      <label class="label">Description</label>
+      <textarea class="textarea" rows="3">500 exam-pattern MCQs with detailed working notes, covering Marginal Costing, Standard Costing, Budgetary Control.</textarea>
+    </div>
+
+    <div class="form-2col">
+      <div class="field">
+        <label class="label">Category</label>
+        <select class="select"><option>CA Inter · Costing</option><option>CS Executive</option><option>CMA Foundation</option></select>
+      </div>
+      <div class="field">
+        <label class="label">Price (₹)</label>
+        <input class="input" value="499" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="label">Question Bank File</label>
+      <div class="input" style="display:flex;align-items:center;justify-content:space-between;color:var(--muted-foreground);">
+        <span>costing-question-bank.pdf</span>
+        <span class="badge badge-neutral">4.2 MB · 120 pages</span>
+      </div>
+    </div>
+
+    <div class="card" style="padding:14px 16px;">
+      <div class="switch"><div class="switch-track"><div class="switch-thumb"></div></div> Enable preview</div>
+      <div class="field" style="margin-top:10px;">
+        <label class="label">Preview page count</label>
+        <input class="input" value="10" />
+        <span class="hint">Max 120 pages</span>
+      </div>
+    </div>
+
+    <div class="card" style="padding:14px 16px;">
+      <div class="switch"><div class="switch-track"><div class="switch-thumb"></div></div> Early bird pricing</div>
+      <div class="form-2col" style="margin-top:10px;">
+        <div class="field">
+          <label class="label">Early bird price (₹)</label>
+          <input class="input" value="349" />
+        </div>
+        <div class="field">
+          <label class="label">Ends at</label>
+          <input class="input" value="28 Aug 2026, 11:59 PM" />
+        </div>
+      </div>
+    </div>
+
+    <div class="switch"><div class="switch-track"><div class="switch-thumb"></div></div> Published (visible to students)</div>
+
+  </div>
+  <div class="sheet-footer">
+    <button class="btn btn-outline">Cancel</button>
+    <button class="btn btn-primary">Save Question Bank</button>
+  </div>
+</div>
+
+<div class="screen-nav">
+  <a href="index.html">1. Landing</a>
+  <a href="catalog.html">2. Catalog</a>
+  <a href="detail.html">3. Detail/Checkout</a>
+  <a href="student-dashboard.html">4. Student</a>
+  <a href="admin-dashboard.html">5. Admin</a>
+  <a href="admin-question-bank-form.html" class="current">6. QB Form</a>
+</div>
+
+</body>
+</html>
