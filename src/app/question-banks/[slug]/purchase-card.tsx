@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { CheckCircle2 } from "lucide-react";
+import { useCashfreeSdk } from "@/lib/payment/use-cashfree-sdk";
 
 function formatRupees(paise: number): string {
   return `₹${(paise / 100).toFixed(0)}`;
@@ -71,12 +72,15 @@ export function PurchaseCard({
 }) {
   const router = useRouter();
   const { status } = useSession();
+  const cashfree = useCashfreeSdk();
   const [couponCode, setCouponCode] = useState("");
   const [validated, setValidated] = useState<{ code: string; discountAmount: number } | null>(
     null,
   );
   const [validating, setValidating] = useState(false);
   const [purchasing, setPurchasing] = useState(false);
+  const [needsPhone, setNeedsPhone] = useState(false);
+  const [phone, setPhone] = useState("");
 
   const finalAmount = basePrice - (validated?.discountAmount ?? 0);
 
@@ -107,6 +111,10 @@ export function PurchaseCard({
       router.push("/login");
       return;
     }
+    if (needsPhone && !/^[6-9]\d{9}$/.test(phone)) {
+      toast.error("Enter a valid 10-digit phone number.");
+      return;
+    }
     setPurchasing(true);
     try {
       const res = await fetch("/api/v1/purchase/create-order", {
@@ -115,15 +123,38 @@ export function PurchaseCard({
         body: JSON.stringify({
           questionBankId,
           couponCode: validated?.code,
+          phone: needsPhone ? phone : undefined,
         }),
       });
       const body = await res.json();
       if (!res.ok) {
+        if (body?.error === "PHONE_REQUIRED") {
+          setNeedsPhone(true);
+          setPurchasing(false);
+          return;
+        }
         toast.error(body?.error ?? "Could not start purchase.");
         setPurchasing(false);
         return;
       }
-      router.push(body.redirectUrl);
+
+      if (body.sessionId && cashfree) {
+        const result = await cashfree.checkout({
+          paymentSessionId: body.sessionId,
+          redirectTarget: "_modal",
+        });
+        // checkout() has three terminal states — none of them proves payment
+        // succeeded. Whatever happens, the return page is what decides the
+        // real status by backend-verifying with the provider.
+        if (result.redirect) return; // navigating to a hosted page — return_url handler takes over
+        if (result.error) toast.info("Payment was not completed.");
+        router.push(`/purchase/${body.purchaseId}/return`);
+      } else if (body.redirectUrl) {
+        router.push(body.redirectUrl); // mock path
+      } else {
+        setPurchasing(false);
+        toast.error("Could not start checkout.");
+      }
     } catch {
       toast.error("Something went wrong.");
       setPurchasing(false);
@@ -197,6 +228,18 @@ export function PurchaseCard({
           <span className="font-mono font-medium">
             &minus;{formatRupees(validated.discountAmount)}
           </span>
+        </div>
+      )}
+
+      {needsPhone && (
+        <div className="mt-1 mb-5">
+          <input
+            placeholder="Phone number (required for payment)"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+            inputMode="numeric"
+            className="w-full border-0 border-b-[1.5px] border-primary/30 bg-transparent px-0.5 pt-1.5 pb-2 text-sm outline-none placeholder:text-muted-foreground/60 focus:border-primary"
+          />
         </div>
       )}
 

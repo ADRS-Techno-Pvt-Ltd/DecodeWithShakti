@@ -16,6 +16,9 @@ const statusBadge: Record<string, React.ReactNode> = {
   SUCCESS: <StatusBadge tone="success">Success</StatusBadge>,
   PENDING: <StatusBadge tone="warning">Pending</StatusBadge>,
   FAILED: <StatusBadge tone="destructive">Failed</StatusBadge>,
+  CANCELLED: <StatusBadge tone="muted">Cancelled</StatusBadge>,
+  EXPIRED: <StatusBadge tone="muted">Expired</StatusBadge>,
+  REFUNDED: <StatusBadge tone="muted">Refunded</StatusBadge>,
 };
 
 export default async function StudentDashboardPage() {
@@ -98,6 +101,26 @@ export default async function StudentDashboardPage() {
                             />
                           )}
                         </div>
+                      ) : p.status === "REFUNDED" ? (
+                        p.invoice ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            render={
+                              <a href={`/api/v1/files/invoice/${p.invoice.id}`} className="gap-1.5">
+                                <Receipt className="h-3.5 w-3.5" /> Invoice
+                              </a>
+                            }
+                          />
+                        ) : (
+                          <span className="text-muted-foreground text-xs">Access revoked</span>
+                        )
+                      ) : p.status === "FAILED" || p.status === "CANCELLED" || p.status === "EXPIRED" ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          render={<Link href={`/question-banks/${p.questionBank.slug}`}>Buy again</Link>}
+                        />
                       ) : (
                         <span className="text-muted-foreground text-xs">
                           Available after payment confirms

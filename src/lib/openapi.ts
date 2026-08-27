@@ -654,14 +654,15 @@ export const openApiDocument = {
         tags: ["Purchase"],
         summary: "Create a pending purchase and payment order (student)",
         description:
-          "Creates a PENDING purchase, asks the configured payment provider (mock in this phase) for an order, and " +
-          "returns where to send the buyer next.",
+          "Creates a PENDING purchase, asks the configured payment provider for an order, and returns either a " +
+          "sessionId (Cashfree — pass to the client-side checkout SDK) or a redirectUrl (mock).",
         security: [{ sessionCookie: [] }],
         requestBody: jsonBody({
           type: "object",
           properties: {
             questionBankId: { type: "string" },
             couponCode: { type: "string", description: "Optional" },
+            phone: { type: "string", description: "10-digit phone; required if the account has none on file yet" },
           },
           required: ["questionBankId"],
         }),
@@ -669,13 +670,16 @@ export const openApiDocument = {
           200: jsonResponse("Order created", {
             type: "object",
             properties: {
-              redirectUrl: { type: "string", description: "Send the buyer here to complete payment" },
               purchaseId: { type: "string" },
+              sessionId: { type: "string", nullable: true, description: "Cashfree payment_session_id, for cashfree.checkout()" },
+              redirectUrl: { type: "string", nullable: true, description: "Mock provider only" },
+              expiresAt: { type: "string", format: "date-time" },
             },
           }),
-          400: jsonResponse("Invalid body or coupon", ValidationError),
+          400: jsonResponse("Invalid body, invalid coupon, or PHONE_REQUIRED", ValidationError),
           404: jsonResponse("Question bank not available", ErrorMessage),
           409: jsonResponse("Already owned", ErrorMessage),
+          502: jsonResponse("Payment provider order creation failed", ErrorMessage),
           ...responses401,
           ...responses403,
         },
@@ -696,15 +700,68 @@ export const openApiDocument = {
         tags: ["Purchase"],
         summary: "Poll / finalize a purchase (student)",
         description:
-          "Fallback status check for when the provider callback hasn't landed yet. If the purchase is still PENDING it " +
-          "runs the provider callback and finalizes (issues the invoice) before returning.",
+          "Fallback status check for when the webhook hasn't landed yet. If the purchase is still PENDING it polls " +
+          "the payment provider (throttled to at most once per 3s per purchase) and finalizes on a terminal result.",
         security: [{ sessionCookie: [] }],
         responses: {
           200: jsonResponse("Current status", {
             type: "object",
-            properties: { status: { type: "string", enum: ["PENDING", "SUCCESS", "FAILED"] } },
+            properties: {
+              status: { type: "string", enum: ["PENDING", "SUCCESS", "FAILED", "CANCELLED", "EXPIRED", "REFUNDED"] },
+              failureCode: { type: "string", nullable: true },
+              failureReason: { type: "string", nullable: true },
+              heldForReview: { type: "boolean" },
+            },
           }),
           404: jsonResponse("Not found or not the caller's purchase", ErrorMessage),
+          ...responses401,
+          ...responses403,
+        },
+      },
+    },
+
+    "/api/v1/payment/cashfree/webhook": {
+      post: {
+        tags: ["Purchase"],
+        summary: "Cashfree payment webhook (server-to-server)",
+        description:
+          "Signature-verified only — no session guard. Verifies x-webhook-signature over the raw body, then " +
+          "idempotently finalizes the purchase. Always returns 200 once the signature is verified so Cashfree stops " +
+          "retrying; 401 only on a bad signature.",
+        security: [],
+        responses: {
+          200: jsonResponse("Verified (processed, already-finalized, or unknown order)", Ok),
+          401: jsonResponse("Invalid or missing signature", ErrorMessage),
+          500: jsonResponse("Unexpected failure — Cashfree will retry", ErrorMessage),
+        },
+      },
+    },
+
+    "/api/v1/payment/reconcile": {
+      post: {
+        tags: ["Purchase"],
+        summary: "Reconcile stuck PENDING orders (cron secret or admin)",
+        description:
+          "Sweeps PENDING purchases past their expiry and polls the provider for a terminal status, and repairs any " +
+          "SUCCESS purchase missing an invoice. Authorize with either the `x-cron-secret` header (VPS crontab) or an " +
+          "admin session. Pass `{ purchaseId }` in the body to re-check a single order instead of running the full sweep.",
+        security: [{ sessionCookie: [] }],
+        requestBody: jsonBody({
+          type: "object",
+          properties: { purchaseId: { type: "string", description: "Optional — scope to one purchase" } },
+        }),
+        responses: {
+          200: jsonResponse("Sweep summary", {
+            type: "object",
+            properties: {
+              scanned: { type: "integer" },
+              resolved: { type: "object" },
+              invoicesRepaired: { type: "integer" },
+              held: { type: "integer" },
+              errors: { type: "integer" },
+            },
+          }),
+          404: jsonResponse("purchaseId not found", ErrorMessage),
           ...responses401,
           ...responses403,
         },

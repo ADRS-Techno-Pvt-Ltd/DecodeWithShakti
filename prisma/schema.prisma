@@ -16,6 +16,9 @@ enum PurchaseStatus {
   PENDING
   SUCCESS
   FAILED
+  CANCELLED
+  EXPIRED
+  REFUNDED
 }
 
 enum DiscountType {
@@ -27,6 +30,7 @@ model User {
   id                  String               @id @default(cuid())
   name                String
   email               String               @unique
+  phone               String?
   passwordHash        String
   role                Role                 @default(STUDENT)
   createdAt           DateTime             @default(now())
@@ -110,9 +114,19 @@ model Purchase {
   providerOrderId    String         @unique
   providerPaymentId  String?
   paymentMethod      String?
+  expiresAt          DateTime?
+  failureCode        String?
+  failureReason      String?
+  heldForReview      Boolean        @default(false)
+  reconcileAttempts  Int            @default(0)
+  refundedAt         DateTime?
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
   invoice            Invoice?
+  paymentEvents      PaymentEvent[]
+
+  @@index([status, expiresAt])
+  @@index([userId, questionBankId, status])
 }
 
 model Invoice {
@@ -124,6 +138,27 @@ model Invoice {
   filePath      String
   amount        Int
   issuedAt      DateTime @default(now())
+}
+
+/// Append-only audit of every inbound provider event. Doubles as the
+/// idempotency ledger: a duplicate (provider, eventId) is rejected by the
+/// unique constraint before finalizePurchase is ever called.
+model PaymentEvent {
+  id              String    @id @default(cuid())
+  provider        String
+  eventId         String
+  eventType       String
+  purchaseId      String?
+  purchase        Purchase? @relation(fields: [purchaseId], references: [id])
+  providerOrderId String?
+  signatureValid  Boolean   @default(false)
+  rawPayload      Json
+  processedAt     DateTime?
+  error           String?
+  receivedAt      DateTime  @default(now())
+
+  @@unique([provider, eventId])
+  @@index([providerOrderId])
 }
 
 model PasswordResetToken {

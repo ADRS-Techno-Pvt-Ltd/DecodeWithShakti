@@ -1,10 +1,12 @@
-import { Receipt } from "lucide-react";
+import { Receipt, AlertTriangle } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/dashboard/status-badge";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { Reveal } from "@/components/landing/reveal";
+import { ReconcileButton } from "@/components/dashboard/reconcile-button";
+import { RecheckPaymentButton } from "@/components/dashboard/recheck-payment-button";
 
 function formatRupees(paise: number): string {
   return `₹${(paise / 100).toFixed(0)}`;
@@ -14,6 +16,9 @@ const statusBadge: Record<string, React.ReactNode> = {
   SUCCESS: <StatusBadge tone="success">Success</StatusBadge>,
   PENDING: <StatusBadge tone="warning">Pending</StatusBadge>,
   FAILED: <StatusBadge tone="destructive">Failed</StatusBadge>,
+  CANCELLED: <StatusBadge tone="muted">Cancelled</StatusBadge>,
+  EXPIRED: <StatusBadge tone="muted">Expired</StatusBadge>,
+  REFUNDED: <StatusBadge tone="muted">Refunded</StatusBadge>,
 };
 
 export default async function AdminSalesPage() {
@@ -25,8 +30,13 @@ export default async function AdminSalesPage() {
 
   return (
     <div>
-      <h1 className="font-heading text-2xl font-bold">Sales</h1>
-      <p className="text-muted-foreground text-sm">{purchases.length} purchases (most recent 200).</p>
+      <div className="mb-2 flex items-end justify-between">
+        <div>
+          <h1 className="font-heading text-2xl font-bold">Sales</h1>
+          <p className="text-muted-foreground text-sm">{purchases.length} purchases (most recent 200).</p>
+        </div>
+        <ReconcileButton />
+      </div>
 
       <Reveal delay={60}>
         <div className="mt-6 rounded-lg border bg-card">
@@ -50,6 +60,7 @@ export default async function AdminSalesPage() {
                   <TableHead>Status</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Invoice</TableHead>
+                  <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -65,7 +76,19 @@ export default async function AdminSalesPage() {
                     <TableCell>{p.discountAmount > 0 ? formatRupees(p.discountAmount) : "—"}</TableCell>
                     <TableCell className="font-semibold">{formatRupees(p.amount)}</TableCell>
                     <TableCell className="capitalize">{p.paymentProvider}</TableCell>
-                    <TableCell>{statusBadge[p.status]}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1.5">
+                        {statusBadge[p.status]}
+                        {p.heldForReview && (
+                          <span
+                            title={p.failureReason ?? "Held for review"}
+                            className="inline-flex items-center gap-1 rounded-full border border-warning/40 bg-warning/10 px-1.5 py-0.5 text-[11px] text-warning"
+                          >
+                            <AlertTriangle className="h-3 w-3" /> Held
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>{new Date(p.createdAt).toLocaleDateString("en-IN")}</TableCell>
                     <TableCell>
                       {p.invoice ? (
@@ -84,6 +107,9 @@ export default async function AdminSalesPage() {
                       ) : (
                         "—"
                       )}
+                    </TableCell>
+                    <TableCell>
+                      {p.status === "PENDING" && <RecheckPaymentButton purchaseId={p.id} />}
                     </TableCell>
                   </TableRow>
                 ))}

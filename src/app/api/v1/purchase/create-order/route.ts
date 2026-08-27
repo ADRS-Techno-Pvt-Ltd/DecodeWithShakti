@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireStudent, toErrorResponse } from "@/lib/auth-guards";
@@ -5,10 +6,15 @@ import { resolveEffectivePrice, computeDiscount, isCouponUsable } from "@/lib/pr
 import { getPaymentProvider } from "@/lib/payment";
 import { z } from "zod";
 
+const PHONE_REGEX = /^[6-9]\d{9}$/;
+
 const bodySchema = z.object({
   questionBankId: z.string().min(1),
   couponCode: z.string().optional(),
+  phone: z.string().regex(PHONE_REGEX, "Enter a valid 10-digit phone number.").optional(),
 });
+
+const ORDER_EXPIRY_MINUTES = Number(process.env.CASHFREE_ORDER_EXPIRY_MINUTES ?? "20");
 
 export async function POST(request: Request) {
   try {
@@ -18,7 +24,16 @@ export async function POST(request: Request) {
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
-    const { questionBankId, couponCode } = parsed.data;
+    const { questionBankId, couponCode, phone } = parsed.data;
+
+    const user = await prisma.user.findUniqueOrThrow({ where: { id: session.user.id } });
+    const effectivePhone = user.phone ?? phone;
+    if (!effectivePhone) {
+      return NextResponse.json({ error: "PHONE_REQUIRED" }, { status: 400 });
+    }
+    if (!user.phone && phone) {
+      await prisma.user.update({ where: { id: user.id }, data: { phone } });
+    }
 
     const bank = await prisma.questionBank.findUnique({ where: { id: questionBankId } });
     if (!bank || !bank.isPublished) {
@@ -31,6 +46,18 @@ export async function POST(request: Request) {
     if (alreadyOwned) {
       return NextResponse.json({ error: "You already own this question bank." }, { status: 409 });
     }
+
+    // Reap this user's own stale PENDING orders for this bank before creating
+    // a new one, so retries don't pile up orphaned rows.
+    await prisma.purchase.updateMany({
+      where: {
+        userId: session.user.id,
+        questionBankId,
+        status: "PENDING",
+        expiresAt: { lt: new Date() },
+      },
+      data: { status: "EXPIRED" },
+    });
 
     const basePrice = resolveEffectivePrice(bank);
     let discountAmount = 0;
@@ -52,8 +79,15 @@ export async function POST(request: Request) {
     const amount = Math.max(basePrice - discountAmount, 100); // never below Rs.1 (paise)
     const provider = getPaymentProvider();
 
+    // Purchase.id doubles as the provider's order_id — generated up front so
+    // there is never a window where a webhook could arrive for an order id
+    // not yet written to the DB (see docs/CASHFREE-PLAN.md § 6).
+    const purchaseId = randomUUID();
+    const expiresAt = new Date(Date.now() + ORDER_EXPIRY_MINUTES * 60 * 1000);
+
     const purchase = await prisma.purchase.create({
       data: {
+        id: purchaseId,
         userId: session.user.id,
         questionBankId,
         basePriceSnapshot: basePrice,
@@ -63,23 +97,40 @@ export async function POST(request: Request) {
         amount,
         status: "PENDING",
         paymentProvider: provider.name,
-        providerOrderId: `pending_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        providerOrderId: purchaseId,
+        expiresAt,
       },
     });
 
-    const orderResult = await provider.createOrder({
-      id: purchase.id,
-      amount,
-      userEmail: session.user.email ?? "",
-      questionBankTitle: bank.title,
-    });
+    try {
+      const orderResult = await provider.createOrder({
+        id: purchase.id,
+        amount,
+        userId: session.user.id,
+        userName: user.name,
+        userEmail: session.user.email ?? "",
+        userPhone: effectivePhone,
+        questionBankTitle: bank.title,
+        returnUrl: `${process.env.NEXTAUTH_URL}/purchase/${purchase.id}/return`,
+      });
 
-    await prisma.purchase.update({
-      where: { id: purchase.id },
-      data: { providerOrderId: orderResult.providerOrderId },
-    });
-
-    return NextResponse.json({ redirectUrl: orderResult.redirectUrl, purchaseId: purchase.id });
+      return NextResponse.json({
+        purchaseId: purchase.id,
+        redirectUrl: orderResult.redirectUrl ?? null,
+        sessionId: orderResult.sessionId ?? null,
+        expiresAt,
+      });
+    } catch (err) {
+      await prisma.purchase.update({
+        where: { id: purchase.id },
+        data: {
+          status: "FAILED",
+          failureCode: "order_creation_failed",
+          failureReason: err instanceof Error ? err.message : "Could not start payment.",
+        },
+      });
+      return NextResponse.json({ error: "Could not start payment. Please try again." }, { status: 502 });
+    }
   } catch (err) {
     return toErrorResponse(err);
   }
