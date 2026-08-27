@@ -2,8 +2,13 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { registerSchema } from "@/lib/validation/auth";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
+  if (!rateLimit(`register:${getClientIp(request)}`, 10, 15 * 60 * 1000)) {
+    return NextResponse.json({ error: "Too many attempts. Please try again later." }, { status: 429 });
+  }
+
   const body = await request.json();
   const parsed = registerSchema.safeParse(body);
   if (!parsed.success) {

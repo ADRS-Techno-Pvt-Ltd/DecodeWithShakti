@@ -3,10 +3,14 @@ import { prisma } from "@/lib/prisma";
 import { requireStudent, toErrorResponse } from "@/lib/auth-guards";
 import { validateCouponSchema } from "@/lib/validation/coupon";
 import { resolveEffectivePrice, computeDiscount, isCouponUsable } from "@/lib/pricing";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
-    await requireStudent();
+    const session = await requireStudent();
+    if (!rateLimit(`validate-coupon:${session.user.id}`, 20, 5 * 60 * 1000)) {
+      return NextResponse.json({ error: "Too many attempts. Please try again shortly." }, { status: 429 });
+    }
     const raw = await request.json();
     const parsed = validateCouponSchema.safeParse(raw);
     if (!parsed.success) {

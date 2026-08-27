@@ -174,7 +174,7 @@ export function PurchaseCard({
           </div>
         </div>
         <a
-          href="/dashboard/student"
+          href="/dashboard/student/purchases"
           className="mt-4 mb-5 block w-full rounded-[9px] bg-primary-light py-3 text-center text-[15px] font-medium text-white transition-colors hover:bg-primary"
         >
           Go to my purchases

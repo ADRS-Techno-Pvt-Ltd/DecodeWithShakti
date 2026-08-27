@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { ChevronDown, LayoutDashboard, LogOut, Settings, ShoppingBag } from "lucide-react";
+import { ChevronDown, LayoutDashboard, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BrandLogo } from "@/components/brand-logo";
 import {
@@ -63,35 +63,14 @@ export function SiteHeader() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 {user.email && <DropdownMenuItem disabled>{user.email}</DropdownMenuItem>}
-                {isAdmin ? (
-                  <DropdownMenuItem
-                    render={
-                      <Link href="/dashboard/admin">
-                        <LayoutDashboard />
-                        Admin dashboard
-                      </Link>
-                    }
-                  />
-                ) : (
-                  <>
-                    <DropdownMenuItem
-                      render={
-                        <Link href="/dashboard/student">
-                          <ShoppingBag />
-                          My purchases
-                        </Link>
-                      }
-                    />
-                    <DropdownMenuItem
-                      render={
-                        <Link href="/dashboard/student/settings">
-                          <Settings />
-                          Account settings
-                        </Link>
-                      }
-                    />
-                  </>
-                )}
+                <DropdownMenuItem
+                  render={
+                    <Link href={isAdmin ? "/dashboard/admin" : "/dashboard/student"}>
+                      <LayoutDashboard />
+                      {isAdmin ? "Admin dashboard" : "Dashboard"}
+                    </Link>
+                  }
+                />
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/" })}>
                   <LogOut />

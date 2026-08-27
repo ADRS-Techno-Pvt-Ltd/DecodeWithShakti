@@ -95,7 +95,7 @@ export function PendingPoller({
           resolve automatically shortly — check My Purchases in a few minutes, or contact support.
         </p>
         <a
-          href="/dashboard/student"
+          href="/dashboard/student/purchases"
           className="mt-6 block w-full rounded-[9px] bg-primary-light py-3 text-center text-[15px] font-medium text-white transition-colors hover:bg-primary"
         >
           Go to My Purchases
@@ -118,7 +118,7 @@ export function PendingPoller({
           : "Hang tight, this only takes a few seconds."}
       </p>
       <a
-        href="/dashboard/student"
+        href="/dashboard/student/purchases"
         className="mt-6 block w-full rounded-[9px] border border-primary/30 py-3 text-center text-[15px] font-medium text-primary-dark transition-colors hover:bg-primary/10"
       >
         Go to My Purchases

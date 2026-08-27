@@ -53,7 +53,7 @@ function StatusView({ purchase }: { purchase: PurchaseWithRelations }) {
     case "SUCCESS":
       return (
         <>
-          <AutoRedirect href="/dashboard/student" delayMs={4000} />
+          <AutoRedirect href="/dashboard/student/purchases" delayMs={4000} />
           <Icon><CheckCircle2 className="h-12 w-12 text-emerald-600" strokeWidth={1.5} /></Icon>
           <Heading>Purchase successful</Heading>
           <Message>
@@ -67,7 +67,7 @@ function StatusView({ purchase }: { purchase: PurchaseWithRelations }) {
                 Download invoice
               </SecondaryFileLink>
             )}
-            <SecondaryLink href="/dashboard/student">Go to My Purchases</SecondaryLink>
+            <SecondaryLink href="/dashboard/student/purchases">Go to My Purchases</SecondaryLink>
           </div>
         </>
       );
@@ -82,7 +82,7 @@ function StatusView({ purchase }: { purchase: PurchaseWithRelations }) {
           </Message>
           <div className="mt-6 flex flex-col gap-2.5">
             <PrimaryLink href={buyAgainHref}>Try again</PrimaryLink>
-            <SecondaryLink href="/dashboard/student">Go to My Purchases</SecondaryLink>
+            <SecondaryLink href="/dashboard/student/purchases">Go to My Purchases</SecondaryLink>
           </div>
         </>
       );
@@ -95,7 +95,7 @@ function StatusView({ purchase }: { purchase: PurchaseWithRelations }) {
           <Message>No charge was made. You can try again whenever you&apos;re ready.</Message>
           <div className="mt-6 flex flex-col gap-2.5">
             <PrimaryLink href={buyAgainHref}>Try again</PrimaryLink>
-            <SecondaryLink href="/dashboard/student">Go to My Purchases</SecondaryLink>
+            <SecondaryLink href="/dashboard/student/purchases">Go to My Purchases</SecondaryLink>
           </div>
         </>
       );
@@ -108,7 +108,7 @@ function StatusView({ purchase }: { purchase: PurchaseWithRelations }) {
           <Message>The payment session timed out before it was completed.</Message>
           <div className="mt-6 flex flex-col gap-2.5">
             <PrimaryLink href={buyAgainHref}>Start over</PrimaryLink>
-            <SecondaryLink href="/dashboard/student">Go to My Purchases</SecondaryLink>
+            <SecondaryLink href="/dashboard/student/purchases">Go to My Purchases</SecondaryLink>
           </div>
         </>
       );
@@ -125,7 +125,7 @@ function StatusView({ purchase }: { purchase: PurchaseWithRelations }) {
                 Download invoice
               </SecondaryFileLink>
             )}
-            <SecondaryLink href="/dashboard/student">Go to My Purchases</SecondaryLink>
+            <SecondaryLink href="/dashboard/student/purchases">Go to My Purchases</SecondaryLink>
           </div>
         </>
       );

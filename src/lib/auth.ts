@@ -3,6 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { loginSchema } from "@/lib/validation/auth";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: process.env.NEXTAUTH_SECRET,
@@ -19,6 +20,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       async authorize(credentials) {
         const parsed = loginSchema.safeParse(credentials);
         if (!parsed.success) return null;
+
+        // 10 attempts / 5 min per email — blocks credential-stuffing against one account.
+        if (!rateLimit(`login:${parsed.data.email.toLowerCase()}`, 10, 5 * 60 * 1000)) {
+          return null;
+        }
 
         const user = await prisma.user.findUnique({ where: { email: parsed.data.email } });
         if (!user) return null;

@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
 import { contactSchema } from "@/lib/validation/contact";
 import { sendContactMessage } from "@/lib/email";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
+  if (!rateLimit(`contact:${getClientIp(request)}`, 5, 10 * 60 * 1000)) {
+    return NextResponse.json({ error: "Too many messages sent. Please try again later." }, { status: 429 });
+  }
+
   const body = await request.json();
   const parsed = contactSchema.safeParse(body);
   if (!parsed.success) {

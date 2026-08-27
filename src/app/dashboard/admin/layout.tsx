@@ -17,7 +17,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <DashboardShell
-      brand="Decode with Shakti"
       navItems={navItems}
       userName={session.user.name ?? "Admin"}
       userEmail={session.user.email ?? ""}
