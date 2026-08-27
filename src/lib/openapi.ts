@@ -752,14 +752,15 @@ export const openApiDocument = {
       parameters: [{ name: "invoiceId", in: "path", required: true, schema: { type: "string" } }],
       get: {
         tags: ["Files"],
-        summary: "Download a purchase invoice PDF (any signed-in user)",
+        summary: "Download a purchase invoice PDF",
+        description: "The buyer of the purchase, or any admin.",
         security: [{ sessionCookie: [] }],
         responses: {
           200: {
             description: "Invoice PDF (attachment)",
             content: { "application/pdf": { schema: { type: "string", format: "binary" } } },
           },
-          403: jsonResponse("Not the caller's invoice", ErrorMessage),
+          403: jsonResponse("Not the buyer and not an admin", ErrorMessage),
           ...responses401,
         },
       },

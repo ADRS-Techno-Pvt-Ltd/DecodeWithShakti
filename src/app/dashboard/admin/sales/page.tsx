@@ -1,5 +1,7 @@
+import { Receipt } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/dashboard/status-badge";
 import { Reveal } from "@/components/landing/reveal";
 
@@ -15,7 +17,7 @@ const statusBadge: Record<string, React.ReactNode> = {
 
 export default async function AdminSalesPage() {
   const purchases = await prisma.purchase.findMany({
-    include: { user: true, questionBank: true },
+    include: { user: true, questionBank: true, invoice: true },
     orderBy: { createdAt: "desc" },
     take: 200,
   });
@@ -42,6 +44,7 @@ export default async function AdminSalesPage() {
                   <TableHead>Provider</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Date</TableHead>
+                  <TableHead>Invoice</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -59,6 +62,24 @@ export default async function AdminSalesPage() {
                     <TableCell className="capitalize">{p.paymentProvider}</TableCell>
                     <TableCell>{statusBadge[p.status]}</TableCell>
                     <TableCell>{new Date(p.createdAt).toLocaleDateString("en-IN")}</TableCell>
+                    <TableCell>
+                      {p.invoice ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          render={
+                            <a
+                              href={`/api/v1/files/invoice/${p.invoice.id}`}
+                              className="gap-1.5"
+                            >
+                              <Receipt className="h-3.5 w-3.5" /> {p.invoice.invoiceNumber}
+                            </a>
+                          }
+                        />
+                      ) : (
+                        "—"
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

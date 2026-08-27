@@ -16,7 +16,9 @@ export async function GET(
       include: { purchase: true },
     });
 
-    if (!invoice || invoice.purchase.userId !== session.user.id) {
+    const isOwner = invoice?.purchase.userId === session.user.id;
+    const isAdmin = session.user.role === "ADMIN";
+    if (!invoice || (!isOwner && !isAdmin)) {
       return NextResponse.json({ error: "Not found." }, { status: 403 });
     }
 
