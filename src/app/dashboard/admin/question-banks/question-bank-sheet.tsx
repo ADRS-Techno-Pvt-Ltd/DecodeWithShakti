@@ -278,7 +278,7 @@ export function QuestionBankSheet({
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="description">Description</Label>
-            <Textarea id="description" rows={3} {...register("description", { required: true })} />
+            <Textarea id="description" rows={3} {...register("description")} />
           </div>
 
           <div className="grid grid-cols-2 gap-3">

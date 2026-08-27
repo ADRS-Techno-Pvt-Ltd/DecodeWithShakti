@@ -724,9 +724,9 @@ export default function LandingPage() {
                 Levels
               </h4>
               <ul className="flex flex-col gap-2.5 text-sm text-muted-foreground">
-                <li><span>CA Foundation</span></li>
-                <li><span>CA Intermediate</span></li>
-                <li><span>CA Final</span></li>
+                <li><Link href="/question-banks?category=ca-foundation" className="hover:text-primary">CA Foundation</Link></li>
+                <li><Link href="/question-banks?category=ca-inter" className="hover:text-primary">CA Intermediate</Link></li>
+                <li><Link href="/question-banks?category=ca-final" className="hover:text-primary">CA Final</Link></li>
               </ul>
             </div>
             <div>

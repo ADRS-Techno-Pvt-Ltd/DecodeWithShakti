@@ -39,9 +39,6 @@ const tilt = ["", "-rotate-[0.8deg]", "rotate-[0.6deg]"];
 
 export default function ContactPage() {
   const now = new Date();
-  const stampDate = now
-    .toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
-    .toUpperCase();
 
   return (
     <div className="min-h-full" style={paperBg}>
@@ -92,7 +89,7 @@ export default function ContactPage() {
             </p>
           </div>
 
-          <ContactForm stampDate={stampDate} />
+          <ContactForm />
         </div>
       </main>
 

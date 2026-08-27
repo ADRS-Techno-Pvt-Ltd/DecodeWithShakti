@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { motion, useReducedMotion } from "motion/react";
 import { toast } from "sonner";
 import { ArrowRight } from "lucide-react";
 import { contactSchema, type ContactInput } from "@/lib/validation/contact";
@@ -14,12 +13,7 @@ const fieldBase =
 const labelBase =
   "mb-2 block font-mono text-[10.5px] tracking-[0.1em] text-muted-foreground uppercase";
 
-export function ContactForm({
-  stampDate,
-}: {
-  stampDate: string;
-}) {
-  const reduceMotion = useReducedMotion();
+export function ContactForm() {
   const [sent, setSent] = useState(false);
   const [sentTo, setSentTo] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -46,6 +40,7 @@ export function ContactForm({
       }
       setSentTo(data.email);
       setSent(true);
+      reset();
       toast.success("Message sent — a person will reply soon.");
     } catch {
       toast.error("Could not send your message right now. Please try again shortly.");
@@ -95,7 +90,7 @@ export function ContactForm({
               </label>
               <input
                 id="name"
-                placeholder="Ananya Rao"
+                placeholder="Enter your name"
                 autoComplete="name"
                 readOnly={sent}
                 aria-invalid={!!errors.name}
@@ -113,7 +108,7 @@ export function ContactForm({
               <input
                 id="email"
                 type="email"
-                placeholder="you@email.com"
+                placeholder="you@example.com"
                 autoComplete="email"
                 readOnly={sent}
                 aria-invalid={!!errors.email}
@@ -194,30 +189,6 @@ export function ContactForm({
               </button>
             )}
           </div>
-
-          {/* rubber stamp */}
-          <motion.div
-            aria-hidden
-            initial={false}
-            animate={
-              sent
-                ? { opacity: 0.92, scale: 1, rotate: -13 }
-                : { opacity: 0, scale: reduceMotion ? 1 : 0.55, rotate: -13 }
-            }
-            transition={
-              reduceMotion
-                ? { duration: 0.15 }
-                : { type: "spring", stiffness: 320, damping: 16 }
-            }
-            className="pointer-events-none absolute top-14 right-6 flex h-24 w-24 items-center justify-center rounded-full border-2 border-success text-center font-mono text-[9px] leading-[1.4] tracking-[0.1em] text-success uppercase sm:right-8"
-          >
-            <span className="absolute inset-[5px] rounded-full border border-dashed border-success" />
-            <span className="px-2">
-              Received
-              <br />
-              {stampDate}
-            </span>
-          </motion.div>
         </form>
       </div>
     </div>

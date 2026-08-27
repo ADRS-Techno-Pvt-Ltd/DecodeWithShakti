@@ -22,7 +22,11 @@ export default async function QuestionBankCatalogPage({
     prisma.questionBank.findMany({
       where: {
         isPublished: true,
-        ...(categorySlug ? { category: { slug: categorySlug } } : {}),
+        // startsWith (not exact) so a level prefix like "ca-inter" matches every
+        // Inter subject category (ca-inter-costing/taxation/accounts) — the
+        // footer's per-level links use this; the per-category pills below still
+        // pass a full exact slug, which only ever matches itself.
+        ...(categorySlug ? { category: { slug: { startsWith: categorySlug } } } : {}),
       },
       include: { category: true },
       orderBy: { createdAt: "desc" },

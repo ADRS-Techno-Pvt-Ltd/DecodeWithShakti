@@ -28,7 +28,7 @@ function featuresField() {
 
 const questionBankBaseSchema = z.object({
   title: z.string().min(3).max(200),
-  description: z.string().min(10).max(2000),
+  description: z.string(),
   categoryId: z.string().min(1, "Category is required"),
   price: z.coerce.number().int().positive("Price must be a positive integer (paise)"),
   previewEnabled: booleanField(false),
