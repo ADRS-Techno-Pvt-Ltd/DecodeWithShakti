@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { Download, Receipt } from "lucide-react";
+import { Download, Receipt, BookOpen } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatusBadge } from "@/components/dashboard/status-badge";
+import { EmptyState } from "@/components/dashboard/empty-state";
 import { Reveal } from "@/components/landing/reveal";
 
 function formatRupees(paise: number): string {
@@ -42,9 +43,14 @@ export default async function StudentDashboardPage() {
       <Reveal delay={60}>
         <div className="rounded-lg border bg-card">
           {purchases.length === 0 ? (
-            <p className="text-muted-foreground p-8 text-center text-sm">
-              You haven&apos;t purchased any question banks yet.
-            </p>
+            <EmptyState
+              icon={<BookOpen />}
+              title="No purchases yet"
+              description="Question banks you buy will appear here, ready to download."
+              action={
+                <Button render={<Link href="/question-banks">Browse Question Banks</Link>} />
+              }
+            />
           ) : (
             <Table>
               <TableHeader>

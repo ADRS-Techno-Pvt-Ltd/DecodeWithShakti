@@ -3,10 +3,12 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/dashboard/status-badge";
+import { EmptyState } from "@/components/dashboard/empty-state";
 import { Reveal } from "@/components/landing/reveal";
 import { fetchCoupons, deleteCoupon, type Coupon } from "@/features/coupons/api";
 import { CouponSheet } from "./coupon-sheet";
@@ -69,7 +71,21 @@ export default function AdminCouponsPage() {
               <Skeleton className="h-10 w-full" />
             </div>
           ) : !coupons || coupons.length === 0 ? (
-            <p className="text-muted-foreground p-8 text-center text-sm">No coupons yet.</p>
+            <EmptyState
+              icon={<Tag />}
+              title="No coupons yet"
+              description="Create a discount code with an expiry date and usage limit for checkout."
+              action={
+                <Button
+                  onClick={() => {
+                    setEditing(null);
+                    setSheetOpen(true);
+                  }}
+                >
+                  + New Coupon
+                </Button>
+              }
+            />
           ) : (
             <Table>
               <TableHeader>

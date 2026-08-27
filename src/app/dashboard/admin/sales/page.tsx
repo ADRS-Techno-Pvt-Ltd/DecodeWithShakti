@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/dashboard/status-badge";
+import { EmptyState } from "@/components/dashboard/empty-state";
 import { Reveal } from "@/components/landing/reveal";
 
 function formatRupees(paise: number): string {
@@ -30,7 +31,11 @@ export default async function AdminSalesPage() {
       <Reveal delay={60}>
         <div className="mt-6 rounded-lg border bg-card">
           {purchases.length === 0 ? (
-            <p className="text-muted-foreground p-8 text-center text-sm">No purchases yet.</p>
+            <EmptyState
+              icon={<Receipt />}
+              title="No purchases yet"
+              description="Completed purchases and their invoices will show up here."
+            />
           ) : (
             <Table>
               <TableHeader>

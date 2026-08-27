@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/dashboard/status-badge";
+import { EmptyState } from "@/components/dashboard/empty-state";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Reveal } from "@/components/landing/reveal";
 import { fetchAllFaqs, updateFaq, deleteFaq, type Faq } from "@/features/faqs/api";
@@ -96,7 +97,21 @@ export default function AdminFaqsPage() {
               <Skeleton className="h-10 w-full" />
             </div>
           ) : !faqs || faqs.length === 0 ? (
-            <p className="text-muted-foreground p-8 text-center text-sm">No FAQs yet.</p>
+            <EmptyState
+              icon={<HelpCircle />}
+              title="No FAQs yet"
+              description="Add questions to show in the landing page “Before you ask in chat” section."
+              action={
+                <Button
+                  onClick={() => {
+                    setEditing(null);
+                    setSheetOpen(true);
+                  }}
+                >
+                  + New FAQ
+                </Button>
+              }
+            />
           ) : (
             <Table className="table-fixed">
               <TableHeader>

@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/dashboard/status-badge";
+import { EmptyState } from "@/components/dashboard/empty-state";
 import { Reveal } from "@/components/landing/reveal";
 import { fetchAdminQuestionBanks, fetchCategories, deleteQuestionBank } from "@/features/question-banks/api";
 import type { QuestionBank } from "@/features/question-banks/types";
@@ -70,9 +72,12 @@ export default function AdminQuestionBanksPage() {
               <Skeleton className="h-10 w-full" />
             </div>
           ) : !banks || banks.length === 0 ? (
-            <p className="text-muted-foreground p-8 text-center text-sm">
-              No question banks yet — click &ldquo;Upload Question Bank&rdquo; to add your first one.
-            </p>
+            <EmptyState
+              icon={<BookOpen />}
+              title="No question banks yet"
+              description="Upload your first PDF question bank to publish it to the catalog."
+              action={<Button onClick={openCreate}>+ Upload Question Bank</Button>}
+            />
           ) : (
             <Table>
               <TableHeader>
