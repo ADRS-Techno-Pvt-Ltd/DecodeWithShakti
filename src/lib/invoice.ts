@@ -21,12 +21,16 @@ export type InvoiceData = {
   issuedAt: Date;
   buyerName: string;
   buyerEmail: string;
+  buyerPhone: string | null;
   itemTitle: string;
   basePrice: number; // paise
   discountAmount: number; // paise
   couponCode: string | null;
   totalAmount: number; // paise
   paymentProvider: string;
+  orderId: string;
+  transactionId: string | null;
+  paymentMethod: string | null;
 };
 
 function formatRupees(paise: number): string {
@@ -38,6 +42,29 @@ function formatRupees(paise: number): string {
 
 function formatDate(d: Date): string {
   return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+function formatDateTime(d: Date): string {
+  return `${formatDate(d)}, ${d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}`;
+}
+
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  upi: "UPI",
+  card: "Card",
+  credit_card: "Credit Card",
+  debit_card: "Debit Card",
+  net_banking: "Net Banking",
+  netbanking: "Net Banking",
+  wallet: "Wallet",
+  paylater: "Pay Later",
+  cardless_emi: "Cardless EMI",
+  emi: "EMI",
+  mock: "Test Payment",
+};
+
+function formatPaymentMethod(method: string | null): string {
+  if (!method) return "—";
+  return PAYMENT_METHOD_LABELS[method] ?? method.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 export async function generateInvoicePdf(data: InvoiceData): Promise<Uint8Array> {
@@ -124,9 +151,43 @@ export async function generateInvoicePdf(data: InvoiceData): Promise<Uint8Array>
   if (companyEmail) fromLines.push(companyEmail);
   if (companyWebsite) fromLines.push(companyWebsite);
 
-  const billedBottom = partyBlock(left, y, "Billed To", [data.buyerName, data.buyerEmail]);
+  const billedToLines = [data.buyerName, data.buyerEmail];
+  if (data.buyerPhone) billedToLines.push(data.buyerPhone);
+  const billedBottom = partyBlock(left, y, "Billed To", billedToLines);
   const fromBottom = partyBlock(rightColX, y, "From", fromLines);
-  y = Math.max(billedBottom, fromBottom) + 26;
+  y = Math.max(billedBottom, fromBottom) + 20;
+
+  // --- payment details (order id / transaction id / method / date) ---
+  const detailsPadY = 12;
+  const detailsPadX = 14;
+  const detailRows: [string, string][] = [
+    ["Order ID", data.orderId],
+    ["Transaction ID", data.transactionId ?? "—"],
+    ["Payment Method", formatPaymentMethod(data.paymentMethod)],
+    ["Payment Date", formatDateTime(data.issuedAt)],
+  ];
+  const detailColW = (contentWidth - detailsPadX * 2) / 2;
+  const detailRowH = 30;
+  const detailsBoxH = detailsPadY * 2 + Math.ceil(detailRows.length / 2) * detailRowH;
+
+  doc.rect(left, y, contentWidth, detailsBoxH).fill(ZEBRA);
+  detailRows.forEach(([label, value], i) => {
+    const col = i % 2;
+    const row = Math.floor(i / 2);
+    const dx = left + detailsPadX + col * detailColW;
+    const dy = y + detailsPadY + row * detailRowH;
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(7.5)
+      .fillColor(MUTED)
+      .text(label.toUpperCase(), dx, dy, { width: detailColW - detailsPadX, characterSpacing: 0.5 });
+    doc
+      .font("Helvetica")
+      .fontSize(9.5)
+      .fillColor(INK)
+      .text(value, dx, dy + 11, { width: detailColW - detailsPadX });
+  });
+  y += detailsBoxH + 20;
 
   // --- line items table ---
   const cellPad = 12;
@@ -212,7 +273,7 @@ export async function generateInvoicePdf(data: InvoiceData): Promise<Uint8Array>
     .fontSize(9)
     .fillColor(MUTED)
     .text(
-      `Payment received via ${data.paymentProvider} on ${formatDate(data.issuedAt)}.`,
+      `Processed via ${data.paymentProvider.replace(/\b\w/g, (c) => c.toUpperCase())} Payment Gateway.`,
       left,
       footerY + 12,
       { width: contentWidth },

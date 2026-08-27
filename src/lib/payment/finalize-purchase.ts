@@ -152,12 +152,16 @@ export async function ensureInvoice(purchaseId: string): Promise<void> {
     issuedAt: invoiceRow.issuedAt,
     buyerName: purchase.user.name,
     buyerEmail: purchase.user.email,
+    buyerPhone: purchase.user.phone,
     itemTitle: purchase.questionBank.title,
     basePrice: purchase.basePriceSnapshot,
     discountAmount: purchase.discountAmount,
     couponCode: purchase.couponCodeSnapshot,
     totalAmount: purchase.amount,
     paymentProvider: purchase.paymentProvider,
+    orderId: purchase.providerOrderId,
+    transactionId: purchase.providerPaymentId,
+    paymentMethod: purchase.paymentMethod,
   });
 
   const filePath = await saveInvoiceFile(invoiceNumber, pdfBytes);

@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireStudent } from "@/lib/auth-guards";
 import { Card, CardContent } from "@/components/ui/card";
 import { PendingPoller } from "./pending-poller";
+import { AutoRedirect } from "./auto-redirect";
 
 const purchaseInclude = { questionBank: true, invoice: true } satisfies Prisma.PurchaseInclude;
 type PurchaseWithRelations = Prisma.PurchaseGetPayload<{ include: typeof purchaseInclude }>;
@@ -52,6 +53,7 @@ function StatusView({ purchase }: { purchase: PurchaseWithRelations }) {
     case "SUCCESS":
       return (
         <>
+          <AutoRedirect href="/dashboard/student" delayMs={4000} />
           <Icon><CheckCircle2 className="h-12 w-12 text-emerald-600" strokeWidth={1.5} /></Icon>
           <Heading>Purchase successful</Heading>
           <Message>
@@ -59,11 +61,11 @@ function StatusView({ purchase }: { purchase: PurchaseWithRelations }) {
             been generated.
           </Message>
           <div className="mt-6 flex flex-col gap-2.5">
-            <PrimaryLink href={`/api/v1/files/download/${purchase.id}`}>Download PDF</PrimaryLink>
+            <PrimaryFileLink href={`/api/v1/files/download/${purchase.id}`}>Download PDF</PrimaryFileLink>
             {purchase.invoice && (
-              <SecondaryLink href={`/api/v1/files/invoice/${purchase.invoice.id}`}>
+              <SecondaryFileLink href={`/api/v1/files/invoice/${purchase.invoice.id}`}>
                 Download invoice
-              </SecondaryLink>
+              </SecondaryFileLink>
             )}
             <SecondaryLink href="/dashboard/student">Go to My Purchases</SecondaryLink>
           </div>
@@ -119,9 +121,9 @@ function StatusView({ purchase }: { purchase: PurchaseWithRelations }) {
           <Message>Access to &ldquo;{purchase.questionBank.title}&rdquo; has been revoked.</Message>
           <div className="mt-6 flex flex-col gap-2.5">
             {purchase.invoice && (
-              <SecondaryLink href={`/api/v1/files/invoice/${purchase.invoice.id}`}>
+              <SecondaryFileLink href={`/api/v1/files/invoice/${purchase.invoice.id}`}>
                 Download invoice
-              </SecondaryLink>
+              </SecondaryFileLink>
             )}
             <SecondaryLink href="/dashboard/student">Go to My Purchases</SecondaryLink>
           </div>
@@ -161,5 +163,31 @@ function SecondaryLink({ href, children }: { href: string; children: React.React
     >
       {children}
     </Link>
+  );
+}
+
+// File-serving endpoints (/api/v1/files/**) must use a plain <a>, never
+// next/link's <Link> — Link does client-side route interception meant for
+// internal app pages, which breaks binary downloads (works once, then the
+// soft-navigated click no longer triggers a real browser download).
+function PrimaryFileLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <a
+      href={href}
+      className="block w-full rounded-[9px] bg-primary-light py-3 text-center text-[15px] font-medium text-white transition-colors hover:bg-primary"
+    >
+      {children}
+    </a>
+  );
+}
+
+function SecondaryFileLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <a
+      href={href}
+      className="block w-full rounded-[9px] border border-primary/30 py-3 text-center text-[15px] font-medium text-primary-dark transition-colors hover:bg-primary/10"
+    >
+      {children}
+    </a>
   );
 }

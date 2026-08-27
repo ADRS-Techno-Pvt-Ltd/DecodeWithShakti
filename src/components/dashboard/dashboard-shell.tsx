@@ -70,6 +70,7 @@ export function DashboardShell({
                     <SidebarMenuButton
                       isActive={item.href === activeHref}
                       tooltip={item.label}
+                      size="lg"
                       render={
                         <Link href={item.href}>
                           {item.icon}
@@ -88,6 +89,7 @@ export function DashboardShell({
             <SidebarMenuItem>
               <SidebarMenuButton
                 tooltip="Log out"
+                size="lg"
                 onClick={() => signOut({ callbackUrl: "/" })}
               >
                 <LogOut />
