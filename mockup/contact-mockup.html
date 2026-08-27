@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Decode with Shakti — Contact (mockup)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  /* Tokens mirror the live app — src/app/globals.css ("Decode with Shakti" indigo + gold).
+     This sign-off mockup deliberately commits to a single light "paper / filing" look,
+     matching the other mockup/*.html screens. */
+  :root{
+    --bg:            #fafafd;
+    --paper:         #ffffff;
+    --paper-warm:    #fdfdfb;
+    --ink:           #1b1b2f;
+    --ink-soft:      #54546b;
+    --primary:       #352f9e;
+    --primary-dark:  #251f73;
+    --primary-light: #4f46e5;
+    --accent:        #edecfb;
+    --accent-line:   #d9d6f6;
+    --line:          #e5e4f1;
+    --line-strong:   #cdcaec;
+    --ring:          #4f46e5;
+    --gold:          #b8862e;
+    --gold-ink:      #8a631c;
+    --gold-pale:     #fbf2dc;
+    --success:       #157f4d;
+    --success-pale:  #e7f4ec;
+    --radius:        0.625rem;
+    --shadow-card:   0 1px 2px rgba(27,27,47,.04), 0 22px 46px -24px rgba(37,31,115,.30);
+    --shadow-lift:   0 1px 2px rgba(27,27,47,.05), 0 30px 60px -28px rgba(37,31,115,.38);
+  }
+
+  *{box-sizing:border-box;}
+  html{font-family:'Inter',system-ui,sans-serif;}
+  body{
+    margin:0;
+    overflow-x:hidden;
+    background:
+      radial-gradient(var(--line-strong) 0.6px, transparent 0.6px),
+      var(--bg);
+    background-size:24px 24px;
+    color:var(--ink);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--accent);color:var(--primary-dark);}
+  a{color:inherit;}
+  :focus-visible{outline:2px solid var(--ring);outline-offset:2px;border-radius:4px;}
+
+  .wrap{max-width:1080px;margin:0 auto;padding:0 32px;}
+
+  /* ---------- header ---------- */
+  header{
+    position:sticky;top:0;z-index:20;
+    border-bottom:1px solid var(--line);
+    background:rgba(250,250,253,.82);
+    backdrop-filter:blur(8px);
+  }
+  .headerbar{display:flex;align-items:center;justify-content:space-between;height:64px;}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:16px;letter-spacing:-0.01em;}
+  .mark{
+    width:30px;height:30px;border-radius:8px;
+    background:linear-gradient(135deg,var(--primary-light),var(--primary-dark));
+    color:#fff;font-weight:600;font-size:14px;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Fraunces',serif;
+  }
+  .back{
+    display:inline-flex;align-items:center;gap:6px;
+    font-size:14px;color:var(--ink-soft);text-decoration:none;font-weight:500;
+    transition:color .15s ease;
+  }
+  .back:hover{color:var(--primary);}
+  .back svg{width:15px;height:15px;}
+
+  /* ---------- masthead ---------- */
+  main{padding:72px 0 96px;}
+
+  .tag{
+    display:inline-block;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--primary);
+    background:var(--accent);
+    border:1px solid var(--accent-line);
+    padding:5px 11px;
+    border-radius:5px;
+    margin-bottom:22px;
+  }
+
+  h1{
+    font-family:'Fraunces',serif;
+    font-weight:500;
+    font-size:clamp(2.1rem, 5.4vw, 3.15rem);
+    line-height:1.06;
+    letter-spacing:-0.02em;
+    margin:0 0 18px;
+    max-width:20ch;
+    text-wrap:balance;
+  }
+
+  .lede{
+    font-size:16.5px;
+    line-height:1.62;
+    color:var(--ink-soft);
+    max-width:46ch;
+    margin:0 0 60px;
+  }
+
+  .layout{
+    display:grid;
+    grid-template-columns:270px minmax(0,1fr);
+    gap:44px;
+    align-items:start;
+  }
+  .tabs,.card,.card-body,form,.field{min-width:0;}
+  .field input,.field textarea{min-width:0;}
+
+  /* ---------- folder-tab stack (left) ---------- */
+  .tabs{display:flex;flex-direction:column;gap:26px;padding-top:16px;}
+  .folder{
+    position:relative;
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:3px 12px 12px 12px;
+    padding:20px 18px 18px;
+    transform:rotate(var(--tilt,0deg));
+    transition:transform .22s cubic-bezier(.2,.7,.3,1), box-shadow .22s ease, border-color .22s ease;
+  }
+  .folder:nth-child(2){--tilt:-0.8deg;}
+  .folder:nth-child(3){--tilt:0.6deg;}
+  .folder:hover{
+    transform:rotate(0deg) translateY(-3px);
+    box-shadow:0 16px 30px -20px rgba(37,31,115,.42);
+    border-color:var(--line-strong);
+  }
+  .tab{
+    position:absolute;
+    top:-16px;left:18px;
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-bottom:none;
+    border-radius:6px 6px 0 0;
+    padding:3px 10px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--primary);
+    transition:background .22s ease, color .22s ease, border-color .22s ease;
+  }
+  .folder:hover .tab{background:var(--primary);color:#fff;border-color:var(--primary);}
+  .folder-head{display:flex;align-items:center;gap:9px;margin-bottom:7px;}
+  .folder-head svg{width:17px;height:17px;color:var(--primary);flex-shrink:0;stroke-width:1.6;}
+  .folder h3{
+    font-family:'Fraunces',serif;
+    font-weight:500;
+    font-size:16.5px;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  .folder p{
+    font-size:13.5px;
+    line-height:1.58;
+    color:var(--ink-soft);
+    margin:0;
+  }
+  .folder a.more{
+    display:inline-flex;align-items:center;gap:5px;
+    margin-top:11px;
+    font-size:12.5px;
+    color:var(--primary);
+    text-decoration:none;
+    font-weight:600;
+    white-space:nowrap;
+  }
+  .folder a.more svg{width:13px;height:13px;flex-shrink:0;}
+  .folder a.more:hover{text-decoration:underline;}
+  .tab{white-space:nowrap;}
+
+  .stack-note{
+    margin-top:4px;
+    padding-left:18px;
+    font-size:12.5px;
+    line-height:1.55;
+    color:var(--ink-soft);
+    border-left:2px solid var(--accent-line);
+  }
+
+  /* ---------- filed card (right) ---------- */
+  .card{
+    position:relative;
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:14px;
+    box-shadow:var(--shadow-card);
+    overflow:hidden;
+    transition:box-shadow .3s ease;
+  }
+  .card:hover{box-shadow:var(--shadow-lift);}
+  .card-tab{
+    position:absolute;top:0;left:34px;z-index:3;
+    background:var(--primary);
+    color:#fff;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+    padding:5px 12px 4px;
+    border-radius:0 0 6px 6px;
+  }
+  /* folded dog-ear, top-right */
+  .card::before{
+    content:'';position:absolute;top:0;right:0;
+    border-style:solid;border-width:0 24px 24px 0;
+    border-color:transparent var(--bg) transparent transparent;
+    z-index:2;
+  }
+  .card::after{
+    content:'';position:absolute;top:0;right:0;
+    width:24px;height:24px;
+    border-bottom:1px solid var(--line);
+    border-left:1px solid var(--line);
+    border-radius:0 0 0 6px;
+    z-index:1;
+  }
+
+  .card-top{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:24px 34px 16px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--ink-soft);
+  }
+  .card-top b{color:var(--primary-dark);font-weight:600;}
+  .perf{
+    height:0;border-top:1.5px dashed var(--line-strong);
+    margin:0 34px;position:relative;
+  }
+  .perf::before,.perf::after{
+    content:'';position:absolute;top:-7px;width:14px;height:14px;border-radius:50%;
+    background:var(--bg);border:1px solid var(--line);
+  }
+  .perf::before{left:-41px;}
+  .perf::after{right:-41px;}
+
+  .card-body{display:grid;grid-template-columns:46px 1fr;}
+  .margin{
+    border-right:1.5px dashed var(--line-strong);
+    display:flex;flex-direction:column;align-items:center;
+    gap:40px;padding-top:52px;
+  }
+  .margin span{
+    width:11px;height:11px;border-radius:50%;
+    background:var(--bg);
+    border:1px solid var(--line-strong);
+    box-shadow:inset 0 1.5px 2px rgba(37,31,115,.16);
+  }
+
+  form{padding:30px 34px 30px;position:relative;}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-bottom:22px;}
+  .field{position:relative;}
+  .field label{
+    display:block;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--ink-soft);
+    margin-bottom:8px;
+  }
+  .field input,.field textarea{
+    width:100%;
+    border:none;
+    border-bottom:1.5px solid var(--line-strong);
+    background:transparent;
+    font-family:'Inter',sans-serif;
+    font-size:15px;
+    color:var(--ink);
+    padding:6px 2px 9px;
+    outline:none;
+    caret-color:var(--primary-light);
+    transition:border-color .15s ease;
+  }
+  .field input::placeholder,.field textarea::placeholder{color:#6b6b85;}
+  .field input:focus,.field textarea:focus{border-color:var(--primary-light);}
+  .field.invalid input,.field.invalid textarea{border-color:var(--gold-ink);}
+  .field textarea{
+    resize:vertical;min-height:132px;
+    font-family:'Fraunces',serif;font-size:15.5px;
+    line-height:28px;
+    padding-top:4px;
+    background-image:repeating-linear-gradient(
+      transparent, transparent 27px, var(--accent-line) 27px, var(--accent-line) 28px);
+    scrollbar-width:thin;
+    scrollbar-color:var(--line-strong) transparent;
+  }
+  .field textarea::-webkit-scrollbar{width:8px;}
+  .field textarea::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:99px;}
+  .full{margin-bottom:24px;}
+  .err{
+    display:none;
+    margin-top:6px;
+    font-size:12px;color:var(--gold-ink);
+    font-family:'Inter',sans-serif;
+  }
+  .field.invalid .err{display:block;}
+
+  .card-foot{
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+    margin-top:4px;
+  }
+  .hint{font-size:12.5px;color:var(--ink-soft);max-width:34ch;transition:color .2s ease;}
+  .hint.done{color:var(--success);font-weight:500;}
+
+  button{
+    background:var(--primary);
+    color:#fff;
+    border:none;
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:14px;
+    padding:11px 20px;
+    border-radius:8px;
+    cursor:pointer;
+    display:inline-flex;align-items:center;gap:8px;
+    white-space:nowrap;
+    transition:background .15s ease, transform .1s ease;
+  }
+  button svg{width:15px;height:15px;}
+  button:hover{background:var(--primary-dark);}
+  button:active{transform:scale(0.97);}
+  button:disabled{background:var(--primary-light);opacity:.6;cursor:default;}
+  button.done{background:var(--success);}
+
+  .spinner{
+    width:14px;height:14px;border-radius:50%;
+    border:2px solid rgba(255,255,255,.4);border-top-color:#fff;
+    animation:spin .6s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* rubber stamp */
+  .stamp{
+    position:absolute;
+    top:74px;right:30px;
+    width:96px;height:96px;
+    border:2px solid var(--success);
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;text-align:center;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--success);line-height:1.4;
+    transform:rotate(-13deg) scale(.55);
+    opacity:0;pointer-events:none;
+    transition:opacity .28s ease, transform .32s cubic-bezier(.2,1.5,.4,1);
+  }
+  .stamp::before{
+    content:'';position:absolute;inset:5px;
+    border:1px dashed var(--success);border-radius:50%;
+  }
+  .stamp.show{opacity:.92;transform:rotate(-13deg) scale(1);}
+
+  /* one authored entrance */
+  @keyframes drop-in{
+    from{opacity:0;transform:translateY(16px) rotate(-1.2deg);}
+    to{opacity:1;transform:translateY(0) rotate(0);}
+  }
+  @keyframes folder-in{
+    from{opacity:0;transform:translateY(14px) rotate(0);}
+    to{opacity:1;transform:rotate(var(--tilt,0deg));}
+  }
+  .reveal{animation:drop-in .6s cubic-bezier(.2,.7,.3,1) both;}
+  .tabs .folder{animation:folder-in .55s cubic-bezier(.2,.7,.3,1) both;}
+  .tabs .folder:nth-child(1){animation-delay:.05s;}
+  .tabs .folder:nth-child(2){animation-delay:.12s;}
+  .tabs .folder:nth-child(3){animation-delay:.19s;}
+  .card.reveal{animation-delay:.1s;}
+
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none!important;transition:none!important;}
+  }
+
+  /* ---------- footer ---------- */
+  footer{
+    border-top:1px solid var(--line);
+    padding:28px 0;
+    font-size:13px;color:var(--ink-soft);
+  }
+  .footbar{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;align-items:center;}
+  .footbar a{text-decoration:none;color:var(--ink-soft);}
+  .footbar a:hover{color:var(--primary);}
+  .foot-links{display:flex;gap:20px;}
+
+  @media (max-width:860px){
+    .wrap{padding:0 20px;}
+    main{padding:52px 0 72px;}
+    h1,.lede{max-width:100%;}
+    .layout{grid-template-columns:1fr;gap:48px;}
+    .tabs{max-width:100%;}
+    .row{grid-template-columns:1fr;gap:20px;margin-bottom:18px;}
+    .card-top,.perf,form{padding-left:24px;padding-right:24px;}
+    .perf{margin:0 24px;}
+    .perf::before,.perf::after{display:none;}
+    .card-body{grid-template-columns:1fr;}
+    .margin{display:none;}
+    .stamp{top:auto;bottom:26px;right:20px;width:82px;height:82px;}
+    .card-foot{flex-direction:column;align-items:flex-start;}
+    .card-foot button{width:100%;justify-content:center;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap headerbar">
+    <div class="brand">
+      <div class="mark">D</div>
+      <span>Decode with Shakti</span>
+    </div>
+    <a class="back" href="index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+      Back to home
+    </a>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <span class="tag">Contact</span>
+  <h1>Ask your question. We&rsquo;ll file a reply.</h1>
+  <p class="lede">Questions about a question bank, a payment, or your account &mdash; drop them
+  in the card and a real person on the team writes back, usually within a day.</p>
+
+  <div class="layout">
+    <div class="tabs">
+      <div class="folder">
+        <span class="tab">Orders</span>
+        <div class="folder-head">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+          <h3>Orders &amp; accounts</h3>
+        </div>
+        <p>Payment issues, invoices, downloads, or anything tied to your account &mdash; send it
+        through the form and we&rsquo;ll sort it out.</p>
+      </div>
+
+      <div class="folder">
+        <span class="tab">Timing</span>
+        <div class="folder-head">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          <h3>Response time</h3>
+        </div>
+        <p>We typically reply within 1&ndash;2 business days, straight to the email address you
+        write in from.</p>
+      </div>
+
+      <div class="folder">
+        <span class="tab">FAQ</span>
+        <div class="folder-head">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+          <h3>Before you write in</h3>
+        </div>
+        <p>Quick questions about previews, early-bird pricing, or coupon codes are usually
+        answered already in the FAQ.</p>
+        <a class="more" href="index.html#faq">Browse the FAQ
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </a>
+      </div>
+
+      <p class="stack-note">Every message lands in a shared inbox the team reads through each
+      morning &mdash; nothing routes to a bot.</p>
+    </div>
+
+    <div class="card reveal">
+      <span class="card-tab">File &middot; Contact</span>
+      <div class="card-top">
+        <span>Filed under &mdash; support</span>
+        <span>No. <b>2026&ndash;08</b></span>
+      </div>
+      <div class="perf"></div>
+      <div class="card-body">
+        <div class="margin"><span></span><span></span><span></span></div>
+        <form id="contactForm" novalidate>
+          <div class="row">
+            <div class="field" id="f-name">
+              <label for="name">Your name</label>
+              <input type="text" id="name" name="name" placeholder="Ananya Rao" autocomplete="name">
+              <p class="err">Add your name so we know who&rsquo;s writing.</p>
+            </div>
+            <div class="field" id="f-email">
+              <label for="email">Email</label>
+              <input type="email" id="email" name="email" placeholder="you@email.com" autocomplete="email">
+              <p class="err">Enter a valid email so our reply reaches you.</p>
+            </div>
+          </div>
+          <div class="field full" id="f-subject">
+            <label for="subject">Subject</label>
+            <input type="text" id="subject" name="subject" placeholder="e.g. Question about a purchase">
+          </div>
+          <div class="field full" id="f-message">
+            <label for="message">Message</label>
+            <textarea id="message" name="message" placeholder="Write your note here&hellip;"></textarea>
+            <p class="err">Tell us a little about what you need.</p>
+          </div>
+          <div class="card-foot">
+            <span class="hint" id="hintText" aria-live="polite">A person reads every card &mdash; no auto-replies.</span>
+            <button type="submit" id="sendBtn">
+              Send message
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </button>
+          </div>
+          <div class="stamp" id="stamp" aria-hidden="true">Received<br>27 Aug<br>2026</div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  <div class="wrap footbar">
+    <span>&copy; 2026 Decode with Shakti. All rights reserved.</span>
+    <div class="foot-links">
+      <a href="#">Terms</a>
+      <a href="#">Privacy</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  var form  = document.getElementById('contactForm');
+  var btn   = document.getElementById('sendBtn');
+  var hint  = document.getElementById('hintText');
+  var stamp = document.getElementById('stamp');
+  var nameEl = document.getElementById('name');
+  var emailEl = document.getElementById('email');
+  var msgEl = document.getElementById('message');
+
+  function setInvalid(id, bad){
+    document.getElementById(id).classList.toggle('invalid', bad);
+  }
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+
+    var name = nameEl.value.trim();
+    var email = emailEl.value.trim();
+    var message = msgEl.value.trim();
+    var emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+    setInvalid('f-name', !name);
+    setInvalid('f-email', !emailOk);
+    setInvalid('f-message', !message);
+
+    if(!name || !emailOk || !message){
+      var first = form.querySelector('.field.invalid input, .field.invalid textarea');
+      if(first) first.focus();
+      hint.textContent = 'Check the highlighted fields and send again.';
+      hint.classList.remove('done');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Filing&hellip;';
+
+    setTimeout(function(){
+      stamp.classList.add('show');
+      btn.classList.add('done');
+      btn.innerHTML = 'Filed ✓';
+      hint.textContent = 'Filed. We’ll write back to ' + email + ' within 1–2 business days.';
+      hint.classList.add('done');
+      [nameEl, emailEl, msgEl, document.getElementById('subject')].forEach(function(el){ el.readOnly = true; });
+    }, 750);
+  });
+
+  // clear a field's error as soon as the user starts fixing it
+  [['name', nameEl], ['email', emailEl], ['message', msgEl]].forEach(function(pair){
+    pair[1].addEventListener('input', function(){
+      document.getElementById('f-' + pair[0]).classList.remove('invalid');
+    });
+  });
+</script>
+
+</body>
+</html>

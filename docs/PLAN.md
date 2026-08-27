@@ -14,7 +14,7 @@ The quotation (`ADRS_Techno_Quotation_LMS_Phase1_Verbatim.pdf`) also lists an ex
 Stack decisions confirmed by the user:
 - **Next.js (App Router, TypeScript) full-stack** — no separate backend server; API routes/server actions handle backend logic.
 - **PostgreSQL** via **Prisma** ORM.
-- **Local disk storage** for uploaded files (not S3) — files live outside `public/`, served only through authenticated route handlers.
+- **Cloudinary storage** for uploaded files (not local disk / S3) — PDFs are `type: authenticated` raw resources, served only by streaming through authenticated route handlers; thumbnails are public CDN images.
 - Deployment target: client-owned AWS/VPS (must work with a standard Node process manager, not serverless-only).
 
 ## Scope
@@ -90,10 +90,11 @@ decodewithshakti/
 ├── prisma/
 │   ├── schema.prisma
 │   └── seed.ts                     # creates the single admin account
-├── storage/                        # LOCAL DISK, outside public/, gitignored
-│   ├── questionbanks/{id}/original.pdf
-│   ├── questionbanks/{id}/preview.pdf
-│   └── invoices/{invoiceNumber}.pdf
+│                                   # Binary assets live on Cloudinary (not local disk):
+│                                   #   question-bank/{id}/original   (raw, authenticated)
+│                                   #   question-bank/{id}/preview    (raw, authenticated)
+│                                   #   question-bank/{id}/thumbnail  (image, public)
+│                                   #   invoices/{invoiceNumber}      (raw, authenticated)
 ├── src/
 │   ├── app/
 │   │   ├── (marketing)/page.tsx                      # landing page
@@ -120,7 +121,7 @@ decodewithshakti/
 │   ├── components/{ui,landing}/           # cross-feature/shared only
 │   ├── lib/
 │   │   ├── prisma.ts, auth.ts, auth-guards.ts
-│   │   ├── storage.ts, preview.ts (pdf-lib), invoice.ts (pdfkit), email.ts (nodemailer)
+│   │   ├── storage.ts (cloudinary), preview.ts (pdf-lib), invoice.ts (pdfkit), email.ts (resend)
 │   │   ├── watermark.ts (pdf-lib), pricing.ts (early-bird + coupon resolution)
 │   │   ├── payment/
 │   │   │   ├── provider.ts          # PaymentProvider interface
@@ -141,7 +142,8 @@ decodewithshakti/
 - **State**: `@tanstack/react-query`, `zustand`
 - Validation/forms: `zod`, `react-hook-form`, `@hookform/resolvers`
 - PDF: `pdf-lib` (preview truncation + watermarking + page count), `pdfkit` (invoice generation) — both pure JS, no native deps, easy on a VPS
-- Email: `nodemailer`
+- Email: `resend` (HTTP API SDK; `RESEND_API_KEY` + verified `EMAIL_FROM` domain)
+- Storage: `cloudinary` (Node SDK; `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET`)
 - UI: `shadcn/ui` (`new-york` style) + `lucide-react` + `@tanstack/react-table` (for admin data tables) + `react-day-picker` (date pickers) — Tailwind-based, sufficient for "basic animations" (no GSAP/Framer Motion, per "no custom motion design"). See **UI / Design System** section below for the full visual direction and component inventory.
 - **No payment SDK yet** — `@cashfreepayments/cashfree-js` and Cashfree server SDK are added only when the follow-up Cashfree plan runs.
 
@@ -170,8 +172,8 @@ No `Session`/`Account` tables needed — Auth.js runs JWT-only with the Credenti
 
 ## Admin Flows
 
-- **Upload** (`POST /api/v1/question-banks`, multipart): zod-validates metadata, restricts file type to PDF and a max size (`MAX_UPLOAD_MB` env), saves to `storage/questionbanks/{id}/original.pdf`, extracts `totalPages` via pdf-lib, and if preview is enabled, builds `preview.pdf` capped at `min(previewPageCount, totalPages)`.
-- **Manage/edit/delete**: list (including unpublished) with edit/delete actions; editing preview settings regenerates `preview.pdf` from the stored original; delete is blocked (via the FK `Restrict` + an explicit pre-check for a clean error) once a `Purchase` references the bank — admin unpublishes instead. Upload/edit form includes early-bird price + end-date fields (optional).
+- **Upload** (`POST /api/v1/question-banks`, multipart): zod-validates metadata, restricts file type to PDF and a max size (`MAX_UPLOAD_MB` env), uploads to Cloudinary as `question-bank/{id}/original` (raw, authenticated), extracts `totalPages` via pdf-lib, and if preview is enabled, uploads `question-bank/{id}/preview` capped at `min(previewPageCount, totalPages)`.
+- **Manage/edit/delete**: list (including unpublished) with edit/delete actions; editing preview settings regenerates the preview from the stored original; delete is blocked (via the FK `Restrict` + an explicit pre-check for a clean error) once a `Purchase` references the bank — admin unpublishes instead. Upload/edit form includes early-bird price + end-date fields (optional).
 - **Coupons** (`/dashboard/admin/coupons`): CRUD list — code (or auto-generate), discount type + value, expiry date, usage limit; table shows `usedCount / usageLimit` and expiry status; deactivate (`isActive = false`) instead of delete once used.
 - **Sales**: `/dashboard/admin/sales` — paginated, filterable table of `Purchase` rows joined to `User`/`QuestionBank`, showing base price, coupon applied, discount, final amount, and payment provider. Not an analytics dashboard (that's Phase 2).
 
@@ -181,7 +183,7 @@ No `Session`/`Account` tables needed — Auth.js runs JWT-only with the Credenti
 - **Preview**: `GET /api/v1/files/preview/[id]` serves only `previewFilePath` (never the original) and 404s if preview isn't enabled — the full file can never leak pre-purchase.
 - **Coupon entry**: optional coupon-code field calls `POST /api/v1/purchase/validate-coupon` (checks `isActive`, `expiresAt > now`, `usedCount < usageLimit`) to preview the discount; the same validation re-runs server-side at order creation — the client-previewed discount is never trusted as-is.
 - **Purchase** (mock provider — see below): `POST /api/v1/purchase/create-order` re-resolves the effective price and re-validates any coupon server-side, computes `amount`, creates a `PENDING` `Purchase` snapshotting price/coupon/discount, then hands off to the active `PaymentProvider`.
-- **Download** (`GET /api/v1/files/download/[purchaseId]`): verifies `purchase.userId === session.user.id && purchase.status === 'SUCCESS'`, then runs `lib/watermark.ts` over the original file **in memory** — student's email diagonally on every page — and streams the watermarked bytes. The clean original on disk is never modified. Same ownership pattern for invoice download (unwatermarked — it already identifies the buyer).
+- **Download** (`GET /api/v1/files/download/[purchaseId]`): verifies `purchase.userId === session.user.id && purchase.status === 'SUCCESS'`, then runs `lib/watermark.ts` over the original file **in memory** — student's email diagonally on every page — and streams the watermarked bytes. The clean original on Cloudinary is never modified. Same ownership pattern for invoice download (unwatermarked — it already identifies the buyer).
 
 ## Preview Generation (pdf-lib, synchronous, no queue needed at this scale)
 
@@ -198,10 +200,10 @@ await fs.promises.writeFile(previewPath, await previewDoc.save());
 
 ## Watermarking (pdf-lib, generated per-download, not stored)
 
-The original file on disk always stays clean. The download route stamps it on the fly:
+The original file on Cloudinary always stays clean. The download route stamps it on the fly:
 
 ```ts
-const srcDoc = await PDFDocument.load(await fs.promises.readFile(originalPath));
+const srcDoc = await PDFDocument.load(await readStoredFile(originalPublicId));
 const font = await srcDoc.embedFont(StandardFonts.Helvetica);
 for (const page of srcDoc.getPages()) {
   const { width, height } = page.getSize();
@@ -214,7 +216,7 @@ for (const page of srcDoc.getPages()) {
 const watermarked = await srcDoc.save();
 ```
 
-Kept in memory for the request duration, streamed directly — no watermarked copy persisted to disk. Runs only on the authenticated, ownership-checked download route, never on the public preview route.
+Kept in memory for the request duration, streamed directly — no watermarked copy persisted anywhere. Runs only on the authenticated, ownership-checked download route, never on the public preview route.
 
 ## Payment Provider Abstraction (Cashfree deferred to a follow-up plan)
 
@@ -234,17 +236,17 @@ This is the key structural decision for this plan: purchases must work end-to-en
 ## Deployment (client-owned AWS/VPS)
 
 - Ubuntu VPS/EC2: Node LTS, PostgreSQL (on-box or RDS), Nginx.
-- **PM2** path: `npm ci && npx prisma migrate deploy && npm run build`, `pm2 start ecosystem.config.js`, `pm2 startup && pm2 save`. (Docker is a viable alternative — mount a named volume over the storage path so redeploys don't wipe purchased files/invoices.)
+- **PM2** path: `npm ci && npx prisma migrate deploy && npm run build`, `pm2 start ecosystem.config.js`, `pm2 startup && pm2 save`. (Docker is a viable alternative — no storage volume needed now that files live on Cloudinary.)
 - Nginx reverse-proxies to `127.0.0.1:3000`, `client_max_body_size` raised to match `MAX_UPLOAD_MB`, SSL via certbot.
-- `STORAGE_ROOT` should be an **absolute path outside the git-managed app directory** (e.g. `/var/lib/decodewithshakti/storage`) so redeploys never touch uploaded files or invoices.
-- `.env` on the server holds `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `PAYMENT_PROVIDER=mock`, `SMTP_*`, `STORAGE_ROOT` — no `CASHFREE_*` needed until the follow-up plan.
+- File storage is Cloudinary — no server disk to provision or back up. Confirm the Cloudinary plan's raw-file size cap covers `MAX_UPLOAD_MB`.
+- `.env` on the server holds `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `PAYMENT_PROVIDER=mock`, `RESEND_API_KEY`, `EMAIL_FROM`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` — no `CASHFREE_*` needed until the follow-up plan.
 - **Health check**: unauthenticated `GET /api/v1/health` (DB ping + timestamp) — point an external uptime pinger at it.
-- Nightly `pg_dump` cron + periodic backup of `STORAGE_ROOT`.
+- Nightly `pg_dump` cron (Cloudinary holds its own copies of uploaded assets).
 - Rate-limit login/forgot-password routes with a lightweight in-memory limiter.
 
 ## Build Order
 
-1. **Docs + design sign-off + foundations** — write `docs/BRD.md`, `docs/HLD.md`, `docs/RTM.md` (skeleton, filled in as each module lands), root `CLAUDE.md`; build the `mockup/` static HTML screens (landing, catalog, detail/checkout, student dashboard, admin dashboard, admin question-bank form) and get visual sign-off before real UI work starts; Next.js scaffold (route groups, `src/features/`, `src/stores/`), Tailwind/shadcn (`new-york` theme tokens), TanStack Query + Zustand setup, Prisma schema (incl. `Coupon`, early-bird fields, `paymentProvider`) + migration + admin seed, Auth.js (login/register/forgot/reset) against a dev SMTP, role-guard middleware.
+1. **Docs + design sign-off + foundations** — write `docs/BRD.md`, `docs/HLD.md`, `docs/RTM.md` (skeleton, filled in as each module lands), root `CLAUDE.md`; build the `mockup/` static HTML screens (landing, catalog, detail/checkout, student dashboard, admin dashboard, admin question-bank form) and get visual sign-off before real UI work starts; Next.js scaffold (route groups, `src/features/`, `src/stores/`), Tailwind/shadcn (`new-york` theme tokens), TanStack Query + Zustand setup, Prisma schema (incl. `Coupon`, early-bird fields, `paymentProvider`) + migration + admin seed, Auth.js (login/register/forgot/reset) with Resend, role-guard middleware.
 2. **Admin core** — storage lib, upload API + form (incl. early-bird fields), pdf-lib preview truncation, edit/delete, admin dashboard shell, coupon CRUD.
 3. **Landing page + student browse** — Hero/Features/Pricing/Testimonials/FAQ, public question-bank list + filter, detail page with embedded preview and early-bird price display.
 4. **Purchase flow (mock provider)** — `lib/pricing.ts`, coupon validation endpoint, `lib/payment/provider.ts` + `mock-provider.ts` + `finalize-purchase.ts`, create-order route, return-URL page, ownership-checked + watermarked download route.
@@ -262,14 +264,14 @@ This sequencing loosely tracks the quotation's ~1 week timeline for steps 1–7,
 - `src/lib/auth.ts` — Auth.js config
 - `src/middleware.ts` — role guards
 - `src/lib/payment/provider.ts` + `mock-provider.ts` + `finalize-purchase.ts` — the payment seam Cashfree will later plug into
-- `src/lib/storage.ts` + `src/lib/preview.ts` — file handling + preview truncation
+- `src/lib/storage.ts` (Cloudinary) + `src/lib/preview.ts` — file handling + preview truncation
 - `src/lib/pricing.ts` — early-bird + coupon effective-price resolution
 - `src/lib/watermark.ts` — per-download email watermarking
 - `src/app/api/v1/files/download/[purchaseId]/route.ts` — ownership-checked, watermarked download
 
 ## Verification
 
-- **Auth**: register a student, log in as both roles, confirm `/dashboard/admin` blocks students and vice versa; run the forgot/reset-password flow end to end against a dev SMTP.
+- **Auth**: register a student, log in as both roles, confirm `/dashboard/admin` blocks students and vice versa; run the forgot/reset-password flow end to end against a live Resend key.
 - **Upload + preview**: upload a multi-page PDF with preview enabled at N pages; confirm the preview route returns exactly N pages and the download route is unreachable pre-purchase.
 - **Purchase (mock)**: run a purchase through the mock provider, confirm it transitions straight to `SUCCESS`, an `Invoice` row + PDF are created, and the download route now succeeds for the purchaser only (test with a second, non-purchasing account to confirm 403).
 - **Early bird**: set a bank's `earlyBirdEndsAt` in the past vs. future and confirm the displayed/charged price flips correctly at the boundary.

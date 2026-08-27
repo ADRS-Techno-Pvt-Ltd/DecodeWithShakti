@@ -1,4 +1,20 @@
+import { existsSync } from "node:fs";
+import path from "node:path";
 import PDFDocument from "pdfkit";
+
+/** Brand lockup used on the invoice header — see `public/logo.png` (from `Logo/`). */
+const LOGO_PATH = path.join(process.cwd(), "public", "logo.png");
+const LOGO_ASPECT = 298 / 1000; // intrinsic h/w of public/logo.png
+
+/** Palette mirrors the app design tokens in `src/app/globals.css` (light theme). */
+const INK = "#1b1b2f";
+const PRIMARY = "#352f9e";
+const PRIMARY_DARK = "#251f73";
+const MUTED = "#54546b";
+const BORDER = "#e5e4f1";
+const SUCCESS = "#157f4d";
+const ZEBRA = "#f4f3fb";
+const WHITE = "#ffffff";
 
 export type InvoiceData = {
   invoiceNumber: string;
@@ -14,7 +30,14 @@ export type InvoiceData = {
 };
 
 function formatRupees(paise: number): string {
-  return `Rs. ${(paise / 100).toFixed(2)}`;
+  return `Rs. ${(paise / 100).toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
+function formatDate(d: Date): string {
+  return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 }
 
 export async function generateInvoicePdf(data: InvoiceData): Promise<Uint8Array> {
@@ -27,37 +50,188 @@ export async function generateInvoicePdf(data: InvoiceData): Promise<Uint8Array>
   });
 
   const companyName = process.env.INVOICE_COMPANY_NAME ?? "Decode with Shakti";
+  const companyAddress = process.env.INVOICE_COMPANY_ADDRESS ?? null;
+  const companyEmail = process.env.INVOICE_COMPANY_EMAIL ?? null;
+  const companyGstin = process.env.INVOICE_COMPANY_GSTIN ?? null;
+  const companyWebsite = process.env.INVOICE_COMPANY_WEBSITE ?? null;
 
-  doc.fontSize(20).text(companyName, { continued: false });
-  doc.moveDown(0.5);
-  doc.fontSize(10).fillColor("#666").text("Tax Invoice");
-  doc.moveDown(1.5);
+  const left = doc.page.margins.left;
+  const right = doc.page.width - doc.page.margins.right;
+  const contentWidth = right - left;
 
-  doc.fillColor("#000").fontSize(12);
-  doc.text(`Invoice Number: ${data.invoiceNumber}`);
-  doc.text(`Date: ${data.issuedAt.toLocaleDateString("en-IN")}`);
-  doc.moveDown(1);
+  // --- top accent bar (full bleed) ---
+  doc.rect(0, 0, doc.page.width, 6).fill(PRIMARY);
 
-  doc.text("Bill To:");
-  doc.text(data.buyerName);
-  doc.text(data.buyerEmail);
-  doc.moveDown(1.5);
+  // --- header: brand lockup (left) + invoice heading (right) ---
+  let brandBottom = 50;
+  const logoWidth = 190;
+  if (existsSync(LOGO_PATH)) {
+    try {
+      doc.image(LOGO_PATH, left, 46, { width: logoWidth });
+      brandBottom = 46 + logoWidth * LOGO_ASPECT;
+    } catch {
+      doc.font("Helvetica-Bold").fontSize(20).fillColor(INK).text(companyName, left, 50);
+      brandBottom = 82;
+    }
+  } else {
+    doc.font("Helvetica-Bold").fontSize(20).fillColor(INK).text(companyName, left, 50);
+    brandBottom = 82;
+  }
 
-  doc.fontSize(12).text(data.itemTitle);
-  doc.moveDown(0.5);
+  doc
+    .font("Helvetica-Bold")
+    .fontSize(22)
+    .fillColor(PRIMARY_DARK)
+    .text("TAX INVOICE", left, 50, { width: contentWidth, align: "right", characterSpacing: 1 });
+  doc
+    .font("Helvetica")
+    .fontSize(10)
+    .fillColor(MUTED)
+    .text(data.invoiceNumber, left, 80, { width: contentWidth, align: "right" })
+    .text(`Issued ${formatDate(data.issuedAt)}`, left, 94, { width: contentWidth, align: "right" });
 
-  doc.fontSize(11);
-  doc.text(`Base price: ${formatRupees(data.basePrice)}`);
+  let y = Math.max(brandBottom, 110) + 24;
+
+  doc.moveTo(left, y).lineTo(right, y).lineWidth(1).strokeColor(BORDER).stroke();
+  y += 22;
+
+  // --- billed to / from (two columns) ---
+  const colGap = 24;
+  const colW = (contentWidth - colGap) / 2;
+  const rightColX = left + colW + colGap;
+
+  function partyBlock(x: number, startY: number, label: string, lines: string[]): number {
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(8)
+      .fillColor(MUTED)
+      .text(label.toUpperCase(), x, startY, { width: colW, characterSpacing: 1 });
+    let ly = startY + 15;
+    lines.filter(Boolean).forEach((line, i) => {
+      doc
+        .font(i === 0 ? "Helvetica-Bold" : "Helvetica")
+        .fontSize(i === 0 ? 11 : 9.5)
+        .fillColor(i === 0 ? INK : MUTED)
+        .text(line, x, ly, { width: colW });
+      ly = doc.y + 3;
+    });
+    return ly;
+  }
+
+  const fromLines = [companyName];
+  if (companyGstin) fromLines.push(`GSTIN: ${companyGstin}`);
+  if (companyAddress) fromLines.push(companyAddress);
+  if (companyEmail) fromLines.push(companyEmail);
+  if (companyWebsite) fromLines.push(companyWebsite);
+
+  const billedBottom = partyBlock(left, y, "Billed To", [data.buyerName, data.buyerEmail]);
+  const fromBottom = partyBlock(rightColX, y, "From", fromLines);
+  y = Math.max(billedBottom, fromBottom) + 26;
+
+  // --- line items table ---
+  const cellPad = 12;
+  const descX = left + cellPad;
+  const amtColW = 120;
+  const amtColX = right - amtColW - cellPad;
+  const qtyColW = 44;
+  const qtyColX = amtColX - qtyColW - cellPad;
+  const descColW = qtyColX - descX - cellPad;
+
+  doc.rect(left, y, contentWidth, 24).fill(PRIMARY);
+  doc.font("Helvetica-Bold").fontSize(8.5).fillColor(WHITE);
+  doc.text("DESCRIPTION", descX, y + 8, { width: descColW, characterSpacing: 0.5 });
+  doc.text("QTY", qtyColX, y + 8, { width: qtyColW, align: "right", characterSpacing: 0.5 });
+  doc.text("AMOUNT", amtColX, y + 8, { width: amtColW, align: "right", characterSpacing: 0.5 });
+  y += 24;
+
+  doc.font("Helvetica").fontSize(10);
+  const descHeight = doc.heightOfString(data.itemTitle, { width: descColW });
+  const rowHeight = Math.max(descHeight + 16, 30);
+  doc.rect(left, y, contentWidth, rowHeight).fill(ZEBRA);
+  doc.fillColor(INK).font("Helvetica").fontSize(10).text(data.itemTitle, descX, y + 8, { width: descColW });
+  doc.fillColor(MUTED).text("1", qtyColX, y + 8, { width: qtyColW, align: "right" });
+  doc
+    .fillColor(INK)
+    .text(formatRupees(data.basePrice), amtColX, y + 8, { width: amtColW, align: "right" });
+  y += rowHeight;
+
+  doc.moveTo(left, y).lineTo(right, y).lineWidth(1).strokeColor(BORDER).stroke();
+  y += 20;
+
+  // --- PAID badge (left) + totals (right) ---
+  const summaryTop = y;
+  doc.roundedRect(left, summaryTop, 78, 26, 4).fill(SUCCESS);
+  doc
+    .font("Helvetica-Bold")
+    .fontSize(11)
+    .fillColor(WHITE)
+    .text("PAID", left, summaryTop + 8, { width: 78, align: "center", characterSpacing: 1 });
+
+  const sumW = 250;
+  const sumX = right - sumW;
+  const sumHalf = sumW / 2;
+
+  function summaryRow(
+    label: string,
+    value: string,
+    opts: { bold?: boolean; size?: number; color?: string } = {},
+  ) {
+    const size = opts.size ?? 10;
+    const font = opts.bold ? "Helvetica-Bold" : "Helvetica";
+    doc.font(font).fontSize(size).fillColor(opts.color ?? MUTED).text(label, sumX, y, { width: sumHalf });
+    doc
+      .font(font)
+      .fontSize(size)
+      .fillColor(opts.color ?? INK)
+      .text(value, sumX + sumHalf, y, { width: sumHalf, align: "right" });
+    y = doc.y + 7;
+  }
+
+  summaryRow("Subtotal", formatRupees(data.basePrice));
   if (data.discountAmount > 0) {
-    doc.text(
-      `Discount${data.couponCode ? ` (${data.couponCode})` : ""}: -${formatRupees(data.discountAmount)}`,
+    summaryRow(
+      `Discount${data.couponCode ? ` (${data.couponCode})` : ""}`,
+      `-${formatRupees(data.discountAmount)}`,
+      { color: SUCCESS },
     );
   }
-  doc.moveDown(0.5);
-  doc.fontSize(13).text(`Total Paid: ${formatRupees(data.totalAmount)}`, { underline: true });
-  doc.moveDown(1);
+  y += 2;
+  doc.moveTo(sumX, y).lineTo(right, y).lineWidth(1).strokeColor(BORDER).stroke();
+  y += 12;
+  summaryRow("Total Paid", formatRupees(data.totalAmount), {
+    bold: true,
+    size: 13,
+    color: PRIMARY_DARK,
+  });
 
-  doc.fontSize(10).fillColor("#666").text(`Paid via ${data.paymentProvider} provider.`);
+  // --- footer (pinned near page bottom) ---
+  const footerY = doc.page.height - doc.page.margins.bottom - 68;
+  doc.moveTo(left, footerY).lineTo(right, footerY).lineWidth(1).strokeColor(BORDER).stroke();
+  doc
+    .font("Helvetica")
+    .fontSize(9)
+    .fillColor(MUTED)
+    .text(
+      `Payment received via ${data.paymentProvider} on ${formatDate(data.issuedAt)}.`,
+      left,
+      footerY + 12,
+      { width: contentWidth },
+    );
+  doc
+    .font("Helvetica-Bold")
+    .fontSize(10)
+    .fillColor(INK)
+    .text("Thank you for your purchase.", left, footerY + 28, { width: contentWidth });
+  doc
+    .font("Helvetica")
+    .fontSize(8)
+    .fillColor(MUTED)
+    .text(
+      "This is a computer-generated invoice and does not require a signature.",
+      left,
+      footerY + 44,
+      { width: contentWidth },
+    );
 
   doc.end();
   return done;

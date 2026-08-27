@@ -34,6 +34,8 @@ export type QuestionBankUpdateInput = {
   earlyBirdPrice?: number;
   earlyBirdEndsAt?: string;
   isPublished: boolean;
+  isFeatured: boolean;
+  features: string[];
 };
 
 export async function updateQuestionBank(

@@ -32,7 +32,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
 
     const bytes = Buffer.from(await thumbnail.arrayBuffer());
-    const savedThumbnailPath = await saveThumbnailFile(id, bytes, ext);
+    const savedThumbnailPath = await saveThumbnailFile(id, bytes);
 
     const updated = await prisma.questionBank.update({
       where: { id },
@@ -43,7 +43,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const { thumbnailPath, ...bankDto } = updated;
     return NextResponse.json({
       ...bankDto,
-      thumbnailUrl: thumbnailUrlFor(updated.id, thumbnailPath, updated.updatedAt),
+      thumbnailUrl: thumbnailUrlFor(thumbnailPath),
     });
   } catch (err) {
     return toErrorResponse(err);

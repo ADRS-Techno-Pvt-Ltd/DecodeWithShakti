@@ -1,22 +1,40 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, BookOpen, CheckCircle2, Eye } from "lucide-react";
+import { ArrowLeft, BookOpen, Eye } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { resolveEffectivePrice } from "@/lib/pricing";
 import { thumbnailUrlFor } from "@/lib/thumbnail";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Reveal } from "@/components/landing/reveal";
-import { StatusBadge } from "@/components/dashboard/status-badge";
+import { SiteHeader } from "@/components/site-header";
 import { PurchaseCard } from "./purchase-card";
 
-const included = [
-  "Watermarked with your account email on download",
-  "Lifetime access from your student dashboard",
-  "Auto-generated invoice on purchase",
-];
+/** Dotted-paper backdrop, matched to the checkout mockup. */
+const paperBg: React.CSSProperties = {
+  backgroundImage: "radial-gradient(var(--border) 0.7px, transparent 0.7px)",
+  backgroundSize: "22px 22px",
+};
+
+function Folder({
+  tab,
+  className = "",
+  children,
+}: {
+  tab: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className={`relative rounded-[2px_14px_14px_14px] border border-border bg-card px-7 pt-7 pb-7 ${className}`}
+    >
+      <span className="absolute -top-[17px] left-6 rounded-t-[7px] border border-b-0 border-border bg-card px-2.5 py-[3px] font-mono text-[11px] tracking-[0.06em] text-primary-light uppercase">
+        {tab}
+      </span>
+      {children}
+    </div>
+  );
+}
 
 export default async function QuestionBankDetailPage({
   params,
@@ -40,85 +58,88 @@ export default async function QuestionBankDetailPage({
 
   const effectivePrice = resolveEffectivePrice(bank);
   const earlyBirdActive = effectivePrice < bank.price;
-  const thumbnailUrl = thumbnailUrlFor(bank.id, bank.thumbnailPath, bank.updatedAt);
+  const thumbnailUrl = thumbnailUrlFor(bank.thumbnailPath);
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-7 py-10 2xl:max-w-[1440px]">
-      <nav className="mb-8">
+    <div className="min-h-full" style={paperBg}>
+      <SiteHeader />
+
+      <main className="mx-auto w-full max-w-6xl px-7 py-14 2xl:max-w-[1440px]">
         <Link
           href="/question-banks"
-          className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+          className="mb-6 inline-flex items-center gap-1.5 text-[14px] font-medium text-muted-foreground hover:text-primary"
         >
-          <ArrowLeft className="h-4 w-4" /> Back to Catalog
+          <ArrowLeft className="h-4 w-4" />
+          Back to catalog
         </Link>
-      </nav>
+        <div className="mb-7">
+          <span className="inline-block rounded-[5px] border border-primary/25 bg-accent px-3 py-1.5 font-mono text-[11.5px] tracking-[0.11em] text-primary-dark uppercase">
+            {bank.category.name} · Question bank
+          </span>
+        </div>
 
-      <Badge variant="secondary">{bank.category.name}</Badge>
-      <h1 className="font-heading mt-2.5 text-2xl font-bold md:text-3xl">{bank.title}</h1>
-      <p className="mt-2.5 max-w-2xl text-muted-foreground">{bank.description}</p>
+        <div className="grid max-w-5xl grid-cols-1 items-start gap-9 lg:grid-cols-[1fr_340px]">
+          <Reveal className="flex flex-col gap-8">
+            <Folder tab="Preview">
+              {bank.previewEnabled ? (
+                <span className="mb-5 inline-flex items-center gap-1.5 rounded-full bg-success/10 px-2.5 py-1 font-mono text-[10.5px] tracking-[0.05em] text-success uppercase">
+                  <span className="h-1.5 w-1.5 rounded-full bg-success" />
+                  Preview enabled
+                </span>
+              ) : (
+                <span className="mb-5 inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 font-mono text-[10.5px] tracking-[0.05em] text-muted-foreground uppercase">
+                  Preview not available
+                </span>
+              )}
 
-      <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[1.4fr_1fr]">
-        <Reveal>
-          <Card>
-            <CardHeader className="flex-row items-center justify-between">
-              <CardTitle className="text-base">
-                {bank.previewEnabled ? "Preview" : "Preview not available"}
-              </CardTitle>
-              {bank.previewEnabled && <StatusBadge tone="success">Preview enabled</StatusBadge>}
-            </CardHeader>
-            <CardContent>
-              <div className="flex aspect-video items-center justify-center overflow-hidden rounded-md border bg-muted text-primary">
+              <div className="mb-6 flex items-center justify-center rounded-[10px] border border-border bg-accent px-6 py-9">
                 {thumbnailUrl ? (
-                  <img src={thumbnailUrl} alt="" className="h-full w-full object-contain" />
+                  <img
+                    src={thumbnailUrl}
+                    alt=""
+                    className="w-[220px] max-w-full rounded-[4px] shadow-[0_20px_34px_-18px_rgba(53,47,158,0.35)]"
+                  />
                 ) : (
-                  <BookOpen className="h-10 w-10" strokeWidth={1.5} />
+                  <div className="flex aspect-3/4 w-[200px] items-center justify-center rounded-[4px] bg-card text-primary-light shadow-[0_20px_34px_-18px_rgba(53,47,158,0.35)]">
+                    <BookOpen className="h-10 w-10" strokeWidth={1.5} />
+                  </div>
                 )}
               </div>
+
+              <span className="inline-block rounded-[6px] border border-primary/25 bg-accent px-2.5 py-0.5 text-xs font-medium text-primary-dark">
+                {bank.category.name}
+              </span>
+              <h1 className="font-heading mt-2.5 text-[32px] leading-tight font-medium">
+                {bank.title}
+              </h1>
+              <p className="mt-2 text-[15px] text-muted-foreground">{bank.description}</p>
+
               {bank.previewEnabled && (
-                <Button
-                  variant="outline"
-                  className="mt-4"
-                  render={
-                    <a href={`/api/v1/files/preview/${bank.id}`} target="_blank" rel="noopener noreferrer">
-                      <Eye className="h-4 w-4" />
-                      Preview first {bank.previewPageCount} of {bank.totalPages ?? "?"} pages
-                    </a>
-                  }
-                />
+                <a
+                  href={`/api/v1/files/preview/${bank.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-5 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-accent px-3.5 py-2 text-[13.5px] font-medium text-primary hover:bg-primary/10"
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                  Preview first {bank.previewPageCount} of {bank.totalPages ?? "?"} pages
+                </a>
               )}
-            </CardContent>
-          </Card>
+            </Folder>
+          </Reveal>
 
-          <Card className="mt-5">
-            <CardHeader>
-              <CardTitle className="text-base">What&apos;s included</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-2.5 text-sm">
-              <p className="text-muted-foreground">{bank.description}</p>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
-                {bank.totalPages ?? "—"}-page downloadable PDF
-              </div>
-              {included.map((item) => (
-                <div key={item} className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
-                  {item}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </Reveal>
-
-        <Reveal delay={120}>
-          <PurchaseCard
-            questionBankId={bank.id}
-            basePrice={effectivePrice}
-            regularPrice={bank.price}
-            earlyBirdActive={earlyBirdActive}
-            alreadyOwned={alreadyOwned}
-          />
-        </Reveal>
-      </div>
+          <Reveal delay={120}>
+            <PurchaseCard
+              questionBankId={bank.id}
+              basePrice={effectivePrice}
+              regularPrice={bank.price}
+              earlyBirdActive={earlyBirdActive}
+              alreadyOwned={alreadyOwned}
+              features={bank.features}
+            />
+          </Reveal>
+        </div>
+      </main>
     </div>
   );
 }

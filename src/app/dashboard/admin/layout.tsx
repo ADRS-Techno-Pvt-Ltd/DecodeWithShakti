@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { LayoutDashboard, BookOpen, Tag, Wallet, LineChart, Users } from "lucide-react";
+import { LayoutDashboard, BookOpen, Tag, Wallet, HelpCircle } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { DashboardShell, type NavItem } from "@/components/dashboard/dashboard-shell";
 
@@ -8,11 +8,7 @@ const navItems: NavItem[] = [
   { href: "/dashboard/admin/question-banks", label: "Question Banks", icon: <BookOpen /> },
   { href: "/dashboard/admin/coupons", label: "Coupons", icon: <Tag /> },
   { href: "/dashboard/admin/sales", label: "Sales", icon: <Wallet /> },
-];
-
-const comingSoonItems: NavItem[] = [
-  { href: "#", label: "Analytics", icon: <LineChart /> },
-  { href: "#", label: "Team / Sub-admins", icon: <Users /> },
+  { href: "/dashboard/admin/faqs", label: "FAQ", icon: <HelpCircle /> },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -23,7 +19,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <DashboardShell
       brand="Decode with Shakti"
       navItems={navItems}
-      comingSoonItems={comingSoonItems}
       userName={session.user.name ?? "Admin"}
       userEmail={session.user.email ?? ""}
       roleLabel="Administrator"

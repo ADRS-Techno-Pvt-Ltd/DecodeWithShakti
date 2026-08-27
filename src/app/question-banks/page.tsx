@@ -1,10 +1,9 @@
 import Link from "next/link";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { resolveEffectivePrice } from "@/lib/pricing";
 import { thumbnailUrlFor } from "@/lib/thumbnail";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { SiteHeader } from "@/components/site-header";
 import { QuestionBankCard } from "@/features/question-banks/question-bank-card";
 
 const filterPillClass =
@@ -19,8 +18,7 @@ export default async function QuestionBankCatalogPage({
   const { category } = await searchParams;
   const categorySlug = typeof category === "string" ? category : undefined;
 
-  const [session, banks, categories] = await Promise.all([
-    auth(),
+  const [banks, categories] = await Promise.all([
     prisma.questionBank.findMany({
       where: {
         isPublished: true,
@@ -32,28 +30,10 @@ export default async function QuestionBankCatalogPage({
     prisma.category.findMany({ orderBy: { name: "asc" } }),
   ]);
 
-  const dashboardHref = session?.user?.role === "ADMIN" ? "/dashboard/admin" : "/dashboard/student";
-
   return (
-    <div className="mx-auto w-full max-w-6xl px-7 py-10 2xl:max-w-[1440px]">
-      <nav className="mb-8 flex items-center justify-between">
-        <Link href="/" className="font-heading flex items-center gap-2.5 font-semibold">
-          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-primary-light to-primary-dark text-xs font-bold text-white">
-            D
-          </span>
-          Decode with Shakti
-        </Link>
-        {session?.user ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            render={<Link href={dashboardHref}>{session.user.name ?? "Dashboard"}</Link>}
-          />
-        ) : (
-          <Button variant="ghost" size="sm" render={<Link href="/login">Log in</Link>} />
-        )}
-      </nav>
-
+    <>
+      <SiteHeader />
+      <div className="mx-auto w-full max-w-6xl px-7 py-10 2xl:max-w-[1440px]">
       <h1 className="font-heading text-3xl font-bold">Browse Question Banks</h1>
       <p className="mt-1 text-muted-foreground">
         {banks.length} question bank{banks.length === 1 ? "" : "s"} available right now.
@@ -103,12 +83,13 @@ export default async function QuestionBankCatalogPage({
                 price={bank.price}
                 effectivePrice={effectivePrice}
                 previewEnabled={bank.previewEnabled}
-                thumbnailUrl={thumbnailUrlFor(bank.id, bank.thumbnailPath, bank.updatedAt)}
+                thumbnailUrl={thumbnailUrlFor(bank.thumbnailPath)}
               />
             );
           })}
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }

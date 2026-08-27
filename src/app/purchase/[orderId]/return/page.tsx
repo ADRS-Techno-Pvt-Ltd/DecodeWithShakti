@@ -6,7 +6,6 @@ import { requireStudent } from "@/lib/auth-guards";
 import { getPaymentProvider } from "@/lib/payment";
 import { finalizePurchase } from "@/lib/payment/finalize-purchase";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 
 export default async function PurchaseReturnPage({
   params,
@@ -48,7 +47,12 @@ export default async function PurchaseReturnPage({
               ? `You now have access to "${purchase.questionBank.title}". An invoice has been generated.`
               : "Something went wrong with this payment. No charge was completed."}
           </p>
-          <Button className="mt-6 w-full" render={<Link href="/dashboard/student">Go to My Purchases</Link>} />
+          <Link
+            href="/dashboard/student"
+            className="mt-6 block w-full rounded-[9px] bg-primary-light py-3 text-center text-[15px] font-medium text-white transition-colors hover:bg-primary"
+          >
+            Go to My Purchases
+          </Link>
         </CardContent>
       </Card>
     </div>

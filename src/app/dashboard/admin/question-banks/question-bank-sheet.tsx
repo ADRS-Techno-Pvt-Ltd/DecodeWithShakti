@@ -1,17 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus, X } from "lucide-react";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -42,6 +42,8 @@ type FormValues = {
   earlyBirdPrice: string;
   earlyBirdEndsAt: string;
   isPublished: boolean;
+  isFeatured: boolean;
+  features: { value: string }[];
   file: FileList | null;
   thumbnail: FileList | null;
 };
@@ -79,6 +81,7 @@ export function QuestionBankSheet({
     watch,
     reset,
     setValue,
+    control,
     formState: { errors },
   } = useForm<FormValues>({
     defaultValues: {
@@ -92,9 +95,16 @@ export function QuestionBankSheet({
       earlyBirdPrice: "",
       earlyBirdEndsAt: "",
       isPublished: true,
+      isFeatured: false,
+      features: [],
       file: null,
       thumbnail: null,
     },
+  });
+
+  const { fields: featureFields, append: appendFeature, remove: removeFeature } = useFieldArray({
+    control,
+    name: "features",
   });
 
   useEffect(() => {
@@ -110,6 +120,8 @@ export function QuestionBankSheet({
         earlyBirdPrice: editing.earlyBirdPrice ? paiseToRupees(editing.earlyBirdPrice) : "",
         earlyBirdEndsAt: toDatetimeLocal(editing.earlyBirdEndsAt),
         isPublished: editing.isPublished,
+        isFeatured: editing.isFeatured,
+        features: (editing.features ?? []).map((value) => ({ value })),
         file: null,
         thumbnail: null,
       });
@@ -125,6 +137,8 @@ export function QuestionBankSheet({
         earlyBirdPrice: "",
         earlyBirdEndsAt: "",
         isPublished: true,
+        isFeatured: false,
+        features: [],
         file: null,
         thumbnail: null,
       });
@@ -151,6 +165,9 @@ export function QuestionBankSheet({
 
   async function onSubmit(values: FormValues) {
     setSubmitting(true);
+    const features = values.features
+      .map((f) => f.value.trim())
+      .filter((v) => v.length > 0);
     try {
       if (editing) {
         await updateQuestionBank(editing.id, {
@@ -165,6 +182,8 @@ export function QuestionBankSheet({
             ? new Date(values.earlyBirdEndsAt).toISOString()
             : undefined,
           isPublished: values.isPublished,
+          isFeatured: values.isFeatured,
+          features,
         });
         if (values.thumbnail && values.thumbnail.length > 0) {
           await replaceQuestionBankThumbnail(editing.id, values.thumbnail[0]);
@@ -188,6 +207,8 @@ export function QuestionBankSheet({
           formData.set("earlyBirdEndsAt", new Date(values.earlyBirdEndsAt).toISOString());
         }
         formData.set("isPublished", String(values.isPublished));
+        formData.set("isFeatured", String(values.isFeatured));
+        formData.set("features", JSON.stringify(features));
         formData.set("file", values.file[0]);
         if (values.thumbnail && values.thumbnail.length > 0) {
           formData.set("thumbnail", values.thumbnail[0]);
@@ -205,15 +226,26 @@ export function QuestionBankSheet({
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex flex-col gap-0 overflow-y-auto sm:max-w-md">
-        <SheetHeader>
-          <SheetTitle>{editing ? "Edit Question Bank" : "Upload Question Bank"}</SheetTitle>
-          <SheetDescription>PDF only</SheetDescription>
-        </SheetHeader>
+    <Dialog
+      open={open}
+      // Only close via the ✕ button, the Cancel button, or a successful save —
+      // ignore backdrop clicks, Escape, and focus-out so a half-filled form isn't lost.
+      onOpenChange={(next, details) => {
+        if (!next && details?.reason !== "close-press" && details?.reason !== "imperative-action") {
+          return;
+        }
+        onOpenChange(next);
+      }}
+      disablePointerDismissal
+    >
+      <DialogContent className="flex max-h-[85vh] w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
+        <DialogHeader className="border-b px-6 py-4">
+          <DialogTitle>{editing ? "Edit Question Bank" : "Upload Question Bank"}</DialogTitle>
+          <DialogDescription>PDF only</DialogDescription>
+        </DialogHeader>
         <form
           onSubmit={handleSubmit(onSubmit)}
-          className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 py-4"
+          className="no-scrollbar flex flex-1 flex-col gap-4 overflow-y-auto px-6 py-5"
         >
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="title">Title</Label>
@@ -233,7 +265,11 @@ export function QuestionBankSheet({
                 onValueChange={(v) => setValue("categoryId", v ?? "")}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select category" />
+                  <SelectValue placeholder="Select category">
+                    {(value) =>
+                      categories.find((c) => c.id === value)?.name ?? "Select category"
+                    }
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {categories.map((c) => (
@@ -370,6 +406,65 @@ export function QuestionBankSheet({
             )}
           </div>
 
+          <div className="rounded-lg border p-3.5">
+            <div className="flex items-center gap-2.5">
+              <Switch
+                checked={watch("isFeatured")}
+                onCheckedChange={(v) => setValue("isFeatured", v)}
+              />
+              <span className="text-sm font-medium">Feature on landing page</span>
+            </div>
+            <p className="text-muted-foreground mt-1.5 text-xs">
+              Featured banks fill the &ldquo;Priced per bank&rdquo; section on the home page.
+            </p>
+          </div>
+
+          <div className="rounded-lg border p-3.5">
+            <div className="flex flex-col gap-1">
+              <span className="text-sm font-medium">Highlights (optional)</span>
+              <p className="text-muted-foreground text-xs">
+                Short selling points shown as a checklist on the detail page and landing card.
+              </p>
+            </div>
+            <div className="mt-3 flex flex-col gap-2">
+              {featureFields.map((field, index) => (
+                <div key={field.id} className="flex items-center gap-2">
+                  <Input
+                    placeholder={`e.g. ${
+                      index === 0
+                        ? "12-page free preview"
+                        : index === 1
+                          ? "600 questions, answer key included"
+                          : "Instant download after purchase"
+                    }`}
+                    {...register(`features.${index}.value` as const, { maxLength: 120 })}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Remove highlight"
+                    onClick={() => removeFeature(index)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+            {featureFields.length < 8 && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mt-2.5"
+                onClick={() => appendFeature({ value: "" })}
+              >
+                <Plus className="mr-1.5 h-3.5 w-3.5" />
+                Add highlight
+              </Button>
+            )}
+          </div>
+
           <div className="flex items-center gap-2.5">
             <Switch
               checked={watch("isPublished")}
@@ -378,15 +473,15 @@ export function QuestionBankSheet({
             <span className="text-sm font-medium">Published (visible to students)</span>
           </div>
         </form>
-        <SheetFooter className="flex-row justify-end gap-2 border-t">
+        <DialogFooter className="mx-0 mb-0 rounded-b-xl border-t px-6 py-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
           <Button onClick={handleSubmit(onSubmit)} disabled={submitting}>
             {submitting ? "Saving…" : "Save Question Bank"}
           </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

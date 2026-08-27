@@ -107,11 +107,14 @@ export default function AdminQuestionBanksPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      {bank.isPublished ? (
-                        <StatusBadge tone="success">Published</StatusBadge>
-                      ) : (
-                        <Badge variant="secondary">Unpublished</Badge>
-                      )}
+                      <div className="flex flex-wrap gap-1.5">
+                        {bank.isPublished ? (
+                          <StatusBadge tone="success">Published</StatusBadge>
+                        ) : (
+                          <Badge variant="secondary">Unpublished</Badge>
+                        )}
+                        {bank.isFeatured && <Badge variant="outline">Featured</Badge>}
+                      </div>
                     </TableCell>
                     <TableCell className="flex gap-2">
                       <Button variant="outline" size="sm" onClick={() => openEdit(bank)}>

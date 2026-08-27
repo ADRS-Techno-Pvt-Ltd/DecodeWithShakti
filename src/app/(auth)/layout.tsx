@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Eye, ShieldCheck, ListChecks } from "lucide-react";
 import { AuthCardMotion } from "@/components/landing/auth-card-motion";
+import { BrandLogo } from "@/components/brand-logo";
 
 const trustPoints = [
   { icon: Eye, text: "Preview real pages before you pay" },
@@ -23,10 +24,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
         <Link
           href="/"
-          className="font-heading relative flex items-center gap-2.5 text-[19px] font-semibold"
+          className="font-heading relative flex items-center gap-2.5 text-[19px] font-semibold text-white"
         >
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15 text-[15px] font-bold text-white ring-1 ring-white/25">
-            D
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white p-1 ring-1 ring-white/25">
+            <BrandLogo href={null} variant="mark" imgClassName="h-full w-full object-contain" />
           </span>
           Decode with Shakti
         </Link>
@@ -65,15 +66,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           className="pointer-events-none absolute -bottom-24 -left-20 h-72 w-72 rounded-full bg-gold-pale/70 blur-3xl"
         />
 
-        <Link
-          href="/"
-          className="font-heading relative flex items-center gap-2.5 px-6 pt-6 text-[17px] font-semibold lg:hidden"
-        >
-          <span className="flex h-7.5 w-7.5 items-center justify-center rounded-lg bg-gradient-to-br from-primary-light to-primary-dark text-[14px] font-bold text-white">
-            D
-          </span>
-          Decode with Shakti
-        </Link>
+        <div className="relative px-6 pt-6 lg:hidden">
+          <BrandLogo imgClassName="h-7 w-auto" />
+        </div>
 
         <div className="relative flex flex-1 flex-col items-center justify-center px-4 py-10">
           <AuthCardMotion>{children}</AuthCardMotion>

@@ -13,7 +13,7 @@ An LMS question-bank purchase platform (Phase 1), built to grow into a full-fled
 
 - **Next.js 16** (App Router, TypeScript), no separate backend server — see "Next.js 16 specifics" below, this version differs from most training data
 - PostgreSQL via Prisma ORM
-- Local disk file storage (`storage/`, outside `public/`, served only via authenticated route handlers)
+- Cloudinary file storage (`src/lib/storage.ts`): question-bank PDFs/previews/thumbnails under `question-bank/<id>/`, invoices under `invoices/`. PDFs are uploaded as `type: authenticated` (raw) and only ever streamed back through the authenticated `/api/v1/files/**` route handlers; thumbnails are public images served straight from the Cloudinary CDN
 - TanStack Query (server state) + Zustand (client UI state) — see `docs/HLD.md` § 5
 - shadcn/ui (Tailwind v4, `base-nova` preset, indigo primary + custom success/warning tokens) — see `docs/HLD.md` § 6 for the design system
 - Auth.js v5 (Credentials provider, JWT sessions)
@@ -57,7 +57,7 @@ This project's shadcn preset (`base-nova`) is built on **Base UI** (`@base-ui/re
 - **Feature folders**: domain logic lives in `src/features/<domain>/` (components, hooks, zod schemas). `src/app/**` route files stay thin — they wire a feature into a URL, they don't contain business logic.
 - **State**: prefer Server Components/Server Actions first; reach for TanStack Query only for client-side server-state caching, and Zustand only for genuinely client-side UI state (checkout steps, multi-step forms). Auth state comes from `next-auth`'s `useSession`, never a duplicate store.
 - **Money**: all prices stored as integers (paise), never floats.
-- **File security**: the original uploaded PDF and the full downloaded copy are never served directly from `public/` or an unauthenticated route. Preview files are separately generated, capped copies. Downloads are watermarked in memory at request time — never persisted watermarked to disk.
+- **File security**: the original uploaded PDF, the generated preview, and invoices are stored on Cloudinary as `type: authenticated` raw resources — never publicly reachable. They are only ever fetched server-side (signed URL) and streamed through the authenticated `/api/v1/files/**` routes, which keep their session/ownership checks. Preview files are separately generated, capped copies. Downloads are watermarked in memory at request time — never persisted watermarked. Thumbnails are the one public asset (the catalog is public) and are served directly from the Cloudinary CDN.
 
 ## Commands
 
@@ -76,8 +76,8 @@ See `.env.example` for the full list. Key ones:
 - `NEXTAUTH_SECRET`, `NEXTAUTH_URL` — Auth.js
 - `ADMIN_EMAIL`, `ADMIN_PASSWORD` — used once by `prisma/seed.ts` to create the single admin account
 - `PAYMENT_PROVIDER` — `mock` for now; `cashfree` reserved for the follow-up plan
-- `SMTP_*` — nodemailer, used for password reset emails
-- `STORAGE_ROOT` — absolute path for uploaded files/invoices; in production, set this **outside** the git-managed app directory so redeploys never touch purchased content
+- `RESEND_API_KEY`, `EMAIL_FROM` — Resend, used for password-reset + contact-form emails (`EMAIL_FROM` must be on a Resend-verified domain)
+- `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` — Cloudinary account used by `src/lib/storage.ts` for all uploaded files, previews, thumbnails, and invoices
 - `MAX_UPLOAD_MB` — max question-bank upload size
 
 ## Design reference

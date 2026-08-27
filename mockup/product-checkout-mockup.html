@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Decode with Shakti — Question bank (mockup)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #FAF8FF;
+    --paper: #FFFFFF;
+    --ink: #201C33;
+    --ink-soft: #625C78;
+    --indigo: #4F46E5;
+    --indigo-deep: #38309E;
+    --lavender: #EFECFE;
+    --line: #DDD6F7;
+    --line-strong: #C6BCF5;
+    --green: #0F8A5F;
+    --green-bg: #E4F6EE;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(var(--line-strong) 0.7px, transparent 0.7px),
+      var(--bg);
+    background-size:22px 22px;
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:0 32px;}
+
+  header{
+    border-bottom:1px solid var(--line);
+    padding:22px 0;
+    background:linear-gradient(var(--bg) 60%, transparent);
+  }
+  .headerbar{display:flex;align-items:center;justify-content:space-between;}
+  .brand{display:flex;align-items:center;gap:10px;}
+  .mark{
+    width:32px;height:32px;border-radius:8px;background:var(--indigo);
+    color:#fff;font-weight:600;font-size:15px;display:flex;align-items:center;justify-content:center;
+    font-family:'Fraunces',serif;
+  }
+  .brand span{font-weight:600;font-size:16px;letter-spacing:-0.01em;}
+  .back{font-size:14px;color:var(--ink-soft);text-decoration:none;}
+  .back:hover{color:var(--indigo);}
+
+  main{padding:56px 0 90px;}
+
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;letter-spacing:.11em;text-transform:uppercase;
+    color:var(--indigo-deep);
+    background:var(--lavender);
+    display:inline-block;
+    padding:5px 12px;
+    border-radius:5px;
+    border:1px solid var(--line-strong);
+    margin-bottom:26px;
+  }
+
+  .layout{
+    display:grid;
+    grid-template-columns:1fr 340px;
+    gap:36px;
+    align-items:start;
+  }
+
+  /* ---- shared folder card ---- */
+  .folder{
+    position:relative;
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:2px 14px 14px 14px;
+    padding:26px 28px 28px;
+    margin-bottom:28px;
+  }
+  .tab{
+    position:absolute;
+    top:-17px;left:26px;
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-bottom:none;
+    border-radius:7px 7px 0 0;
+    padding:3px 11px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--indigo);
+  }
+  .folder-head{display:flex;align-items:center;gap:10px;margin-bottom:18px;}
+  .folder-head h2{
+    font-family:'Fraunces',serif;font-weight:500;font-size:19px;margin:0;
+  }
+  .pill{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;
+    background:var(--green-bg);color:var(--green);
+    padding:4px 10px;border-radius:20px;
+    display:inline-flex;align-items:center;gap:5px;
+  }
+  .pill::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--green);}
+
+  /* cover preview */
+  .cover-frame{
+    background:var(--lavender);
+    border:1px solid var(--line);
+    border-radius:10px;
+    display:flex;align-items:center;justify-content:center;
+    padding:36px;
+    margin-bottom:22px;
+  }
+  .cover{
+    width:220px;aspect-ratio:3/4;
+    background:linear-gradient(160deg,#EFE7DC,#DDD2C2);
+    border-radius:4px;
+    box-shadow:0 20px 34px -18px rgba(56,48,158,0.35);
+    display:flex;flex-direction:column;justify-content:space-between;
+    padding:20px 18px;
+    font-family:'IBM Plex Mono',monospace;
+    color:#3B3427;
+  }
+  .cover .kicker{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;}
+  .cover .title{
+    font-family:'Fraunces',serif;font-weight:500;font-size:20px;line-height:1.15;color:#26221A;
+  }
+  .cover .sub{font-size:9.5px;line-height:1.5;color:#5C543F;margin-top:8px;}
+  .cover .byline{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;text-align:right;}
+
+  .cat-tag{
+    display:inline-block;
+    font-size:12px;font-weight:500;color:var(--indigo-deep);
+    background:var(--lavender);border:1px solid var(--line-strong);
+    padding:3px 11px;border-radius:6px;margin-bottom:12px;
+  }
+  h1.title{
+    font-family:'Fraunces',serif;font-weight:500;font-size:32px;margin:0 0 8px;
+  }
+  .subtitle{color:var(--ink-soft);font-size:15px;margin:0 0 18px;}
+  .preview-link{
+    display:inline-flex;align-items:center;gap:7px;
+    font-size:13.5px;font-weight:500;color:var(--indigo);
+    border:1px solid var(--line-strong);background:var(--lavender);
+    padding:8px 14px;border-radius:20px;text-decoration:none;
+  }
+  .preview-link:hover{background:#E4DEFC;}
+
+  .checklist{list-style:none;margin:0;padding:0;}
+  .checklist li{
+    display:flex;align-items:flex-start;gap:10px;
+    padding:10px 0;font-size:14.5px;
+    border-top:1px dashed var(--line-strong);
+  }
+  .checklist li:first-child{border-top:none;}
+  .checklist svg{flex-shrink:0;margin-top:2px;}
+  .note{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.05em;
+    text-transform:uppercase;color:var(--ink-soft);margin:0 0 14px;
+  }
+  .desc-text{
+    font-size:15px;line-height:1.75;color:var(--ink-soft);margin:0;
+  }
+
+  /* ---- ticket / order summary ---- */
+  .ticket-wrap{position:sticky;top:24px;}
+  .ticket{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:14px 14px 0 0;
+    box-shadow:0 18px 40px -28px rgba(56,48,158,0.35);
+    overflow:hidden;
+  }
+  .ticket-top{
+    padding:22px 26px 18px;
+    display:flex;justify-content:space-between;align-items:baseline;
+    border-bottom:1px dashed var(--line-strong);
+  }
+  .ticket-top h2{
+    font-family:'Fraunces',serif;font-weight:500;font-size:18px;margin:0;
+  }
+  .ticket-no{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--ink-soft);}
+
+  .ticket-body{padding:22px 26px 8px;}
+  .line{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;font-size:14.5px;}
+  .line .lab{color:var(--ink-soft);}
+  .line .val{font-family:'IBM Plex Mono',monospace;font-weight:500;}
+
+  .coupon{display:flex;gap:8px;margin-bottom:20px;}
+  .coupon input{
+    flex:1;border:none;border-bottom:1.5px solid var(--line-strong);
+    background:transparent;font-family:'Inter',sans-serif;font-size:14px;
+    padding:6px 2px 9px;outline:none;color:var(--ink);
+  }
+  .coupon input:focus{border-color:var(--indigo);}
+  .coupon input::placeholder{color:#B7B0D6;}
+  .coupon button{
+    border:1px solid var(--line-strong);background:var(--lavender);color:var(--indigo-deep);
+    font-family:'Inter',sans-serif;font-weight:500;font-size:13px;
+    padding:0 16px;border-radius:7px;cursor:pointer;
+  }
+  .coupon button:hover{background:#E4DEFC;}
+
+  .divider{
+    border:none;border-top:1px dashed var(--line-strong);margin:6px 0 18px;
+  }
+
+  .total{
+    display:flex;justify-content:space-between;align-items:baseline;
+    margin-bottom:20px;
+  }
+  .total .lab{font-weight:500;font-size:15px;}
+  .total .val{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:20px;color:var(--indigo-deep);}
+
+  .buy{
+    width:100%;background:var(--indigo);color:#fff;border:none;
+    font-family:'Inter',sans-serif;font-weight:500;font-size:15px;
+    padding:13px;border-radius:9px;cursor:pointer;margin-bottom:12px;
+    transition:background .15s ease, transform .1s ease;
+    position:relative;
+  }
+  .buy:hover{background:var(--indigo-deep);}
+  .buy:active{transform:scale(0.98);}
+  .fine{text-align:center;font-size:11.5px;color:var(--ink-soft);margin:0 0 22px;}
+
+  .ticket-edge{
+    height:16px;
+    background-image:
+      linear-gradient(135deg, var(--bg) 50%, transparent 50%),
+      linear-gradient(45deg, var(--bg) 50%, transparent 50%);
+    background-size:16px 16px;
+    background-position:0 0, 8px 0;
+    background-repeat:repeat-x;
+  }
+
+  .stamp{
+    position:fixed;
+    left:50%;top:50%;
+    width:120px;height:120px;
+    border:2px solid var(--indigo);
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    text-align:center;
+    font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--indigo);
+    background:rgba(250,248,255,0.9);
+    transform:translate(-50%,-50%) rotate(-12deg) scale(0.6);
+    opacity:0;pointer-events:none;
+    transition:opacity .25s ease, transform .3s cubic-bezier(.2,1.4,.4,1);
+    z-index:10;
+  }
+  .stamp::before{content:'';position:absolute;inset:7px;border:1.5px dashed var(--indigo);border-radius:50%;}
+  .stamp.show{opacity:1;transform:translate(-50%,-50%) rotate(-12deg) scale(1);}
+
+  @media (max-width:860px){
+    .layout{grid-template-columns:1fr;}
+    .ticket-wrap{position:static;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap headerbar">
+    <div class="brand">
+      <div class="mark">D</div>
+      <span>Decode with Shakti</span>
+    </div>
+    <a class="back" href="#">Back to home</a>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="eyebrow">Card no. 07 · Question bank</div>
+
+  <div class="layout">
+    <div>
+      <div class="folder">
+        <span class="tab">Preview</span>
+        <div class="folder-head" style="margin-top:6px;">
+          <span class="pill">Preview enabled</span>
+        </div>
+
+        <div class="cover-frame">
+          <div class="cover">
+            <div>
+              <div class="kicker">E-book</div>
+            </div>
+            <div>
+              <div class="title">Time Management</div>
+              <div class="sub">Effective techniques for personal development.</div>
+            </div>
+            <div class="byline">Olivia Wilson</div>
+          </div>
+        </div>
+
+        <span class="cat-tag">CA Foundation</span>
+        <h1 class="title">ca test</h1>
+        <p class="subtitle">for ca final preparation</p>
+        <a class="preview-link" href="#">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          Preview first 2 of 4 pages
+        </a>
+      </div>
+
+      <div class="folder">
+        <span class="tab">Description</span>
+        <div class="folder-head" style="margin-top:6px;">
+          <h2>About this question bank</h2>
+        </div>
+        <p class="desc-text">This question bank walks through the highest-weightage CA Final topics with fully solved practice sets and examiner-style explanations. Each answer breaks down the reasoning step by step, so you can see exactly how the marks are earned instead of just checking a final number. Built from real exam patterns, it's designed to help you spend revision time on what's actually likely to show up on the paper.</p>
+      </div>
+    </div>
+
+    <div class="ticket-wrap">
+      <div class="ticket">
+        <div class="ticket-top">
+          <h2>Order summary</h2>
+        </div>
+        <div class="ticket-body">
+          <div class="line"><span class="lab">Base price</span><span class="val">₹57</span></div>
+          <div class="coupon">
+            <input type="text" placeholder="Coupon code" id="coupon">
+            <button id="applyBtn">Apply</button>
+          </div>
+          <hr class="divider">
+          <div class="total"><span class="lab">Total payable</span><span class="val" id="totalVal">₹57</span></div>
+          <button class="buy" id="buyBtn">Purchase now →</button>
+          <p class="fine">Secure checkout · invoice generated automatically</p>
+        </div>
+      </div>
+      <div class="ticket-edge"></div>
+    </div>
+  </div>
+
+</main>
+
+<div class="stamp" id="stamp">paid<br>2026 · 08 · 27</div>
+
+<script>
+  document.getElementById('buyBtn').addEventListener('click', function(){
+    var stamp = document.getElementById('stamp');
+    stamp.classList.add('show');
+    setTimeout(function(){ stamp.classList.remove('show'); }, 1600);
+  });
+</script>
+
+</body>
+</html>

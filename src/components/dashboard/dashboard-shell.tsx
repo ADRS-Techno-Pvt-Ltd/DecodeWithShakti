@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
+import { LogOut } from "lucide-react";
 import { motion, AnimatePresence, MotionConfig } from "motion/react";
 import {
   Sidebar,
@@ -10,7 +11,6 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarInset,
   SidebarMenu,
@@ -26,13 +26,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { BrandLogo } from "@/components/brand-logo";
 
 export type NavItem = { href: string; label: string; icon: React.ReactNode };
 
 export function DashboardShell({
   brand,
   navItems,
-  comingSoonItems = [],
   userName,
   userEmail,
   roleLabel,
@@ -40,7 +40,6 @@ export function DashboardShell({
 }: {
   brand: string;
   navItems: NavItem[];
-  comingSoonItems?: NavItem[];
   userName: string;
   userEmail: string;
   roleLabel: string;
@@ -55,13 +54,11 @@ export function DashboardShell({
   return (
     <MotionConfig reducedMotion="user">
     <SidebarProvider>
-      <Sidebar>
+      <Sidebar collapsible="icon">
         <SidebarHeader>
-          <div className="font-heading flex items-center gap-2 px-2 py-1.5 font-bold">
-            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-primary-light to-primary-dark text-xs font-bold text-white">
-              D
-            </span>
-            {brand}
+          <div className="font-heading flex items-center gap-2 px-2 py-1.5 font-bold group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center">
+            <BrandLogo href={null} variant="mark" imgClassName="h-7 w-7 shrink-0" />
+            <span className="truncate group-data-[collapsible=icon]:hidden">{brand}</span>
           </div>
         </SidebarHeader>
         <SidebarContent>
@@ -72,6 +69,7 @@ export function DashboardShell({
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
                       isActive={item.href === activeHref}
+                      tooltip={item.label}
                       render={
                         <Link href={item.href}>
                           {item.icon}
@@ -84,25 +82,20 @@ export function DashboardShell({
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-          {comingSoonItems.length > 0 && (
-            <SidebarGroup>
-              <SidebarGroupLabel>Coming in Phase 2</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {comingSoonItems.map((item) => (
-                    <SidebarMenuItem key={item.label}>
-                      <SidebarMenuButton disabled className="opacity-45">
-                        {item.icon}
-                        <span>{item.label}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          )}
         </SidebarContent>
-        <SidebarFooter />
+        <SidebarFooter>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                tooltip="Log out"
+                onClick={() => signOut({ callbackUrl: "/" })}
+              >
+                <LogOut />
+                <span>Log out</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
       </Sidebar>
       <SidebarInset>
         <header className="flex h-16 items-center justify-between border-b bg-card px-6">
@@ -126,6 +119,7 @@ export function DashboardShell({
             <DropdownMenuContent align="end">
               <DropdownMenuItem disabled>{userEmail}</DropdownMenuItem>
               <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/" })}>
+                <LogOut />
                 Log out
               </DropdownMenuItem>
             </DropdownMenuContent>

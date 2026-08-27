@@ -7,6 +7,25 @@ function booleanField(defaultValue: boolean) {
   return z.preprocess((v) => (typeof v === "string" ? v === "true" : v), z.boolean()).default(defaultValue);
 }
 
+// `features` arrives as a JSON-encoded string array from the multipart create route and as
+// a real array from the JSON PATCH route. Normalize both, drop blanks, and cap the list.
+function featuresField() {
+  return z
+    .preprocess((v) => {
+      if (Array.isArray(v)) return v;
+      if (typeof v === "string" && v.trim() !== "") {
+        try {
+          const parsed = JSON.parse(v);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch {
+          return [];
+        }
+      }
+      return [];
+    }, z.array(z.string().trim().min(1).max(120)).max(8))
+    .default([]);
+}
+
 const questionBankBaseSchema = z.object({
   title: z.string().min(3).max(200),
   description: z.string().min(10).max(2000),
@@ -17,6 +36,8 @@ const questionBankBaseSchema = z.object({
   earlyBirdPrice: z.coerce.number().int().positive().optional(),
   earlyBirdEndsAt: z.coerce.date().optional(),
   isPublished: booleanField(true),
+  isFeatured: booleanField(false),
+  features: featuresField(),
 });
 
 export const questionBankInputSchema = questionBankBaseSchema

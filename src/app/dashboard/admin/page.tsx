@@ -1,25 +1,59 @@
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
 import { Reveal } from "@/components/landing/reveal";
+import { RevenueChart, type RevenuePoint } from "@/features/admin/revenue-chart";
+
+const WINDOW_DAYS = 30;
 
 function formatRupees(paise: number): string {
   return `₹${(paise / 100).toLocaleString("en-IN")}`;
 }
 
-export default async function AdminOverviewPage() {
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+function startOfDay(d: Date): Date {
+  const copy = new Date(d);
+  copy.setHours(0, 0, 0, 0);
+  return copy;
+}
 
-  const [revenueAgg, publishedCount, unpublishedCount, activeCouponCount, purchaseCount30d] =
+export default async function AdminOverviewPage() {
+  const windowStart = startOfDay(new Date());
+  windowStart.setDate(windowStart.getDate() - (WINDOW_DAYS - 1));
+
+  const [revenueAgg, publishedCount, unpublishedCount, activeCouponCount, windowPurchases] =
     await Promise.all([
       prisma.purchase.aggregate({ where: { status: "SUCCESS" }, _sum: { amount: true } }),
       prisma.questionBank.count({ where: { isPublished: true } }),
       prisma.questionBank.count({ where: { isPublished: false } }),
       prisma.coupon.count({ where: { isActive: true, expiresAt: { gt: new Date() } } }),
-      prisma.purchase.count({
-        where: { status: "SUCCESS", createdAt: { gte: thirtyDaysAgo } },
+      prisma.purchase.findMany({
+        where: { status: "SUCCESS", createdAt: { gte: windowStart } },
+        select: { amount: true, createdAt: true },
+        orderBy: { createdAt: "asc" },
       }),
     ]);
+
+  // Bucket revenue by day, then accumulate.
+  const perDay = new Map<string, number>();
+  for (let i = 0; i < WINDOW_DAYS; i++) {
+    const day = new Date(windowStart);
+    day.setDate(windowStart.getDate() + i);
+    perDay.set(day.toISOString().slice(0, 10), 0);
+  }
+  for (const p of windowPurchases) {
+    const key = startOfDay(p.createdAt).toISOString().slice(0, 10);
+    perDay.set(key, (perDay.get(key) ?? 0) + p.amount);
+  }
+
+  let running = 0;
+  const revenueSeries: RevenuePoint[] = [...perDay.entries()].map(([key, amount]) => {
+    running += amount;
+    return {
+      date: new Date(key).toLocaleDateString("en-IN", { day: "numeric", month: "short" }),
+      cumulative: running,
+    };
+  });
+
+  const purchaseCount30d = windowPurchases.length;
 
   const stats = [
     { label: "Total Revenue", value: formatRupees(revenueAgg._sum.amount ?? 0) },
@@ -45,6 +79,10 @@ export default async function AdminOverviewPage() {
           </Reveal>
         ))}
       </div>
+
+      <Reveal delay={260} className="mt-4">
+        <RevenueChart data={revenueSeries} />
+      </Reveal>
     </div>
   );
 }

@@ -6,16 +6,15 @@ const THUMBNAIL_MIME_TO_EXT: Record<string, string> = {
 
 export const MAX_THUMBNAIL_BYTES = 5 * 1024 * 1024;
 
+/** Returns a file extension for an accepted image MIME type, or null to reject the upload. */
 export function extForThumbnailMime(mimeType: string): string | null {
   return THUMBNAIL_MIME_TO_EXT[mimeType] ?? null;
 }
 
-// `?v=` cache-busts the browser/CDN cache (see the 1h Cache-Control on the thumbnail route)
-// so a replaced thumbnail shows up immediately instead of the old cached image at the same URL.
-export function thumbnailUrlFor(
-  id: string,
-  thumbnailPath: string | null,
-  updatedAt: Date,
-): string | null {
-  return thumbnailPath ? `/api/v1/files/thumbnail/${id}?v=${updatedAt.getTime()}` : null;
+/**
+ * `thumbnailPath` now stores the full Cloudinary CDN URL (public image, versioned so it
+ * cache-busts on re-upload). This just narrows it to the DTO's `thumbnailUrl` field.
+ */
+export function thumbnailUrlFor(thumbnailPath: string | null): string | null {
+  return thumbnailPath;
 }

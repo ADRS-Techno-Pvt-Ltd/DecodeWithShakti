@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { motion, type Variants } from "motion/react";
@@ -24,6 +25,10 @@ import {
 } from "@/components/ui/accordion";
 import { MentorSection } from "@/components/landing/mentor-section";
 import { Reveal } from "@/components/landing/reveal";
+import { BrandLogo } from "@/components/brand-logo";
+import { SiteHeader } from "@/components/site-header";
+import { useFeaturedBanks, type FeaturedBankCard } from "./use-featured-banks";
+import { useFaqs } from "./use-faqs";
 
 const examPills = [
   "CA Foundation",
@@ -74,10 +79,10 @@ const steps = [
   { title: "Download & practice", body: "Your file and invoice land on your dashboard immediately." },
 ];
 
-// Static, curated examples for the landing page — not live catalog data.
-// Swap for the current promotions when they change; the real, always-current
-// inventory lives at /question-banks.
-const featuredBanks = [
+// Fallback cards for the landing "Priced per bank" section, shown only when no question
+// bank is marked "featured" in the admin. Otherwise the section renders the real featured
+// banks — see `useFeaturedBanks`.
+const featuredBanks: FeaturedBankCard[] = [
   {
     category: "CA Foundation · Paper 2",
     title: "Business Laws — 600 Question Bank",
@@ -85,8 +90,11 @@ const featuredBanks = [
     oldPrice: "₹899",
     price: "₹649",
     badge: { label: "Early bird · ends in 2 days", tone: "gold" as const },
+    earlyBirdEndsAt: null,
+    thumbnailUrl: null,
     bullets: ["12-page free preview", "600 questions, answer key included", "Instant download after purchase"],
     popular: false,
+    href: "/question-banks",
   },
   {
     category: "CA Inter · Costing",
@@ -95,8 +103,11 @@ const featuredBanks = [
     oldPrice: null,
     price: "₹549",
     badge: { label: "Regular price", tone: "green" as const },
+    earlyBirdEndsAt: null,
+    thumbnailUrl: null,
     bullets: ["15-page free preview", "5 full-length mock papers", "Instant download after purchase"],
     popular: true,
+    href: "/question-banks",
   },
   {
     category: "CA Final · Audit",
@@ -105,8 +116,11 @@ const featuredBanks = [
     oldPrice: "₹749",
     price: "₹579",
     badge: { label: "Early bird · ends in 5 days", tone: "gold" as const },
+    earlyBirdEndsAt: null,
+    thumbnailUrl: null,
     bullets: ["10-page free preview", "480 case-study questions", "Instant download after purchase"],
     popular: false,
+    href: "/question-banks",
   },
 ];
 
@@ -134,7 +148,8 @@ const testimonials = [
   },
 ];
 
-const faqs = [
+/** Fallback shown only if the admin hasn't published any FAQs (or the fetch is still pending). */
+const fallbackFaqs = [
   {
     q: "What exactly do I get after buying a question bank?",
     a: "A downloadable PDF of the full question bank, watermarked with your registered email, plus an auto-generated invoice for the purchase. Both stay available on your student dashboard for future downloads.",
@@ -156,6 +171,43 @@ const faqs = [
     a: "Occasionally, yes. When a coupon is active you can enter it at checkout to see the discount applied before you confirm payment. Codes have an expiry date and a limited number of uses, so they may run out.",
   },
 ];
+
+const DAY_MS = 86_400_000;
+
+function formatCountdown(ms: number): string {
+  const total = Math.floor(ms / 1000);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  return `${h}h ${String(m).padStart(2, "0")}m ${String(s).padStart(2, "0")}s`;
+}
+
+/**
+ * Renders `fallback` normally, but once the early-bird deadline is under 24h away it
+ * switches to a live, per-second countdown ("Early bird · ends in 5h 23m 07s").
+ */
+function EarlyBirdBadgeLabel({
+  endsAt,
+  fallback,
+}: {
+  endsAt: string | null;
+  fallback: string;
+}) {
+  const target = endsAt ? new Date(endsAt).getTime() : null;
+  const [now, setNow] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (target == null) return;
+    setNow(Date.now());
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [target]);
+
+  if (target == null || now == null) return <>{fallback}</>;
+  const remaining = target - now;
+  if (remaining <= 0 || remaining >= DAY_MS) return <>{fallback}</>;
+  return <>Early bird · ends in {formatCountdown(remaining)}</>;
+}
 
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
@@ -197,40 +249,12 @@ const heroItem: Variants = {
 
 export default function LandingPage() {
   const { data: session } = useSession();
-  const dashboardHref = session?.user?.role === "ADMIN" ? "/dashboard/admin" : "/dashboard/student";
+  const { banks: displayedBanks, loading: banksLoading } = useFeaturedBanks(featuredBanks);
+  const { faqs } = useFaqs(fallbackFaqs);
 
   return (
     <>
-      <header className="sticky top-0 z-50 border-b border-border bg-background/85 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl 2xl:max-w-[1440px] items-center justify-between px-7 py-4">
-          <Link href="/" className="font-heading flex items-center gap-2.5 text-[19px] font-semibold">
-            <span className="flex h-7.5 w-7.5 items-center justify-center rounded-lg bg-gradient-to-br from-primary-light to-primary-dark text-[15px] font-bold text-white">
-              D
-            </span>
-            Decode with Shakti
-          </Link>
-          <nav className="hidden items-center gap-8 text-[14.5px] font-medium text-muted-foreground md:flex">
-            <Link href="#mentor" className="hover:text-primary">Your mentor</Link>
-            <Link href="#features" className="hover:text-primary">Why us</Link>
-            <Link href="#how" className="hover:text-primary">How it works</Link>
-            <Link href="#pricing" className="hover:text-primary">Question banks</Link>
-            <Link href="#testimonials" className="hover:text-primary">Results</Link>
-            <Link href="#faq" className="hover:text-primary">FAQ</Link>
-          </nav>
-          <div className="flex items-center gap-2.5">
-            {session?.user ? (
-              <Button
-                variant="ghost"
-                className="h-9 px-4"
-                render={<Link href={dashboardHref}>{session.user.name ?? "Dashboard"}</Link>}
-              />
-            ) : (
-              <Button variant="ghost" className="h-9 px-4" render={<Link href="/login">Log in</Link>} />
-            )}
-            <Button className="h-9 px-5 shadow-sm" render={<Link href="/question-banks">Browse banks</Link>} />
-          </div>
-        </div>
-      </header>
+      <SiteHeader />
 
       <main>
         {/* HERO */}
@@ -446,7 +470,30 @@ export default function LandingPage() {
             </Reveal>
 
             <div className="grid grid-cols-1 items-stretch gap-6 md:grid-cols-3">
-              {featuredBanks.map((bank, i) => (
+              {banksLoading
+                ? Array.from({ length: 3 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="flex h-full flex-col rounded-[14px] border border-border bg-card shadow-sm"
+                    >
+                      <div className="p-6.5 pb-5">
+                        <div className="mb-4 aspect-video animate-pulse rounded-[10px] bg-muted" />
+                        <div className="h-2.5 w-24 animate-pulse rounded bg-muted" />
+                        <div className="mt-3 h-4 w-3/4 animate-pulse rounded bg-muted" />
+                        <div className="mt-3 h-3 w-full animate-pulse rounded bg-muted" />
+                        <div className="mt-2 h-3 w-2/3 animate-pulse rounded bg-muted" />
+                      </div>
+                      <div className="mx-6 border-t-2 border-dashed border-border" />
+                      <div className="px-6.5 pt-5">
+                        <div className="h-7 w-20 animate-pulse rounded bg-muted" />
+                        <div className="mt-3 h-6 w-32 animate-pulse rounded bg-muted" />
+                      </div>
+                      <div className="mt-auto p-6.5 pt-5.5">
+                        <div className="h-10 w-full animate-pulse rounded bg-muted" />
+                      </div>
+                    </div>
+                  ))
+                : displayedBanks.map((bank, i) => (
                 <Reveal key={bank.title} delay={i * 60}>
                   <motion.div
                     whileHover={{ y: -6 }}
@@ -461,13 +508,27 @@ export default function LandingPage() {
                       </span>
                     )}
                     <div className="p-6.5 pb-5">
+                      <Link
+                        href={bank.href}
+                        className="mb-4 flex aspect-video items-center justify-center overflow-hidden rounded-[10px] bg-muted text-primary"
+                      >
+                        {bank.thumbnailUrl ? (
+                          <img
+                            src={bank.thumbnailUrl}
+                            alt=""
+                            className="h-full w-full object-contain"
+                          />
+                        ) : (
+                          <FileText className="h-7 w-7" strokeWidth={1.5} />
+                        )}
+                      </Link>
                       <div className="font-mono text-[11px] font-semibold tracking-wide text-primary uppercase">
                         {bank.category}
                       </div>
                       <div className="font-heading mt-2 text-[19px] leading-snug font-semibold">
                         {bank.title}
                       </div>
-                      <p className="mt-2.5 text-[13.5px] leading-relaxed text-muted-foreground">
+                      <p className="mt-2.5 line-clamp-3 text-[13.5px] leading-relaxed text-muted-foreground">
                         {bank.desc}
                       </p>
                     </div>
@@ -489,23 +550,32 @@ export default function LandingPage() {
                         }`}
                       >
                         {bank.badge.tone === "gold" && <Clock className="h-3.5 w-3.5" />}
-                        {bank.badge.label}
+                        {bank.badge.tone === "gold" ? (
+                          <EarlyBirdBadgeLabel
+                            endsAt={bank.earlyBirdEndsAt}
+                            fallback={bank.badge.label}
+                          />
+                        ) : (
+                          bank.badge.label
+                        )}
                       </span>
                     </div>
-                    <ul className="mt-4.5 flex flex-col gap-2.5 px-6.5 text-[13.8px] text-muted-foreground">
-                      {bank.bullets.map((b) => (
-                        <li key={b} className="flex items-start gap-2.5">
-                          <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" strokeWidth={2.5} />
-                          {b}
-                        </li>
-                      ))}
-                    </ul>
+                    {bank.bullets.length > 0 && (
+                      <ul className="mt-4.5 flex flex-col gap-2.5 px-6.5 text-[13.8px] text-muted-foreground">
+                        {bank.bullets.map((b) => (
+                          <li key={b} className="flex items-start gap-2.5">
+                            <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" strokeWidth={2.5} />
+                            {b}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                     <div className="mt-auto p-6.5 pt-5.5">
                       <MotionButton block>
                         <Button
                           variant={bank.popular ? "default" : "outline"}
                           className="w-full"
-                          render={<Link href="/question-banks">{bank.popular ? "Buy this bank" : "Preview sample"}</Link>}
+                          render={<Link href={bank.href}>{bank.popular ? "Buy this bank" : "Preview sample"}</Link>}
                         />
                       </MotionButton>
                     </div>
@@ -611,14 +681,16 @@ export default function LandingPage() {
                       render={<Link href="#pricing">Browse question banks</Link>}
                     />
                   </MotionButton>
-                  <MotionButton>
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      className="border-white/35 bg-transparent text-white hover:border-white hover:bg-white/10 hover:text-white"
-                      render={<Link href="/register">Create a free account</Link>}
-                    />
-                  </MotionButton>
+                  {!session?.user && (
+                    <MotionButton>
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        className="border-white/35 bg-transparent text-white hover:border-white hover:bg-white/10 hover:text-white"
+                        render={<Link href="/register">Create a free account</Link>}
+                      />
+                    </MotionButton>
+                  )}
                 </div>
               </div>
             </Reveal>
@@ -630,12 +702,7 @@ export default function LandingPage() {
         <div className="mx-auto max-w-6xl 2xl:max-w-[1440px] px-7">
           <div className="grid grid-cols-2 gap-8 md:grid-cols-[1.6fr_1fr_1fr_1fr]">
             <div>
-              <Link href="/" className="font-heading flex items-center gap-2.5 text-[19px] font-semibold">
-                <span className="flex h-7.5 w-7.5 items-center justify-center rounded-lg bg-gradient-to-br from-primary-light to-primary-dark text-[15px] font-bold text-white">
-                  D
-                </span>
-                Decode with Shakti
-              </Link>
+              <BrandLogo imgClassName="h-8 w-auto" />
               <p className="mt-3.5 max-w-[260px] text-[13.8px] leading-relaxed text-muted-foreground">
                 Exam-pattern question banks for CA Foundation, Inter and Final —
                 previewed before you buy, yours the moment you pay.

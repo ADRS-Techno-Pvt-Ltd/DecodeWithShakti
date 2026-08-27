@@ -14,6 +14,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const category = searchParams.get("category");
     const admin = searchParams.get("admin") === "true";
+    const featured = searchParams.get("featured") === "true";
 
     if (admin) {
       await requireAdmin();
@@ -23,15 +24,18 @@ export async function GET(request: Request) {
       where: {
         ...(admin ? {} : { isPublished: true }),
         ...(category ? { category: { slug: category } } : {}),
+        ...(featured ? { isFeatured: true } : {}),
       },
       include: { category: true },
-      orderBy: { createdAt: "desc" },
+      orderBy: admin
+        ? { createdAt: "desc" }
+        : [{ isFeatured: "desc" }, { createdAt: "desc" }] as const,
     });
 
     return NextResponse.json(
       banks.map(({ thumbnailPath, ...bank }) => ({
         ...bank,
-        thumbnailUrl: thumbnailUrlFor(bank.id, thumbnailPath, bank.updatedAt),
+        thumbnailUrl: thumbnailUrlFor(thumbnailPath),
       })),
     );
   } catch (err) {
@@ -115,6 +119,8 @@ async function createQuestionBank(request: Request) {
       previewEnabled: input.previewEnabled,
       previewPageCount: input.previewPageCount ?? null,
       isPublished: input.isPublished,
+      isFeatured: input.isFeatured,
+      features: input.features,
     },
   });
 
@@ -129,7 +135,7 @@ async function createQuestionBank(request: Request) {
   let thumbnailPathValue: string | null = null;
   if (thumbnail instanceof File && thumbnailExt) {
     const thumbnailBytes = Buffer.from(await thumbnail.arrayBuffer());
-    thumbnailPathValue = await saveThumbnailFile(bank.id, thumbnailBytes, thumbnailExt);
+    thumbnailPathValue = await saveThumbnailFile(bank.id, thumbnailBytes);
   }
 
   const updated = await prisma.questionBank.update({
@@ -140,7 +146,7 @@ async function createQuestionBank(request: Request) {
 
   const { thumbnailPath, ...bankDto } = updated;
   return NextResponse.json(
-    { ...bankDto, thumbnailUrl: thumbnailUrlFor(updated.id, thumbnailPath, updated.updatedAt) },
+    { ...bankDto, thumbnailUrl: thumbnailUrlFor(thumbnailPath) },
     { status: 201 },
   );
 }

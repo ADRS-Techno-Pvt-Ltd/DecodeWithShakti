@@ -8,7 +8,7 @@
 
 ## 1. Architecture Overview
 
-A single Next.js (App Router, TypeScript) application handles both frontend and backend — no separate API server. PostgreSQL (via Prisma ORM) is the system of record. Uploaded files live on local disk on the server, outside the web root, served only through authenticated route handlers. Deployment target is a client-owned AWS/VPS instance running the app under PM2 behind Nginx.
+A single Next.js (App Router, TypeScript) application handles both frontend and backend — no separate API server. PostgreSQL (via Prisma ORM) is the system of record. Uploaded files, previews and invoices live on Cloudinary as `type: authenticated` raw resources, served only by streaming through authenticated route handlers; thumbnails are public CDN images. Deployment target is a client-owned AWS/VPS instance running the app under PM2 behind Nginx.
 
 ```
 ┌─────────────┐      ┌───────────────────────────────────────┐      ┌────────────┐
@@ -19,9 +19,9 @@ A single Next.js (App Router, TypeScript) application handles both frontend and 
                       └───────────────┬─────────────────────┬─┘
                                        │                     │
                               ┌────────▼────────┐   ┌────────▼────────┐
-                              │ Local disk       │   │ SMTP (nodemailer)│
-                              │ storage/ (PDFs,  │   │ password reset,  │
-                              │ invoices)        │   │ notifications     │
+                              │ Cloudinary       │   │ Email (Resend)   │
+                              │ (PDFs, previews, │   │ password reset,  │
+                              │ invoices, thumbs)│   │ notifications     │
                               └──────────────────┘   └──────────────────┘
 ```
 
@@ -38,8 +38,8 @@ Each domain owns its own components, hooks, and zod schemas; `src/app/**` route 
 
 **Upload → preview generation**
 1. Admin submits multipart form (`POST /api/v1/question-banks`) with metadata + PDF.
-2. `lib/storage.ts` writes `storage/questionbanks/{id}/original.pdf`.
-3. `lib/preview.ts` (pdf-lib) extracts page count; if preview is enabled, truncates to N pages into `preview.pdf`.
+2. `lib/storage.ts` uploads it to Cloudinary as `question-bank/{id}/original` (raw, `type: authenticated`).
+3. `lib/preview.ts` (pdf-lib) extracts page count; if preview is enabled, truncates to N pages and uploads `question-bank/{id}/preview` (raw, authenticated).
 
 **Browse → checkout → download**
 1. Student browses `/question-banks`, server-rendered from published `QuestionBank` rows.
@@ -73,9 +73,9 @@ Visual direction: professional CA exam-prep coaching + LMS look (trust-first, ca
 
 - Ubuntu VPS/EC2: Node LTS, PostgreSQL (on-box or RDS), Nginx reverse proxy, SSL via certbot.
 - Process management: PM2 (`ecosystem.config.js`), `pm2 startup && pm2 save` for reboot persistence.
-- `STORAGE_ROOT` set to an absolute path **outside** the git-managed app directory so redeploys never touch uploaded files/invoices.
+- `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` — file storage is Cloudinary, so there is no server disk to provision or keep outside the app directory.
 - `GET /api/v1/health` — unauthenticated DB-ping health check for an external uptime monitor.
-- Nightly `pg_dump` + `STORAGE_ROOT` backup cron.
+- Nightly `pg_dump` cron (Cloudinary retains uploaded assets).
 
 ## 8. Extension Points for Phase 2 (not built now)
 

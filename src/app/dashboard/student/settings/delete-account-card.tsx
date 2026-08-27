@@ -87,28 +87,57 @@ export function DeleteAccountCard() {
         </Button>
 
         <Dialog open={open} onOpenChange={handleOpenChange}>
-          <DialogContent>
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Confirm account deletion</DialogTitle>
+              <div
+                aria-hidden
+                className="bg-destructive/10 text-destructive flex size-11 items-center justify-center rounded-full"
+              >
+                <TriangleAlert className="size-5" />
+              </div>
+              <DialogTitle>Permanently delete your account?</DialogTitle>
               <DialogDescription>
-                Enter your password to permanently delete your account. This action cannot be
-                undone.
+                This can&apos;t be undone. Enter your password to confirm.
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+              <ul className="border-destructive/20 bg-destructive/5 text-muted-foreground flex flex-col gap-1.5 rounded-lg border p-3 text-xs">
+                <li className="flex gap-2">
+                  <span className="text-destructive">&bull;</span>
+                  Your name, email, and login are erased immediately.
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-destructive">&bull;</span>
+                  Question banks you&apos;ve purchased become unrecoverable.
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-destructive">&bull;</span>
+                  You&apos;ll be signed out right away.
+                </li>
+              </ul>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="delete-password">Password</Label>
-                <PasswordInput id="delete-password" {...register("password")} />
+                <PasswordInput
+                  id="delete-password"
+                  autoComplete="current-password"
+                  autoFocus
+                  {...register("password")}
+                />
                 {errors.password && (
                   <p className="text-destructive text-xs">{errors.password.message}</p>
                 )}
               </div>
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setOpen(false)}
+                  disabled={submitting}
+                >
                   Cancel
                 </Button>
                 <Button type="submit" variant="destructive" disabled={submitting}>
-                  {submitting ? "Deleting…" : "Permanently delete"}
+                  {submitting ? "Deleting…" : "Delete account"}
                 </Button>
               </DialogFooter>
             </form>

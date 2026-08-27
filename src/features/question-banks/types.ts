@@ -17,5 +17,7 @@ export type QuestionBank = {
   previewPageCount: number | null;
   thumbnailUrl: string | null;
   isPublished: boolean;
+  isFeatured: boolean;
+  features: string[];
   createdAt: string;
 };

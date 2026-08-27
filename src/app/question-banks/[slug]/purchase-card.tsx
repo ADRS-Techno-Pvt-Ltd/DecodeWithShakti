@@ -5,13 +5,53 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { CheckCircle2 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
 function formatRupees(paise: number): string {
   return `₹${(paise / 100).toFixed(0)}`;
+}
+
+/** Perforated ticket bottom edge, matched to the checkout mockup. */
+const edgeStyle: React.CSSProperties = {
+  background: "var(--card)",
+  filter: "drop-shadow(0 5px 6px rgba(53,47,158,0.15))",
+  WebkitMaskImage:
+    "linear-gradient(135deg, #000 50%, transparent 0), linear-gradient(45deg, #000 50%, transparent 0)",
+  WebkitMaskSize: "14px 14px",
+  WebkitMaskPosition: "0 0, 7px 0",
+  WebkitMaskRepeat: "repeat-x",
+  maskImage:
+    "linear-gradient(135deg, #000 50%, transparent 0), linear-gradient(45deg, #000 50%, transparent 0)",
+  maskSize: "14px 14px",
+  maskPosition: "0 0, 7px 0",
+  maskRepeat: "repeat-x",
+};
+
+function TicketShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="sticky top-6">
+      <div className="overflow-hidden rounded-t-[14px] border border-border bg-card shadow-[0_18px_40px_-28px_rgba(53,47,158,0.35)]">
+        <div className="flex items-baseline justify-between border-b border-dashed border-primary/25 px-6 pt-5 pb-4">
+          <h2 className="font-heading text-[18px] font-medium">Order summary</h2>
+        </div>
+        <div className="px-6 pt-5 pb-2">{children}</div>
+      </div>
+      <div aria-hidden className="h-3" style={edgeStyle} />
+    </div>
+  );
+}
+
+function FeatureList({ features }: { features: string[] }) {
+  if (features.length === 0) return null;
+  return (
+    <ul className="mb-5 flex flex-col gap-2.5 text-[13.8px] text-muted-foreground">
+      {features.map((feature) => (
+        <li key={feature} className="flex items-start gap-2.5">
+          <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" strokeWidth={2.5} />
+          {feature}
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 export function PurchaseCard({
@@ -20,12 +60,14 @@ export function PurchaseCard({
   regularPrice,
   earlyBirdActive,
   alreadyOwned,
+  features = [],
 }: {
   questionBankId: string;
   basePrice: number;
   regularPrice: number;
   earlyBirdActive: boolean;
   alreadyOwned: boolean;
+  features?: string[];
 }) {
   const router = useRouter();
   const { status } = useSession();
@@ -90,74 +132,101 @@ export function PurchaseCard({
 
   if (alreadyOwned) {
     return (
-      <Card className="sticky top-24">
-        <CardHeader>
-          <CardTitle className="text-base">You already own this</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <TicketShell>
+        <div className="relative">
+          <span className="pointer-events-none absolute -top-2 right-0 -rotate-12 rounded-full border-2 border-success/60 px-3 py-2.5 font-mono text-[12px] tracking-[0.08em] text-success/80 uppercase">
+            paid
+          </span>
           <div className="flex items-start gap-2.5 rounded-md bg-success/10 px-3.5 py-3 text-sm text-success">
             <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
             Purchased and ready to download anytime from your student dashboard.
           </div>
-          <Button
-            className="mt-4 w-full"
-            size="lg"
-            render={<a href="/dashboard/student">Go to My Purchases</a>}
-          />
-        </CardContent>
-      </Card>
+        </div>
+        <a
+          href="/dashboard/student"
+          className="mt-4 mb-5 block w-full rounded-[9px] bg-primary-light py-3 text-center text-[15px] font-medium text-white transition-colors hover:bg-primary"
+        >
+          Go to my purchases
+        </a>
+        <FeatureList features={features} />
+      </TicketShell>
     );
   }
 
   return (
-    <Card className="sticky top-24">
-      <CardHeader>
-        <CardTitle className="text-base">Order Summary</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex justify-between py-2 text-sm">
-          <span>Base price</span>
-          <span>{formatRupees(regularPrice)}</span>
-        </div>
-        {earlyBirdActive && (
-          <div className="flex justify-between py-2 text-sm text-green-700">
-            <span>
-              Early bird discount{" "}
-              <Badge className="ml-1 border-gold/40 bg-gold-pale text-gold-ink">active</Badge>
+    <TicketShell>
+      <div className="mb-4 flex items-center justify-between text-[14.5px]">
+        <span className="text-muted-foreground">Base price</span>
+        <span className="font-mono font-medium">{formatRupees(regularPrice)}</span>
+      </div>
+
+      {earlyBirdActive && (
+        <div className="mb-4 flex items-center justify-between text-[14.5px] text-success">
+          <span className="flex items-center gap-1.5">
+            Early bird
+            <span className="rounded-full border border-gold/40 bg-gold-pale px-1.5 py-0.5 font-mono text-[10px] tracking-[0.04em] text-gold-ink uppercase">
+              active
             </span>
-            <span>-{formatRupees(regularPrice - basePrice)}</span>
-          </div>
-        )}
-
-        <div className="mt-2 flex gap-2">
-          <Input
-            placeholder="Coupon code"
-            value={couponCode}
-            onChange={(e) => setCouponCode(e.target.value)}
-          />
-          <Button variant="outline" size="sm" onClick={applyCoupon} disabled={validating}>
-            Apply
-          </Button>
+          </span>
+          <span className="font-mono font-medium">
+            &minus;{formatRupees(regularPrice - basePrice)}
+          </span>
         </div>
-        {validated && (
-          <div className="flex justify-between py-2 text-sm text-green-700">
-            <span>Coupon &ldquo;{validated.code}&rdquo;</span>
-            <span>-{formatRupees(validated.discountAmount)}</span>
-          </div>
-        )}
+      )}
 
-        <div className="mt-1.5 flex justify-between border-t pt-3.5 text-base font-bold">
-          <span>Total payable</span>
-          <span>{formatRupees(finalAmount)}</span>
+      <div className="mt-1 mb-5 flex gap-2">
+        <input
+          placeholder="Coupon code"
+          value={couponCode}
+          onChange={(e) => setCouponCode(e.target.value)}
+          className="min-w-0 flex-1 border-0 border-b-[1.5px] border-primary/30 bg-transparent px-0.5 pt-1.5 pb-2 text-sm outline-none placeholder:text-muted-foreground/60 focus:border-primary"
+        />
+        <button
+          type="button"
+          onClick={applyCoupon}
+          disabled={validating}
+          className="rounded-[7px] border border-primary/30 bg-accent px-4 text-[13px] font-medium text-primary-dark transition-colors hover:bg-primary/10 disabled:opacity-50"
+        >
+          Apply
+        </button>
+      </div>
+
+      {validated && (
+        <div className="mb-4 flex items-center justify-between text-[14.5px] text-success">
+          <span>Coupon &ldquo;{validated.code}&rdquo;</span>
+          <span className="font-mono font-medium">
+            &minus;{formatRupees(validated.discountAmount)}
+          </span>
         </div>
+      )}
 
-        <Button className="mt-4 w-full" size="lg" onClick={purchase} disabled={purchasing}>
-          {purchasing ? "Processing…" : "Purchase Now"}
-        </Button>
-        <p className="text-muted-foreground mt-2.5 text-center text-xs">
-          Secure checkout · Invoice generated automatically
-        </p>
-      </CardContent>
-    </Card>
+      <hr className="mt-1.5 mb-4 border-0 border-t border-dashed border-primary/25" />
+
+      <div className="mb-5 flex items-baseline justify-between">
+        <span className="font-medium">Total payable</span>
+        <span className="font-mono text-[20px] font-semibold text-primary">
+          {formatRupees(finalAmount)}
+        </span>
+      </div>
+
+      <button
+        type="button"
+        onClick={purchase}
+        disabled={purchasing}
+        className="mb-3 w-full rounded-[9px] bg-primary-light py-3 text-[15px] font-medium text-white transition-[background-color,transform] hover:bg-primary active:scale-[0.98] disabled:opacity-60"
+      >
+        {purchasing ? "Processing…" : "Purchase now →"}
+      </button>
+      <p className="mb-5 text-center text-[11.5px] text-muted-foreground">
+        Secure checkout · invoice generated automatically
+      </p>
+
+      {features.length > 0 && (
+        <>
+          <hr className="mt-1.5 mb-4 border-0 border-t border-dashed border-primary/25" />
+          <FeatureList features={features} />
+        </>
+      )}
+    </TicketShell>
   );
 }

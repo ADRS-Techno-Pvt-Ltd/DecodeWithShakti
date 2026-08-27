@@ -46,6 +46,44 @@ async function main() {
   }
 
   console.log(`Seeded ${categories.length} categories.`);
+
+  // FAQ — seed the initial set only if an admin hasn't started managing them yet.
+  const faqCount = await prisma.faqItem.count();
+  if (faqCount === 0) {
+    const faqs = [
+      {
+        question: "What exactly do I get after buying a question bank?",
+        answer:
+          "A downloadable PDF of the full question bank, watermarked with your registered email, plus an auto-generated invoice for the purchase. Both stay available on your student dashboard for future downloads.",
+      },
+      {
+        question: "How does early-bird pricing work?",
+        answer:
+          "Select banks launch with a discounted price and a visible deadline. Buy before it passes and you're charged the discounted amount automatically — after that, the price reverts to regular with no action needed from you.",
+      },
+      {
+        question: "Can I preview a bank before paying?",
+        answer:
+          "Yes — every bank with preview enabled shows a set number of real pages for free, so you can judge difficulty and format before you buy. The full file only unlocks after a successful purchase.",
+      },
+      {
+        question: "Why is my download watermarked with my email?",
+        answer:
+          "It's a light, diagonal watermark on every page identifying your copy as yours — it doesn't interfere with reading or printing, and it's what lets us keep prices fair for everyone by discouraging file sharing.",
+      },
+      {
+        question: "Do you offer coupon codes?",
+        answer:
+          "Occasionally, yes. When a coupon is active you can enter it at checkout to see the discount applied before you confirm payment. Codes have an expiry date and a limited number of uses, so they may run out.",
+      },
+    ];
+    await prisma.faqItem.createMany({
+      data: faqs.map((f, i) => ({ ...f, sortOrder: i })),
+    });
+    console.log(`Seeded ${faqs.length} FAQ items.`);
+  } else {
+    console.log(`Skipped FAQ seed (${faqCount} already present).`);
+  }
 }
 
 main()

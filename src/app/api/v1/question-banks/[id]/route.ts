@@ -51,6 +51,8 @@ export async function PATCH(
         previewPageCount: previewEnabled ? (previewPageCount ?? null) : null,
         previewFilePath,
         ...(input.isPublished != null ? { isPublished: input.isPublished } : {}),
+        ...(input.isFeatured != null ? { isFeatured: input.isFeatured } : {}),
+        ...(input.features != null ? { features: input.features } : {}),
       },
       include: { category: true },
     });
@@ -58,7 +60,7 @@ export async function PATCH(
     const { thumbnailPath, ...bankDto } = updated;
     return NextResponse.json({
       ...bankDto,
-      thumbnailUrl: thumbnailUrlFor(updated.id, thumbnailPath, updated.updatedAt),
+      thumbnailUrl: thumbnailUrlFor(thumbnailPath),
     });
   } catch (err) {
     return toErrorResponse(err);
