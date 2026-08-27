@@ -361,6 +361,25 @@ export const openApiDocument = {
           }),
         },
       },
+      post: {
+        tags: ["Catalog"],
+        summary: "Create a category (admin) — used by the question-bank form's inline \"Add new category\"",
+        description:
+          "Case-insensitive match on name reuses an existing category instead of creating a duplicate.",
+        security: [{ sessionCookie: [] }],
+        requestBody: jsonBody({
+          type: "object",
+          properties: { name: { type: "string", maxLength: 60 } },
+          required: ["name"],
+        }),
+        responses: {
+          200: jsonResponse("Existing category with a matching name was reused", Category),
+          201: jsonResponse("New category created", Category),
+          400: jsonResponse("Invalid body", ValidationError),
+          ...responses401,
+          ...responses403,
+        },
+      },
     },
 
     "/api/v1/question-banks": {

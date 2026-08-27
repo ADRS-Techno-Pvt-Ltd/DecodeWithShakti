@@ -20,6 +20,16 @@ export async function fetchCategories(): Promise<Category[]> {
   return unwrap(await fetch("/api/v1/categories"));
 }
 
+export async function createCategory(name: string): Promise<Category> {
+  return unwrap(
+    await fetch("/api/v1/categories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    }),
+  );
+}
+
 export async function createQuestionBank(formData: FormData): Promise<QuestionBank> {
   return unwrap(await fetch("/api/v1/question-banks", { method: "POST", body: formData }));
 }
