@@ -14,10 +14,6 @@ const fieldBase =
 const labelBase =
   "mb-2 block font-mono text-[10.5px] tracking-[0.1em] text-muted-foreground uppercase";
 
-// Support inbox the message is addressed to. Set NEXT_PUBLIC_CONTACT_EMAIL to override.
-const CONTACT_EMAIL =
-  process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "support@decodewithshakti.com";
-
 export function ContactForm({
   stampDate,
 }: {
@@ -26,6 +22,7 @@ export function ContactForm({
   const reduceMotion = useReducedMotion();
   const [sent, setSent] = useState(false);
   const [sentTo, setSentTo] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const {
     register,
@@ -34,19 +31,27 @@ export function ContactForm({
     formState: { errors },
   } = useForm<ContactInput>({ resolver: zodResolver(contactSchema) });
 
-  function onSubmit(data: ContactInput) {
-    const subject = `[Contact] ${data.subject}`;
-    const body = `From: ${data.name} <${data.email}>\n\n${data.message}`;
-    const mailto = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
-      subject,
-    )}&body=${encodeURIComponent(body)}`;
-
-    // Hand off to the visitor's mail client — no server round-trip, no mail-provider dependency.
-    window.location.href = mailto;
-
-    setSentTo(data.email);
-    setSent(true);
-    toast.success("Opening your email app — hit send there to file your message.");
+  async function onSubmit(data: ContactInput) {
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/v1/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        toast.error(body?.error ?? "Could not send your message right now. Please try again shortly.");
+        return;
+      }
+      setSentTo(data.email);
+      setSent(true);
+      toast.success("Message sent — a person will reply soon.");
+    } catch {
+      toast.error("Could not send your message right now. Please try again shortly.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function sendAnother() {
@@ -166,8 +171,8 @@ export function ContactForm({
               }`}
             >
               {sent
-                ? `Your email app should have opened — send from ${sentTo} and we'll reply within 1–2 business days.`
-                : "Opens in your email app — a person reads every message, no auto-replies."}
+                ? `Sent from ${sentTo} — a person reads every message and we'll reply within 1–2 business days.`
+                : "A person reads every message, no auto-replies."}
             </p>
 
             {sent ? (
@@ -181,9 +186,10 @@ export function ContactForm({
             ) : (
               <button
                 type="submit"
-                className="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-dark active:scale-[0.97] sm:w-auto"
+                disabled={submitting}
+                className="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-dark active:scale-[0.97] disabled:opacity-60 sm:w-auto"
               >
-                Send message
+                {submitting ? "Sending…" : "Send message"}
                 <ArrowRight className="h-4 w-4" />
               </button>
             )}

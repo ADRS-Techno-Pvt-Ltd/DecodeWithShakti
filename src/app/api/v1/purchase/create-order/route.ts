@@ -18,6 +18,14 @@ const ORDER_EXPIRY_MINUTES = Number(process.env.CASHFREE_ORDER_EXPIRY_MINUTES ??
 
 export async function POST(request: Request) {
   try {
+    if (!process.env.NEXTAUTH_URL || !/^https?:\/\//.test(process.env.NEXTAUTH_URL)) {
+      // Fails fast with a clear cause instead of building "undefined/purchase/.../return"
+      // and letting the payment provider reject it opaquely (e.g. Cashfree's
+      // order_meta.return_url_invalid, which took real diagnosis to trace back to this).
+      console.error("create-order: NEXTAUTH_URL is not set to a valid absolute URL.");
+      return NextResponse.json({ error: "Server misconfigured. Please contact support." }, { status: 500 });
+    }
+
     const session = await requireStudent();
     const raw = await request.json();
     const parsed = bodySchema.safeParse(raw);
@@ -121,12 +129,24 @@ export async function POST(request: Request) {
         expiresAt,
       });
     } catch (err) {
+      // The cashfree-pg SDK throws AxiosErrors — err.message alone is just
+      // "Request failed with status code 400", which isn't enough to diagnose
+      // without reproducing the request by hand. Capture the provider's own
+      // error body (code/message/type) when present, so it's visible directly
+      // on the Purchase row instead of needing to reverse-engineer it later.
+      const providerDetail =
+        err && typeof err === "object" && "response" in err
+          ? (err as { response?: { data?: unknown } }).response?.data
+          : undefined;
+      const detail = providerDetail ? JSON.stringify(providerDetail) : undefined;
+      console.error("create-order: provider.createOrder() failed", err, providerDetail);
+
       await prisma.purchase.update({
         where: { id: purchase.id },
         data: {
           status: "FAILED",
           failureCode: "order_creation_failed",
-          failureReason: err instanceof Error ? err.message : "Could not start payment.",
+          failureReason: detail ?? (err instanceof Error ? err.message : "Could not start payment."),
         },
       });
       return NextResponse.json({ error: "Could not start payment. Please try again." }, { status: 502 });
