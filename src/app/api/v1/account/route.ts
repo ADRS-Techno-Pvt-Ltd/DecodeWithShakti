@@ -3,7 +3,60 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { requireStudent, toErrorResponse } from "@/lib/auth-guards";
-import { deleteAccountSchema } from "@/lib/validation/auth";
+import { deleteAccountSchema, updateEmailSchema } from "@/lib/validation/auth";
+
+/**
+ * Update user email (students only).
+ */
+export async function PATCH(request: Request) {
+  try {
+    const session = await requireStudent();
+    const body = await request.json();
+    
+    // Defensive check for schema availability
+    if (typeof updateEmailSchema === 'undefined') {
+      console.error('updateEmailSchema is undefined - module import issue');
+      return NextResponse.json({ 
+        error: "Server configuration error. Please restart the development server." 
+      }, { status: 500 });
+    }
+    
+    const parsed = updateEmailSchema.safeParse(body);
+    
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    }
+
+    const user = await prisma.user.findUniqueOrThrow({ where: { id: session.user.id } });
+    
+    // Verify password
+    const validPassword = await bcrypt.compare(parsed.data.password, user.passwordHash);
+    if (!validPassword) {
+      return NextResponse.json({ error: "Incorrect password" }, { status: 400 });
+    }
+
+    // Check if new email is already in use
+    const existingUser = await prisma.user.findUnique({ 
+      where: { email: parsed.data.newEmail } 
+    });
+    
+    if (existingUser && existingUser.id !== user.id) {
+      return NextResponse.json({ 
+        error: "This email is already registered to another account" 
+      }, { status: 409 });
+    }
+
+    // Update email
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { email: parsed.data.newEmail },
+    });
+
+    return NextResponse.json({ ok: true, email: parsed.data.newEmail });
+  } catch (err) {
+    return toErrorResponse(err);
+  }
+}
 
 /**
  * Self-service account deletion (students only — the single admin account is

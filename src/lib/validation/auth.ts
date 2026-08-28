@@ -28,3 +28,9 @@ export const deleteAccountSchema = z.object({
   password: z.string().min(1, "Enter your password to confirm"),
 });
 export type DeleteAccountInput = z.infer<typeof deleteAccountSchema>;
+
+export const updateEmailSchema = z.object({
+  newEmail: z.string().email("Enter a valid email address"),
+  password: z.string().min(1, "Enter your password to confirm"),
+});
+export type UpdateEmailInput = z.infer<typeof updateEmailSchema>;

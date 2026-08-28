@@ -40,26 +40,26 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/85 backdrop-blur-md">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-7 py-4 2xl:max-w-[1440px]">
-        <BrandLogo imgClassName="h-8 w-auto" />
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6 sm:py-4 lg:px-7 2xl:max-w-[1440px]">
+        <BrandLogo imgClassName="h-7 w-auto sm:h-8 shrink-0" />
 
-        <nav className="hidden items-center gap-7 text-[14.5px] font-medium text-muted-foreground lg:flex">
-          <Link href="/" className="hover:text-primary">
+        <nav className="hidden items-center gap-5 text-sm font-medium text-muted-foreground lg:flex xl:gap-7">
+          <Link href="/" className="hover:text-primary whitespace-nowrap">
             Home
           </Link>
           {sections.map((s) => (
-            <Link key={s.hash} href={sectionHref(s.hash)} className="hover:text-primary">
+            <Link key={s.hash} href={sectionHref(s.hash)} className="hover:text-primary whitespace-nowrap">
               {s.label}
             </Link>
           ))}
         </nav>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 shrink-0">
           {user ? (
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[14.5px] font-medium hover:bg-muted">
-                {user.name ?? "Account"}
-                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+              <DropdownMenuTrigger className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium hover:bg-muted sm:px-2.5">
+                <span className="truncate max-w-[100px] sm:max-w-none">{user.name ?? "Account"}</span>
+                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 {user.email && <DropdownMenuItem disabled>{user.email}</DropdownMenuItem>}
@@ -81,13 +81,13 @@ export function SiteHeader() {
           ) : (
             <Button
               variant="ghost"
-              className="h-9 px-4"
+              className="h-9 px-3 text-sm sm:px-4"
               render={<Link href="/login">Log in</Link>}
             />
           )}
           <Button
-            className="h-9 px-5 shadow-sm"
-            render={<Link href="/question-banks">Browse banks</Link>}
+            className="h-9 px-3 text-sm shadow-sm sm:px-5"
+            render={<Link href="/question-banks"><span className="hidden sm:inline">Browse banks</span><span className="sm:hidden">Browse</span></Link>}
           />
         </div>
       </div>

@@ -30,6 +30,14 @@ export async function POST(request: Request) {
     }
 
     const effectivePrice = resolveEffectivePrice(bank);
+    
+    // For FLAT discount coupons, reject if item price is less than the discount value
+    if (coupon.discountType === "FLAT" && effectivePrice < coupon.discountValue) {
+      return NextResponse.json({ 
+        error: `This coupon requires a minimum purchase of ₹${(coupon.discountValue / 100).toFixed(0)}. Current item price is ₹${(effectivePrice / 100).toFixed(0)}.` 
+      }, { status: 400 });
+    }
+    
     const discountAmount = computeDiscount(effectivePrice, coupon);
 
     return NextResponse.json({

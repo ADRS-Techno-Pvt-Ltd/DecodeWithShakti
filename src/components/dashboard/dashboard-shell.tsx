@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
@@ -18,6 +19,7 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import {
   DropdownMenu,
@@ -30,7 +32,7 @@ import { BrandLogo } from "@/components/brand-logo";
 
 export type NavItem = { href: string; label: string; icon: React.ReactNode };
 
-export function DashboardShell({
+function DashboardShellContent({
   navItems,
   userName,
   userEmail,
@@ -44,14 +46,27 @@ export function DashboardShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const { isMobile, setOpenMobile } = useSidebar();
+  const [isClient, setIsClient] = useState(false);
+  
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+  
   const activeHref = navItems
     .map((item) => item.href)
     .filter((href) => pathname === href || pathname.startsWith(href + "/"))
     .sort((a, b) => b.length - a.length)[0];
 
+  const handleNavClick = () => {
+    // Close sidebar on mobile when a nav item is clicked
+    if (isClient && isMobile) {
+      setOpenMobile(false);
+    }
+  };
+
   return (
-    <MotionConfig reducedMotion="user">
-    <SidebarProvider>
+    <>
       <Sidebar collapsible="icon">
         <SidebarHeader>
           <div className="flex items-center px-2 py-1.5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
@@ -79,7 +94,7 @@ export function DashboardShell({
                       tooltip={item.label}
                       size="lg"
                       render={
-                        <Link href={item.href}>
+                        <Link href={item.href} onClick={handleNavClick}>
                           {item.icon}
                           <span>{item.label}</span>
                         </Link>
@@ -107,7 +122,7 @@ export function DashboardShell({
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <header className="flex h-16 items-center justify-between border-b bg-card px-6">
+        <header className="flex h-16 items-center justify-between border-b bg-card px-4 sm:px-6">
           <SidebarTrigger />
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-muted">
@@ -134,20 +149,49 @@ export function DashboardShell({
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
-        <main className="bg-background flex-1 p-7">
+        <main className="bg-background flex-1 p-4 sm:p-6 lg:p-7 overflow-x-hidden min-w-0">
           <AnimatePresence mode="wait">
             <motion.div
               key={pathname}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.25, ease: "easeOut" }}
+              className="min-w-0"
             >
               {children}
             </motion.div>
           </AnimatePresence>
         </main>
       </SidebarInset>
-    </SidebarProvider>
+    </>
+  );
+}
+
+export function DashboardShell({
+  navItems,
+  userName,
+  userEmail,
+  roleLabel,
+  children,
+}: {
+  navItems: NavItem[];
+  userName: string;
+  userEmail: string;
+  roleLabel: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <MotionConfig reducedMotion="user">
+      <SidebarProvider>
+        <DashboardShellContent
+          navItems={navItems}
+          userName={userName}
+          userEmail={userEmail}
+          roleLabel={roleLabel}
+        >
+          {children}
+        </DashboardShellContent>
+      </SidebarProvider>
     </MotionConfig>
   );
 }

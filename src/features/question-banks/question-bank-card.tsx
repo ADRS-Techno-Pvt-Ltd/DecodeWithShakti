@@ -34,16 +34,17 @@ export function QuestionBankCard({
   const href = `/question-banks/${slug}`;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 14 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-60px" }}
-      whileHover={{ y: -5 }}
-      transition={{ duration: 0.35, ease: "easeOut" }}
-    >
-      <Card className="h-full transition-shadow hover:shadow-md">
-        <CardContent className="p-5">
-          <Link href={href}>
+    <Link href={href} className="block h-full">
+      <motion.div
+        initial={{ opacity: 0, y: 14 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-60px" }}
+        whileHover={{ y: -5 }}
+        transition={{ duration: 0.35, ease: "easeOut" }}
+        className="h-full"
+      >
+        <Card className="h-full transition-shadow hover:shadow-md">
+          <CardContent className="p-5">
             <div className="mb-3 flex aspect-video items-center justify-center overflow-hidden rounded-[10px] bg-muted text-primary">
               {thumbnailUrl ? (
                 <img src={thumbnailUrl} alt="" className="h-full w-full object-contain" />
@@ -64,24 +65,17 @@ export function QuestionBankCard({
                 {formatRupees(effectivePrice)}
               </span>
             </div>
-          </Link>
-          {previewEnabled ? (
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-3"
-              render={
-                <Link href={href}>
-                  <Eye className="h-3.5 w-3.5" />
-                  Preview
-                </Link>
-              }
-            />
-          ) : hasEarlyBird ? (
-            <Badge className="mt-3 border-gold/40 bg-gold-pale text-gold-ink">Early bird</Badge>
-          ) : null}
-        </CardContent>
-      </Card>
-    </motion.div>
+            {previewEnabled ? (
+              <div className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-sm font-medium shadow-sm">
+                <Eye className="h-3.5 w-3.5" />
+                Preview
+              </div>
+            ) : hasEarlyBird ? (
+              <Badge className="mt-3 border-gold/40 bg-gold-pale text-gold-ink">Early bird</Badge>
+            ) : null}
+          </CardContent>
+        </Card>
+      </motion.div>
+    </Link>
   );
 }

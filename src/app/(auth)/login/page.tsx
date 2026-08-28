@@ -39,20 +39,20 @@ export default function LoginPage() {
 
   return (
     <Card className="w-full shadow-md">
-      <CardHeader className="px-7 pt-7">
-        <CardTitle className="text-2xl">Log in to Decode with Shakti</CardTitle>
+      <CardHeader className="px-6 pt-6 pb-4">
+        <CardTitle className="text-xl sm:text-2xl">Log in to Decode with Shakti</CardTitle>
         <CardDescription>Access your purchases and question banks.</CardDescription>
       </CardHeader>
-      <CardContent className="px-7 pb-7">
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
+      <CardContent className="px-6 pb-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" className="h-11 px-3.5 text-[15px]" {...register("email")} />
+            <Input id="email" type="email" className="h-10 px-3 text-sm sm:h-11 sm:px-3.5 sm:text-[15px]" {...register("email")} />
             {errors.email && <p className="text-destructive text-xs">{errors.email.message}</p>}
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="password">Password</Label>
-            <PasswordInput id="password" className="h-11 px-3.5 text-[15px]" {...register("password")} />
+            <PasswordInput id="password" className="h-10 px-3 text-sm sm:h-11 sm:px-3.5 sm:text-[15px]" {...register("password")} />
             {errors.password && (
               <p className="text-destructive text-xs">{errors.password.message}</p>
             )}
@@ -62,11 +62,11 @@ export default function LoginPage() {
               Forgot password?
             </Link>
           </div>
-          <Button type="submit" disabled={submitting} className="h-11 w-full text-[15px]">
+          <Button type="submit" disabled={submitting} className="h-10 w-full text-sm sm:h-11 sm:text-[15px]">
             {submitting ? "Logging in…" : "Log in"}
           </Button>
         </form>
-        <p className="text-muted-foreground mt-5 text-center text-sm">
+        <p className="text-muted-foreground mt-4 text-center text-sm">
           Don&apos;t have an account?{" "}
           <Link href="/register" className="text-primary hover:underline">
             Sign up
