@@ -71,7 +71,7 @@ export async function watermarkPdf(pdfBytes: Buffer, label: string): Promise<Uin
         const baseX = i * spacingX;
         const baseY = j * spacingY;
         
-        // Draw logo image in grayscale
+        // Draw logo image
         page.drawImage(logoImage, {
           x: baseX,
           y: baseY,
@@ -79,7 +79,6 @@ export async function watermarkPdf(pdfBytes: Buffer, label: string): Promise<Uin
           height: logoDims.height,
           rotate: degrees(-45),
           opacity: 0.2,
-          color: grayscale(0.5), // Make logo grayscale
         });
         
         // Calculate email width to center it below the logo
