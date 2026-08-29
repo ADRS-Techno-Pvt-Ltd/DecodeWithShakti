@@ -70,7 +70,7 @@ export default function AdminUsersPage() {
                     <TableCell className="text-muted-foreground">{user.phone || "—"}</TableCell>
                     <TableCell className="text-center">
                       {user.role === "ADMIN" ? (
-                        <StatusBadge tone="info">Admin</StatusBadge>
+                        <StatusBadge tone="success">Admin</StatusBadge>
                       ) : (
                         <StatusBadge tone="muted">Student</StatusBadge>
                       )}
