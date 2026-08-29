@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/dashboard/status-badge";
 import { EmptyState } from "@/components/dashboard/empty-state";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Reveal } from "@/components/landing/reveal";
 import { fetchAdminQuestionBanks, fetchCategories, deleteQuestionBank } from "@/features/question-banks/api";
 import type { QuestionBank } from "@/features/question-banks/types";
@@ -23,6 +24,7 @@ export default function AdminQuestionBanksPage() {
   const queryClient = useQueryClient();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<QuestionBank | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<QuestionBank | null>(null);
 
   const { data: banks, isLoading } = useQuery({
     queryKey: ["admin-question-banks"],
@@ -40,10 +42,10 @@ export default function AdminQuestionBanksPage() {
     setSheetOpen(true);
   }
 
-  async function handleDelete(bank: QuestionBank) {
-    if (!confirm(`Delete "${bank.title}"? This cannot be undone.`)) return;
+  async function confirmDelete() {
+    if (!deleteTarget) return;
     try {
-      await deleteQuestionBank(bank.id);
+      await deleteQuestionBank(deleteTarget.id);
       toast.success("Question bank deleted.");
       queryClient.invalidateQueries({ queryKey: ["admin-question-banks"] });
     } catch (err) {
@@ -125,7 +127,7 @@ export default function AdminQuestionBanksPage() {
                       <Button variant="outline" size="sm" onClick={() => openEdit(bank)}>
                         Edit
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(bank)}>
+                      <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(bank)}>
                         Delete
                       </Button>
                     </TableCell>
@@ -143,6 +145,22 @@ export default function AdminQuestionBanksPage() {
         categories={categories ?? []}
         editing={editing}
         onSaved={() => queryClient.invalidateQueries({ queryKey: ["admin-question-banks"] })}
+      />
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(next) => !next && setDeleteTarget(null)}
+        title="Delete this question bank?"
+        description={
+          deleteTarget ? (
+            <>
+              &ldquo;{deleteTarget.title}&rdquo; and all of its files will be permanently removed.
+              This can&apos;t be undone.
+            </>
+          ) : null
+        }
+        confirmLabel="Delete question bank"
+        onConfirm={confirmDelete}
       />
     </div>
   );

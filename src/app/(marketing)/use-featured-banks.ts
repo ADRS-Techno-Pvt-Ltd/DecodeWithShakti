@@ -15,6 +15,8 @@ export type FeaturedBankCard = {
   bullets: string[];
   popular: boolean;
   href: string;
+  /** Real pages shown in the free preview, or null when the bank has none configured. */
+  previewPageCount: number | null;
 };
 
 type ApiBank = {
@@ -27,6 +29,8 @@ type ApiBank = {
   earlyBirdEndsAt: string | null;
   thumbnailUrl: string | null;
   features: string[];
+  previewEnabled: boolean;
+  previewPageCount: number | null;
 };
 
 function rupees(paise: number): string {
@@ -62,6 +66,7 @@ function toCard(bank: ApiBank): FeaturedBankCard {
     bullets: bank.features,
     popular: false,
     href: `/question-banks/${bank.slug}`,
+    previewPageCount: bank.previewEnabled ? bank.previewPageCount : null,
   };
 }
 

@@ -95,6 +95,7 @@ const featuredBanks: FeaturedBankCard[] = [
     bullets: ["12-page free preview", "600 questions, answer key included", "Instant download after purchase"],
     popular: false,
     href: "/question-banks",
+    previewPageCount: 12,
   },
   {
     category: "CA Inter · Costing",
@@ -108,6 +109,7 @@ const featuredBanks: FeaturedBankCard[] = [
     bullets: ["15-page free preview", "5 full-length mock papers", "Instant download after purchase"],
     popular: true,
     href: "/question-banks",
+    previewPageCount: 15,
   },
   {
     category: "CA Final · Audit",
@@ -121,6 +123,7 @@ const featuredBanks: FeaturedBankCard[] = [
     bullets: ["10-page free preview", "480 case-study questions", "Instant download after purchase"],
     popular: false,
     href: "/question-banks",
+    previewPageCount: 10,
   },
 ];
 
@@ -209,6 +212,29 @@ function EarlyBirdBadgeLabel({
   return <>Early bird · ends in {formatCountdown(remaining)}</>;
 }
 
+/** Live "02d : 14h : 09m" countdown for the hero mock card, driven by the real early-bird deadline. */
+function HeroCountdown({ endsAt }: { endsAt: string }) {
+  const target = new Date(endsAt).getTime();
+  const [now, setNow] = useState<number | null>(null);
+
+  useEffect(() => {
+    setNow(Date.now());
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [target]);
+
+  if (now == null) return null;
+  const remaining = Math.max(0, target - now);
+  const days = Math.floor(remaining / DAY_MS);
+  const hours = Math.floor((remaining % DAY_MS) / 3_600_000);
+  const minutes = Math.floor((remaining % 3_600_000) / 60_000);
+  return (
+    <>
+      {String(days).padStart(2, "0")}d : {String(hours).padStart(2, "0")}h : {String(minutes).padStart(2, "0")}m
+    </>
+  );
+}
+
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
     <span className="inline-flex items-center gap-2 rounded-full border border-accent bg-accent px-3.5 py-1.5 font-mono text-xs font-semibold tracking-wide text-accent-foreground uppercase">
@@ -251,6 +277,10 @@ export default function LandingPage() {
   const { data: session } = useSession();
   const { banks: displayedBanks, loading: banksLoading } = useFeaturedBanks(featuredBanks);
   const { faqs } = useFaqs(fallbackFaqs);
+  // Hero mock card mirrors whichever bank leads the "Priced per bank" section below —
+  // an admin-featured bank when one exists, the curated fallback otherwise. Only read
+  // once `banksLoading` is false so the fallback never flashes before real data lands.
+  const heroBank = displayedBanks[0];
 
   return (
     <>
@@ -317,54 +347,93 @@ export default function LandingPage() {
                 animate={{ y: [0, -9, 0] }}
                 transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
               >
-                <div className="relative -rotate-1 rounded-[14px] border border-border bg-card shadow-[0_4px_8px_rgba(27,27,47,0.05),0_24px_48px_-16px_rgba(27,27,47,0.18)]">
-                  <div className="flex items-start justify-between gap-3 p-6 pb-4.5">
-                    <div>
-                      <div className="font-mono text-[11.5px] font-bold tracking-wide text-primary uppercase">
-                        CA Foundation · Paper 2
+                {banksLoading || !heroBank ? (
+                  <div className="relative -rotate-1 rounded-[14px] border border-border bg-card shadow-[0_4px_8px_rgba(27,27,47,0.05),0_24px_48px_-16px_rgba(27,27,47,0.18)]">
+                    <div className="flex items-start justify-between gap-3 p-6 pb-4.5">
+                      <div className="flex-1">
+                        <div className="h-3 w-32 animate-pulse rounded bg-muted" />
+                        <div className="mt-3 h-5 w-56 animate-pulse rounded bg-muted" />
+                        <div className="mt-2 h-5 w-36 animate-pulse rounded bg-muted" />
                       </div>
-                      <div className="font-heading mt-2 max-w-[280px] text-xl font-semibold">
-                        Business Laws — 600 Question Bank
+                      <div className="h-7 w-16 shrink-0 animate-pulse rounded-md bg-muted" />
+                    </div>
+                    <div className="mx-6 border-t-2 border-dashed border-border" />
+                    <div className="flex items-end justify-between gap-3.5 p-6 pt-5">
+                      <div>
+                        <div className="h-3 w-12 animate-pulse rounded bg-muted" />
+                        <div className="mt-1.5 h-7 w-20 animate-pulse rounded bg-muted" />
+                      </div>
+                      <div className="h-8 w-24 animate-pulse rounded bg-muted" />
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="relative -rotate-1 rounded-[14px] border border-border bg-card shadow-[0_4px_8px_rgba(27,27,47,0.05),0_24px_48px_-16px_rgba(27,27,47,0.18)]">
+                      <div className="flex items-start justify-between gap-3 p-6 pb-4.5">
+                        <div>
+                          <div className="font-mono text-[11.5px] font-bold tracking-wide text-primary uppercase">
+                            {heroBank.category}
+                          </div>
+                          <div className="font-heading mt-2 max-w-[280px] text-[19px] leading-snug font-semibold">
+                            {heroBank.title}
+                          </div>
+                        </div>
+                        {heroBank.badge.tone === "gold" && (
+                          <span className="rotate-6 rounded-md border-[1.5px] border-gold bg-gold-pale px-2.5 py-1.5 font-mono text-[10.5px] font-bold tracking-wide text-gold-ink uppercase">
+                            Early Bird
+                          </span>
+                        )}
+                      </div>
+                      <div className="mx-6 border-t-2 border-dashed border-border" />
+                      <div className="flex items-end justify-between gap-3.5 p-6 pt-5">
+                        <div>
+                          {heroBank.oldPrice && (
+                            <span className="font-mono text-sm text-muted-foreground line-through">
+                              {heroBank.oldPrice}
+                            </span>
+                          )}
+                          <span className="font-mono mt-0.5 block text-[28px] font-semibold">{heroBank.price}</span>
+                        </div>
+                        <div className="text-right text-xs text-muted-foreground">
+                          {heroBank.earlyBirdEndsAt ? (
+                            <>
+                              <span className="mb-0.5 block text-[10.5px] tracking-wide uppercase">Offer ends in</span>
+                              <HeroCountdown endsAt={heroBank.earlyBirdEndsAt} />
+                            </>
+                          ) : (
+                            <span className="text-[10.5px] tracking-wide uppercase">{heroBank.badge.label}</span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                    <span className="rotate-6 rounded-md border-[1.5px] border-gold bg-gold-pale px-2.5 py-1.5 font-mono text-[10.5px] font-bold tracking-wide text-gold-ink uppercase">
-                      Early Bird
-                    </span>
-                  </div>
-                  <div className="mx-6 border-t-2 border-dashed border-border" />
-                  <div className="flex items-end justify-between gap-3.5 p-6 pt-5">
-                    <div>
-                      <span className="font-mono text-sm text-muted-foreground line-through">₹899</span>
-                      <span className="font-mono mt-0.5 block text-[28px] font-semibold">₹649</span>
-                    </div>
-                    <div className="text-right text-xs text-muted-foreground">
-                      <span className="mb-0.5 block text-[10.5px] tracking-wide uppercase">Offer ends in</span>
-                      02d : 14h : 09m
-                    </div>
-                  </div>
-                </div>
-                <motion.div
-                  className="absolute -top-6 -right-3.5 hidden items-center gap-2.5 rounded-xl border border-border bg-card p-3 px-3.5 shadow-md sm:flex"
-                  animate={{ y: [0, -7, 0] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                >
-                  <CheckCircle2 className="h-5 w-5 shrink-0 text-success" />
-                  <div>
-                    <div className="text-[12.5px] font-semibold">Watermarked to you</div>
-                    <div className="text-[11px] text-muted-foreground">rahul.k@email.com</div>
-                  </div>
-                </motion.div>
-                <motion.div
-                  className="absolute -bottom-5 -left-5 hidden items-center gap-2.5 rounded-xl border border-border bg-card p-2.5 px-3.5 shadow-md sm:flex"
-                  animate={{ y: [0, -6, 0] }}
-                  transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 0.6 }}
-                >
-                  <FileText className="h-4.5 w-4.5 shrink-0 text-primary" />
-                  <div>
-                    <div className="text-xs font-semibold">12-page preview</div>
-                    <div className="text-[11px] text-muted-foreground">before you buy</div>
-                  </div>
-                </motion.div>
+                    <motion.div
+                      className="absolute -top-10 -right-6 hidden items-center gap-2.5 rounded-xl border border-border bg-card p-3 px-3.5 shadow-md sm:flex"
+                      animate={{ y: [0, -7, 0] }}
+                      transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                    >
+                      <CheckCircle2 className="h-5 w-5 shrink-0 text-success" />
+                      <div>
+                        <div className="text-[12.5px] font-semibold">Watermarked to you</div>
+                        <div className="text-[11px] text-muted-foreground">
+                          {session?.user?.email ?? "rahul.k@email.com"}
+                        </div>
+                      </div>
+                    </motion.div>
+                    <motion.div
+                      className="absolute -bottom-10 -left-8 hidden items-center gap-2.5 rounded-xl border border-border bg-card p-2.5 px-3.5 shadow-md sm:flex"
+                      animate={{ y: [0, -6, 0] }}
+                      transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 0.6 }}
+                    >
+                      <FileText className="h-4.5 w-4.5 shrink-0 text-primary" />
+                      <div>
+                        <div className="text-xs font-semibold">
+                          {heroBank.previewPageCount ? `${heroBank.previewPageCount}-page preview` : "Free preview"}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground">before you buy</div>
+                      </div>
+                    </motion.div>
+                  </>
+                )}
               </motion.div>
             </motion.div>
           </div>

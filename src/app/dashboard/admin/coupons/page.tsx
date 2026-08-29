@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/dashboard/status-badge";
 import { EmptyState } from "@/components/dashboard/empty-state";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Reveal } from "@/components/landing/reveal";
 import { fetchCoupons, deleteCoupon, type Coupon } from "@/features/coupons/api";
 import { CouponSheet } from "./coupon-sheet";
@@ -30,13 +31,14 @@ export default function AdminCouponsPage() {
   const queryClient = useQueryClient();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<Coupon | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Coupon | null>(null);
 
   const { data: coupons, isLoading } = useQuery({ queryKey: ["coupons"], queryFn: fetchCoupons });
 
-  async function handleDelete(coupon: Coupon) {
-    if (!confirm(`Delete coupon "${coupon.code}"?`)) return;
+  async function confirmDelete() {
+    if (!deleteTarget) return;
     try {
-      await deleteCoupon(coupon.id);
+      await deleteCoupon(deleteTarget.id);
       toast.success("Coupon deleted.");
       queryClient.invalidateQueries({ queryKey: ["coupons"] });
     } catch (err) {
@@ -121,7 +123,7 @@ export default function AdminCouponsPage() {
                       >
                         Edit
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(c)}>
+                      <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(c)}>
                         Delete
                       </Button>
                     </TableCell>
@@ -138,6 +140,22 @@ export default function AdminCouponsPage() {
         onOpenChange={setSheetOpen}
         editing={editing}
         onSaved={() => queryClient.invalidateQueries({ queryKey: ["coupons"] })}
+      />
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(next) => !next && setDeleteTarget(null)}
+        title="Delete this coupon?"
+        description={
+          deleteTarget ? (
+            <>
+              &ldquo;{deleteTarget.code}&rdquo; will no longer be usable at checkout. This can&apos;t
+              be undone.
+            </>
+          ) : null
+        }
+        confirmLabel="Delete coupon"
+        onConfirm={confirmDelete}
       />
     </div>
   );

@@ -25,7 +25,14 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
     // position and lands on the wrong section. Route them through Lenis instead.
     function scrollToHash(hash: string) {
       const target = document.querySelector(hash);
-      if (target) lenis.scrollTo(target as HTMLElement, { offset: NAV_OFFSET });
+      if (!target) return;
+      // Nav scrollspy listens for these so it can highlight the clicked link
+      // immediately instead of waiting ~1s for the scroll animation to catch up.
+      window.dispatchEvent(new CustomEvent("lenis-hash-start", { detail: hash }));
+      lenis.scrollTo(target as HTMLElement, {
+        offset: NAV_OFFSET,
+        onComplete: () => window.dispatchEvent(new CustomEvent("lenis-hash-end")),
+      });
     }
 
     function onClick(e: MouseEvent) {

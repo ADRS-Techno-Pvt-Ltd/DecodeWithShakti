@@ -4,7 +4,7 @@ import PDFDocument from "pdfkit";
 
 /** Brand lockup used on the invoice header — see `public/logo.png` (from `Logo/`). */
 const LOGO_PATH = path.join(process.cwd(), "public", "logo.png");
-const LOGO_ASPECT = 298 / 1000; // intrinsic h/w of public/logo.png
+const LOGO_ASPECT = 473 / 1512; // intrinsic h/w of public/logo.png
 
 /** Palette mirrors the app design tokens in `src/app/globals.css` (light theme). */
 const INK = "#1b1b2f";

@@ -1,8 +1,8 @@
 import Link from "next/link";
 
 const ASSETS = {
-  lockup: { src: "/logo.png", width: 1000, height: 298 },
-  mark: { src: "/logo-mark.png", width: 512, height: 510 },
+  lockup: { src: "/logo.png", width: 1512, height: 473 },
+  mark: { src: "/logo-mark.png", width: 533, height: 533 },
 } as const;
 
 type BrandLogoProps = {
