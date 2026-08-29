@@ -12,6 +12,15 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
+    // Browsers restore the previous scroll offset on a hard refresh; force the
+    // home page back to the top instead, unless the URL points at a section.
+    // scrollRestoration must be set before the scrollTo, since Chrome can
+    // otherwise re-apply the saved offset after this effect runs.
+    if (window.location.pathname === "/" && !window.location.hash) {
+      if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+      window.scrollTo(0, 0);
+    }
+
     const lenis = new Lenis({ duration: 1.1, smoothWheel: true });
     let rafId: number;
     function raf(time: number) {

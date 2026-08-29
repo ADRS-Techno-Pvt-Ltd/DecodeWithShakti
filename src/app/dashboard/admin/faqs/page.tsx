@@ -113,12 +113,12 @@ export default function AdminFaqsPage() {
               }
             />
           ) : (
-            <Table className="table-fixed">
+            <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12">#</TableHead>
-                  <TableHead>Question &amp; answer</TableHead>
-                  <TableHead className="w-24">Status</TableHead>
+                  <TableHead className="min-w-[120px]">Question</TableHead>
+                  <TableHead className="w-24 text-center">Status</TableHead>
                   <TableHead className="w-28 text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -153,7 +153,7 @@ export default function AdminFaqsPage() {
                         {faq.answer}
                       </p>
                     </TableCell>
-                    <TableCell className="py-3">
+                    <TableCell className="py-3 text-center">
                       {faq.isPublished ? (
                         <StatusBadge tone="success">Published</StatusBadge>
                       ) : (
