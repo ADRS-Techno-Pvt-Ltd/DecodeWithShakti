@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { LogOut } from "lucide-react";
+import { LogOut, Home } from "lucide-react";
 import { motion, AnimatePresence, MotionConfig } from "motion/react";
 import {
   Sidebar,
@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { BrandLogo } from "@/components/brand-logo";
+import { Button } from "@/components/ui/button";
 
 export type NavItem = { href: string; label: string; icon: React.ReactNode };
 
@@ -128,7 +129,19 @@ function DashboardShellContent({
       </Sidebar>
       <SidebarInset>
         <header className="flex h-16 items-center justify-between border-b bg-card px-4 sm:px-6">
-          <SidebarTrigger />
+          <div className="flex items-center gap-1.5">
+            <SidebarTrigger />
+            <Button
+              variant="ghost"
+              size="sm"
+              render={
+                <Link href="/" className="flex items-center gap-1.5">
+                  <Home />
+                  <span className="hidden sm:inline">Back to Home</span>
+                </Link>
+              }
+            />
+          </div>
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-muted">
               <Avatar className="h-8 w-8">
