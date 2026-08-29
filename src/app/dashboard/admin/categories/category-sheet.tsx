@@ -49,9 +49,9 @@ export function CategorySheet({ open, onOpenChange, editing, onSaved }: Category
     }
   }, [open, editing, reset]);
 
-  // Auto-generate slug from name when creating new category
+  // Auto-generate slug from name
   useEffect(() => {
-    if (!editing && nameValue) {
+    if (nameValue) {
       const slug = nameValue
         .toLowerCase()
         .replace(/[^a-z0-9\s-]/g, "")
@@ -60,7 +60,7 @@ export function CategorySheet({ open, onOpenChange, editing, onSaved }: Category
         .trim();
       setValue("slug", slug);
     }
-  }, [nameValue, editing, setValue]);
+  }, [nameValue, setValue]);
 
   async function onSubmit(data: FormData) {
     setSubmitting(true);

@@ -81,7 +81,7 @@ export default function TermsPage() {
       <LegalSection heading="8. Intellectual property">
         <p>
           All question bank content, branding, and the Platform itself are the property of CA
-          Shakti Tiwari and/or ADRS Techno Pvt. Ltd. and are protected by applicable copyright and
+          Shakti Tiwari and are protected by applicable copyright and
           intellectual property law. Nothing in these terms grants you rights beyond the personal
           license described in Section 3.
         </p>

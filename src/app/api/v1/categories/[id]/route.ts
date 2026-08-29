@@ -16,11 +16,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const data = updateCategorySchema.parse(body);
 
     // Auto-generate slug from name if name is being updated
-    if (data.name && !data.slug) {
-      data.slug = data.name
+    if (data.name) {
+      const autoSlug = data.name
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '');
+      
+      // Use auto-generated slug if no slug provided OR if slug matches auto-generation
+      if (!data.slug || data.slug === autoSlug) {
+        data.slug = autoSlug;
+      }
     }
 
     // If updating slug, check it's not taken
