@@ -15,6 +15,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const body = await req.json();
     const data = updateCategorySchema.parse(body);
 
+    // Auto-generate slug from name if name is being updated
+    if (data.name && !data.slug) {
+      data.slug = data.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    }
+
     // If updating slug, check it's not taken
     if (data.slug) {
       const existing = await prisma.category.findUnique({
