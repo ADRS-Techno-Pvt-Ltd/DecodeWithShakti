@@ -31,12 +31,10 @@ import { useFeaturedBanks, type FeaturedBankCard } from "./use-featured-banks";
 import { useFaqs } from "./use-faqs";
 
 const examPills = [
-  "CA Foundation",
   "CA Inter — Accounts",
   "CA Inter — Costing",
   "CA Inter — Taxation",
   "CA Final — Audit",
-  "CA Final — Law",
 ];
 
 const features = [
@@ -84,20 +82,6 @@ const steps = [
 // banks — see `useFeaturedBanks`.
 const featuredBanks: FeaturedBankCard[] = [
   {
-    category: "CA Foundation · Paper 2",
-    title: "Business Laws — 600 Question Bank",
-    desc: "MCQs and short-answer questions across all 5 chapters, sorted by weightage.",
-    oldPrice: "₹899",
-    price: "₹649",
-    badge: { label: "Early bird · ends in 2 days", tone: "gold" as const },
-    earlyBirdEndsAt: null,
-    thumbnailUrl: null,
-    bullets: ["12-page free preview", "600 questions, answer key included", "Instant download after purchase"],
-    popular: false,
-    href: "/question-banks",
-    previewPageCount: 12,
-  },
-  {
     category: "CA Inter · Costing",
     title: "Costing & Financial Management — 900 Question Bank",
     desc: "Topic-wise sets covering Marginal Costing, Standard Costing and Budgetary Control, plus 5 full-length mock papers.",
@@ -130,9 +114,9 @@ const featuredBanks: FeaturedBankCard[] = [
 const testimonials = [
   {
     quote:
-      "The preview sold me — I could see the questions matched the real exam pattern before I paid. Cleared CA Foundation in my first attempt.",
+      "The preview sold me — I could see the questions matched the real exam pattern before I paid. Cleared CA Inter in my first attempt.",
     name: "Rahul Kulkarni",
-    exam: "CA Foundation, May 2026",
+    exam: "CA Inter, May 2026",
     color: "bg-primary-light",
   },
   {
@@ -304,7 +288,7 @@ export default function LandingPage() {
                 variants={heroItem}
                 className="mt-5 max-w-lg text-[17.5px] leading-relaxed text-muted-foreground"
               >
-                Exam-pattern question banks for CA Foundation, Inter and Final — built by rank
+                Exam-pattern question banks for CA Inter and Final — built by rank
                 holders, previewed before you pay, and delivered the moment you buy.
               </motion.p>
               <motion.div variants={heroItem} className="mt-8 flex flex-wrap gap-3.5">
@@ -773,7 +757,7 @@ export default function LandingPage() {
             <div>
               <BrandLogo imgClassName="h-8 w-auto" />
               <p className="mt-3.5 max-w-[260px] text-[13.8px] leading-relaxed text-muted-foreground">
-                Exam-pattern question banks for CA Foundation, Inter and Final —
+                Exam-pattern question banks for CA Inter and Final —
                 previewed before you buy, yours the moment you pay.
               </p>
             </div>
@@ -793,7 +777,6 @@ export default function LandingPage() {
                 Levels
               </h4>
               <ul className="flex flex-col gap-2.5 text-sm text-muted-foreground">
-                <li><Link href="/question-banks?category=ca-foundation" className="hover:text-primary">CA Foundation</Link></li>
                 <li><Link href="/question-banks?category=ca-inter" className="hover:text-primary">CA Intermediate</Link></li>
                 <li><Link href="/question-banks?category=ca-final" className="hover:text-primary">CA Final</Link></li>
               </ul>

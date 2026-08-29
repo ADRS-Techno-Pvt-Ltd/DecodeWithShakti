@@ -3,6 +3,7 @@ import { z } from "zod";
 export const registerSchema = z.object({
   name: z.string().min(2, "Name is too short").max(100),
   email: z.string().email(),
+  caRegistrationNumber: z.string().length(10, "CA registration number must be exactly 10 characters").regex(/^[A-Z]{3}\d{7}$/, "Invalid format. Example: NRO1234567"),
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
 export type RegisterInput = z.infer<typeof registerSchema>;

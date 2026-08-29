@@ -31,6 +31,7 @@ model User {
   name                String
   email               String               @unique
   phone               String?
+  caRegistrationNumber String?
   passwordHash        String
   role                Role                 @default(STUDENT)
   createdAt           DateTime             @default(now())

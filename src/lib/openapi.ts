@@ -47,8 +47,8 @@ const Category = {
   type: "object",
   properties: {
     id: { type: "string", example: "cmt9xk3vr0001cs9ulpm2zz83" },
-    name: { type: "string", example: "CA Foundation" },
-    slug: { type: "string", example: "ca-foundation" },
+    name: { type: "string", example: "CA Inter" },
+    slug: { type: "string", example: "ca-inter" },
   },
   required: ["id", "name", "slug"],
 } as const;
@@ -393,7 +393,7 @@ export const openApiDocument = {
             name: "category",
             in: "query",
             schema: { type: "string" },
-            description: "Filter by category **slug** (e.g. `ca-foundation`)",
+            description: "Filter by category **slug** (e.g. `ca-inter`)",
           },
           {
             name: "featured",

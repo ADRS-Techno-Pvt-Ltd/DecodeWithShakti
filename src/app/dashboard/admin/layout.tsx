@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { LayoutDashboard, BookOpen, Tag, Wallet, HelpCircle, FolderOpen } from "lucide-react";
+import { LayoutDashboard, BookOpen, Tag, Wallet, HelpCircle, FolderOpen, Users } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { DashboardShell, type NavItem } from "@/components/dashboard/dashboard-shell";
 
@@ -9,6 +9,7 @@ const navItems: NavItem[] = [
   { href: "/dashboard/admin/categories", label: "Categories", icon: <FolderOpen /> },
   { href: "/dashboard/admin/coupons", label: "Coupons", icon: <Tag /> },
   { href: "/dashboard/admin/sales", label: "Sales", icon: <Wallet /> },
+  { href: "/dashboard/admin/users", label: "Users", icon: <Users /> },
   { href: "/dashboard/admin/faqs", label: "FAQ", icon: <HelpCircle /> },
 ];
 

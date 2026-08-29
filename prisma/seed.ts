@@ -29,12 +29,10 @@ async function main() {
   console.log(`Seeded admin account: ${email}`);
 
   const categories = [
-    { name: "CA Foundation", slug: "ca-foundation" },
     { name: "CA Inter — Costing", slug: "ca-inter-costing" },
     { name: "CA Inter — Taxation", slug: "ca-inter-taxation" },
     { name: "CA Inter — Accounts", slug: "ca-inter-accounts" },
     { name: "CA Final — Audit", slug: "ca-final-audit" },
-    { name: "CA Final — Law", slug: "ca-final-law" },
   ];
 
   for (const category of categories) {

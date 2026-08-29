@@ -74,6 +74,19 @@ export default function RegisterPage() {
             {errors.email && <p className="text-destructive text-xs">{errors.email.message}</p>}
           </div>
           <div className="flex flex-col gap-1.5">
+            <Label htmlFor="caRegistrationNumber">CA Registration Number</Label>
+            <Input 
+              id="caRegistrationNumber" 
+              placeholder="e.g., NRO1234567"
+              maxLength={10}
+              className="h-11 px-3.5 text-[15px]" 
+              {...register("caRegistrationNumber")} 
+            />
+            {errors.caRegistrationNumber && (
+              <p className="text-destructive text-xs">{errors.caRegistrationNumber.message}</p>
+            )}
+          </div>
+          <div className="flex flex-col gap-1.5">
             <Label htmlFor="password">Password</Label>
             <PasswordInput id="password" className="h-11 px-3.5 text-[15px]" {...register("password")} />
             {errors.password && (

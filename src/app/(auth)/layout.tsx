@@ -6,7 +6,7 @@ import { BrandLogo } from "@/components/brand-logo";
 const trustPoints = [
   { icon: Eye, text: "Preview real pages before you pay" },
   { icon: ShieldCheck, text: "Every download is watermarked, yours alone" },
-  { icon: ListChecks, text: "CA Foundation · Intermediate · Final" },
+  { icon: ListChecks, text: "CA Intermediate · Final" },
 ];
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {

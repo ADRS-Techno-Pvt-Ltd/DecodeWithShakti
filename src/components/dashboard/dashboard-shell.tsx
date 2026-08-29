@@ -93,10 +93,11 @@ function DashboardShellContent({
                       isActive={item.href === activeHref}
                       tooltip={item.label}
                       size="lg"
+                      className="group-data-[collapsible=icon]:justify-center"
                       render={
-                        <Link href={item.href} onClick={handleNavClick}>
+                        <Link href={item.href} onClick={handleNavClick} className="flex items-center gap-2">
                           {item.icon}
-                          <span>{item.label}</span>
+                          <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
                         </Link>
                       }
                     />
@@ -112,11 +113,15 @@ function DashboardShellContent({
               <SidebarMenuButton
                 tooltip="Log out"
                 size="lg"
+                className="group-data-[collapsible=icon]:justify-center"
                 onClick={() => signOut({ callbackUrl: "/" })}
-              >
-                <LogOut />
-                <span>Log out</span>
-              </SidebarMenuButton>
+                render={
+                  <button className="flex items-center gap-2">
+                    <LogOut />
+                    <span className="group-data-[collapsible=icon]:hidden">Log out</span>
+                  </button>
+                }
+              />
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooter>
@@ -182,7 +187,7 @@ export function DashboardShell({
 }) {
   return (
     <MotionConfig reducedMotion="user">
-      <SidebarProvider>
+      <SidebarProvider defaultOpen={true}>
         <DashboardShellContent
           navItems={navItems}
           userName={userName}

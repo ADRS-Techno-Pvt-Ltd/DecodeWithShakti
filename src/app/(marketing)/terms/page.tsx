@@ -20,7 +20,7 @@ export default function TermsPage() {
 
       <LegalSection heading="2. Who can use the Platform">
         <p>
-          The Platform is intended for students preparing for CA Foundation, Inter, and Final
+          The Platform is intended for students preparing for CA Inter and Final
           exams, and for anyone else who finds our question banks useful. You must provide
           accurate information when registering and are responsible for keeping your login
           credentials confidential and for all activity under your account.
