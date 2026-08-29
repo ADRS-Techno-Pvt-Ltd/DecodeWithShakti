@@ -78,9 +78,6 @@ export function QuestionBankSheet({
 }) {
   const [submitting, setSubmitting] = useState(false);
   const queryClient = useQueryClient();
-  const [addingCategory, setAddingCategory] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState("");
-  const [creatingCategory, setCreatingCategory] = useState(false);
   const {
     register,
     handleSubmit,
@@ -112,24 +109,6 @@ export function QuestionBankSheet({
     control,
     name: "features",
   });
-
-  async function handleAddCategory() {
-    const name = newCategoryName.trim();
-    if (!name) return;
-    setCreatingCategory(true);
-    try {
-      const category = await createCategory(name);
-      await queryClient.invalidateQueries({ queryKey: ["categories"] });
-      setValue("categoryId", category.id);
-      setAddingCategory(false);
-      setNewCategoryName("");
-      toast.success(`Category "${category.name}" added.`);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not add category.");
-    } finally {
-      setCreatingCategory(false);
-    }
-  }
 
   useEffect(() => {
     if (editing) {
@@ -287,10 +266,6 @@ export function QuestionBankSheet({
               <Select
                 value={watch("categoryId")}
                 onValueChange={(v) => {
-                  if (v === "__new__") {
-                    setAddingCategory(true);
-                    return;
-                  }
                   setValue("categoryId", v ?? "");
                 }}
               >
@@ -307,52 +282,8 @@ export function QuestionBankSheet({
                       {c.name}
                     </SelectItem>
                   ))}
-                  <SelectItem value="__new__" className="font-medium text-primary">
-                    <Plus className="mr-1.5 inline h-3.5 w-3.5" />
-                    Add new category
-                  </SelectItem>
                 </SelectContent>
               </Select>
-              {addingCategory && (
-                <div className="mt-1 flex items-center gap-2">
-                  <Input
-                    autoFocus
-                    placeholder="New category name"
-                    value={newCategoryName}
-                    onChange={(e) => setNewCategoryName(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        handleAddCategory();
-                      }
-                      if (e.key === "Escape") {
-                        setAddingCategory(false);
-                        setNewCategoryName("");
-                      }
-                    }}
-                  />
-                  <Button
-                    type="button"
-                    size="sm"
-                    disabled={creatingCategory || !newCategoryName.trim()}
-                    onClick={handleAddCategory}
-                  >
-                    {creatingCategory ? "Adding…" : "Add"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Cancel new category"
-                    onClick={() => {
-                      setAddingCategory(false);
-                      setNewCategoryName("");
-                    }}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="price">Price (₹)</Label>
