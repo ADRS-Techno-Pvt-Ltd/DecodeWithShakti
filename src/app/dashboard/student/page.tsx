@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { BookOpen, Download, Receipt } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -25,8 +26,13 @@ export default async function StudentOverviewPage() {
   const session = await auth();
   const userId = session!.user.id;
 
-  const [user, purchases, ownedAgg, pendingCount] = await Promise.all([
-    prisma.user.findUniqueOrThrow({ where: { id: userId } }),
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    // The session's user was deleted (e.g. account removal) while the JWT was still valid.
+    redirect("/login");
+  }
+
+  const [purchases, ownedAgg, pendingCount] = await Promise.all([
     prisma.purchase.findMany({
       where: { userId },
       include: { questionBank: true, invoice: true },

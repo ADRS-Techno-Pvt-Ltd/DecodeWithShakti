@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { SearchX } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { resolveEffectivePrice } from "@/lib/pricing";
 import { thumbnailUrlFor } from "@/lib/thumbnail";
 import { cn } from "@/lib/utils";
 import { SiteHeader } from "@/components/site-header";
 import { QuestionBankCard } from "@/features/question-banks/question-bank-card";
+import { EmptyState } from "@/components/dashboard/empty-state";
 
 const filterPillClass =
   "rounded-full border px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors";
@@ -70,9 +72,12 @@ export default async function QuestionBankCatalogPage({
       </div>
 
       {banks.length === 0 ? (
-        <p className="mt-12 text-center text-muted-foreground">
-          No question banks found in this category yet.
-        </p>
+        <EmptyState
+          className="mt-12"
+          icon={<SearchX />}
+          title="No question banks found"
+          description="Nothing in this category yet — check back soon or browse another category."
+        />
       ) : (
         <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {banks.map((bank) => {

@@ -32,6 +32,8 @@ import { BrandLogo } from "@/components/brand-logo";
 import { SiteHeader } from "@/components/site-header";
 import { useFeaturedBanks, type FeaturedBankCard } from "./use-featured-banks";
 import { useFaqs } from "./use-faqs";
+import { useCategories } from "./use-categories";
+import type { Category } from "@/features/categories/api";
 
 const levels = [
   {
@@ -54,6 +56,11 @@ const levels = [
     label: "CA Final — Audit",
     desc: "Audit exam-pattern sets, each one reviewed personally by Shakti before it's published.",
   },
+];
+
+const fallbackCategories: Category[] = [
+  { id: "ca-inter", name: "CA Intermediate", slug: "ca-inter" },
+  { id: "ca-final", name: "CA Final", slug: "ca-final" },
 ];
 
 const features = [
@@ -257,6 +264,7 @@ export default function LandingPage() {
   const { data: session } = useSession();
   const { banks: displayedBanks, loading: banksLoading } = useFeaturedBanks(featuredBanks);
   const { faqs } = useFaqs(fallbackFaqs);
+  const { categories } = useCategories(fallbackCategories);
 
   return (
     <>
@@ -709,11 +717,16 @@ export default function LandingPage() {
             </div>
             <div>
               <h4 className="mb-3.5 text-xs font-bold tracking-wide text-muted-foreground/80 uppercase">
-                Levels
+                Categories
               </h4>
               <ul className="flex flex-col gap-2.5 text-sm text-muted-foreground">
-                <li><Link href="/question-banks?category=ca-inter" className="hover:text-primary">CA Intermediate</Link></li>
-                <li><Link href="/question-banks?category=ca-final" className="hover:text-primary">CA Final</Link></li>
+                {categories.map((cat) => (
+                  <li key={cat.id}>
+                    <Link href={`/question-banks?category=${cat.slug}`} className="hover:text-primary">
+                      {cat.name}
+                    </Link>
+                  </li>
+                ))}
               </ul>
             </div>
             <div>
