@@ -60,6 +60,7 @@ const PAYMENT_METHOD_LABELS: Record<string, string> = {
   cardless_emi: "Cardless EMI",
   emi: "EMI",
   mock: "Test Payment",
+  free: "Coupon (100% off)",
 };
 
 function formatPaymentMethod(method: string | null): string {
@@ -273,7 +274,9 @@ export async function generateInvoicePdf(data: InvoiceData): Promise<Uint8Array>
     .fontSize(9)
     .fillColor(MUTED)
     .text(
-      `Processed via ${data.paymentProvider.replace(/\b\w/g, (c) => c.toUpperCase())} Payment Gateway.`,
+      data.paymentProvider === "free"
+        ? "This order was fully covered by a coupon — no payment was collected."
+        : `Processed via ${data.paymentProvider.replace(/\b\w/g, (c) => c.toUpperCase())} Payment Gateway.`,
       left,
       footerY + 12,
       { width: contentWidth },

@@ -138,6 +138,12 @@ export function PurchaseCard({
         return;
       }
 
+      if (body.free) {
+        // 100% discount — already finalized server-side, nothing to check out.
+        router.push(`/purchase/${body.purchaseId}/return`);
+        return;
+      }
+
       if (body.sessionId && cashfree) {
         const result = await cashfree.checkout({
           paymentSessionId: body.sessionId,

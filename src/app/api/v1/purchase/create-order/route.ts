@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireStudent, toErrorResponse } from "@/lib/auth-guards";
 import { resolveEffectivePrice, computeDiscount, isCouponUsable } from "@/lib/pricing";
 import { getPaymentProvider } from "@/lib/payment";
+import { finalizePurchase } from "@/lib/payment/finalize-purchase";
 import { z } from "zod";
 
 const PHONE_REGEX = /^[6-9]\d{9}$/;
@@ -92,7 +93,11 @@ export async function POST(request: Request) {
       couponCodeSnapshot = coupon.code;
     }
 
-    const amount = Math.max(basePrice - discountAmount, 100); // never below Rs.1 (paise)
+    // A coupon can discount down to (but never past) the base price — see
+    // computeDiscount's clamp — so this is only ever exactly 0, never negative.
+    const rawAmount = basePrice - discountAmount;
+    const isFree = rawAmount <= 0;
+    const amount = isFree ? 0 : Math.max(rawAmount, 100); // never below Rs.1 (paise) unless fully free
     const provider = getPaymentProvider();
 
     // Purchase.id doubles as the provider's order_id — generated up front so
@@ -112,11 +117,30 @@ export async function POST(request: Request) {
         discountAmount,
         amount,
         status: "PENDING",
-        paymentProvider: provider.name,
+        paymentProvider: isFree ? "free" : provider.name,
         providerOrderId: purchaseId,
         expiresAt,
       },
     });
+
+    // 100% discount — nothing to charge, so skip the payment gateway entirely
+    // and grant access immediately. finalizePurchase() is the same idempotent
+    // path a real webhook uses, so invoicing/coupon accounting stay consistent.
+    if (isFree) {
+      await finalizePurchase({
+        providerOrderId: purchase.id,
+        status: "SUCCESS",
+        paymentMethod: "free",
+        paidAmount: 0,
+      });
+      return NextResponse.json({
+        purchaseId: purchase.id,
+        redirectUrl: null,
+        sessionId: null,
+        free: true,
+        expiresAt,
+      });
+    }
 
     try {
       const orderResult = await provider.createOrder({

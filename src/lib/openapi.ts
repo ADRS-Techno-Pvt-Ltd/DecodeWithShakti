@@ -674,7 +674,9 @@ export const openApiDocument = {
         summary: "Create a pending purchase and payment order (student)",
         description:
           "Creates a PENDING purchase, asks the configured payment provider for an order, and returns either a " +
-          "sessionId (Cashfree — pass to the client-side checkout SDK) or a redirectUrl (mock).",
+          "sessionId (Cashfree — pass to the client-side checkout SDK) or a redirectUrl (mock). If a coupon " +
+          "brings the price to ₹0, the payment gateway is skipped entirely — the purchase is finalized as " +
+          "SUCCESS immediately and `free: true` is returned instead.",
         security: [{ sessionCookie: [] }],
         requestBody: jsonBody({
           type: "object",
@@ -692,6 +694,7 @@ export const openApiDocument = {
               purchaseId: { type: "string" },
               sessionId: { type: "string", nullable: true, description: "Cashfree payment_session_id, for cashfree.checkout()" },
               redirectUrl: { type: "string", nullable: true, description: "Mock provider only" },
+              free: { type: "boolean", description: "true when a 100% coupon fully covered the price — already finalized, no checkout needed" },
               expiresAt: { type: "string", format: "date-time" },
             },
           }),
