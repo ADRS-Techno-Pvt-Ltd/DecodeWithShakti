@@ -148,20 +148,20 @@ export function ChangeEmailCard({ currentEmail }: { currentEmail: string }) {
               )}
             </div>
 
-            <DialogFooter className="gap-2 pt-4 sm:gap-2">
+            <DialogFooter className="gap-2.5 pt-4 sm:gap-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={handleCancel}
                 disabled={submitting}
-                className="h-11 flex-1 sm:flex-1"
+                className="h-auto flex-1 py-3 text-base sm:h-11 sm:flex-1 sm:py-0 sm:text-sm"
               >
                 Cancel
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={submitting}
-                className="h-11 flex-1 sm:flex-1"
+                className="h-auto flex-1 py-3 text-base sm:h-11 sm:flex-1 sm:py-0 sm:text-sm"
               >
                 {submitting ? "Updating..." : "Update Email"}
               </Button>

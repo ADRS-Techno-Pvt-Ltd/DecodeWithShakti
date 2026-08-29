@@ -18,7 +18,6 @@ import {
   Check,
   Quote,
   Star,
-  Trophy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -268,16 +267,9 @@ export default function LandingPage() {
         <section className="border-b border-border bg-gradient-to-b from-[#fcfcfe] to-background py-22">
           <div className="mx-auto grid max-w-6xl 2xl:max-w-[1440px] grid-cols-1 items-center gap-14 px-7 md:grid-cols-[1.05fr_0.95fr]">
             <motion.div variants={heroContainer} initial="hidden" animate="show">
-              <motion.div
-                variants={heroItem}
-                className="inline-flex items-center gap-2 rounded-full border border-gold/30 bg-gold-pale px-3.5 py-1.5 text-[13px] font-semibold text-gold-ink"
-              >
-                <Trophy className="h-3.5 w-3.5" />
-                Used by 12,400+ aspirants this season
-              </motion.div>
               <motion.h1
                 variants={heroItem}
-                className="font-heading mt-5 text-[2.6rem] leading-[1.1] font-semibold tracking-tight text-foreground md:text-[3.4rem]"
+                className="font-heading text-[2.6rem] leading-[1.1] font-semibold tracking-tight text-foreground md:text-[3.4rem]"
               >
                 Built the way a <span className="text-primary">topper actually</span> prepares.
               </motion.h1>
