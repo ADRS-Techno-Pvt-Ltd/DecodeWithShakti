@@ -2,19 +2,23 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { motion, type Variants } from "motion/react";
 import {
   ArrowRight,
+  ArrowLeft,
   Eye,
   Clock,
   DownloadCloud,
   ShieldCheck,
   Receipt,
   ListChecks,
-  CheckCircle2,
   FileText,
   Check,
+  Quote,
+  Star,
+  Trophy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,11 +34,27 @@ import { SiteHeader } from "@/components/site-header";
 import { useFeaturedBanks, type FeaturedBankCard } from "./use-featured-banks";
 import { useFaqs } from "./use-faqs";
 
-const examPills = [
-  "CA Inter — Accounts",
-  "CA Inter — Costing",
-  "CA Inter — Taxation",
-  "CA Final — Audit",
+const levels = [
+  {
+    slug: "ca-inter-accounts",
+    label: "CA Inter — Accounts",
+    desc: "Paper-mapped Accounts question sets for CA Inter, built to the current ICAI pattern.",
+  },
+  {
+    slug: "ca-inter-costing",
+    label: "CA Inter — Costing",
+    desc: "Costing banks with exam-style problems and worked, step-by-step solutions.",
+  },
+  {
+    slug: "ca-inter-taxation",
+    label: "CA Inter — Taxation",
+    desc: "Taxation question sets covering direct and indirect tax topics for CA Inter.",
+  },
+  {
+    slug: "ca-final-audit",
+    label: "CA Final — Audit",
+    desc: "Audit exam-pattern sets, each one reviewed personally by Shakti before it's published.",
+  },
 ];
 
 const features = [
@@ -114,24 +134,24 @@ const featuredBanks: FeaturedBankCard[] = [
 const testimonials = [
   {
     quote:
-      "The preview sold me — I could see the questions matched the real exam pattern before I paid. Cleared CA Inter in my first attempt.",
-    name: "Rahul Kulkarni",
-    exam: "CA Inter, May 2026",
-    color: "bg-primary-light",
+      "Decode with Shakti's test series is a game changer. The level of questions and detailed solutions helped me improve my scores drastically.",
+    name: "Riya Singh",
+    exam: "CA Intermediate Topper",
+    color: "bg-primary",
   },
   {
     quote:
-      "Grabbed the costing bank during the early-bird window and it paid for itself in one mock score jump. Straightforward checkout, instant download.",
-    name: "Anjali Sharma",
-    exam: "CA Inter, 2026",
-    color: "bg-gold",
+      "The questions are exam oriented and explained so well. It feels like learning from toppers. Highly recommended!",
+    name: "Aman Verma",
+    exam: "CA Inter Student",
+    color: "bg-primary",
   },
   {
     quote:
-      "No bundled courses I'd never touch — just the Audit bank I actually needed, priced fairly, with an invoice for my study budget.",
-    name: "Priya Menon",
-    exam: "CA Final, 2026",
-    color: "bg-success",
+      "I scored 70% in CA Inter just because of consistent practice on Decode with Shakti.",
+    name: "Manan Jain",
+    exam: "CA Inter Topper",
+    color: "bg-primary",
   },
 ];
 
@@ -196,29 +216,6 @@ function EarlyBirdBadgeLabel({
   return <>Early bird · ends in {formatCountdown(remaining)}</>;
 }
 
-/** Live "02d : 14h : 09m" countdown for the hero mock card, driven by the real early-bird deadline. */
-function HeroCountdown({ endsAt }: { endsAt: string }) {
-  const target = new Date(endsAt).getTime();
-  const [now, setNow] = useState<number | null>(null);
-
-  useEffect(() => {
-    setNow(Date.now());
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, [target]);
-
-  if (now == null) return null;
-  const remaining = Math.max(0, target - now);
-  const days = Math.floor(remaining / DAY_MS);
-  const hours = Math.floor((remaining % DAY_MS) / 3_600_000);
-  const minutes = Math.floor((remaining % 3_600_000) / 60_000);
-  return (
-    <>
-      {String(days).padStart(2, "0")}d : {String(hours).padStart(2, "0")}h : {String(minutes).padStart(2, "0")}m
-    </>
-  );
-}
-
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
     <span className="inline-flex items-center gap-2 rounded-full border border-accent bg-accent px-3.5 py-1.5 font-mono text-xs font-semibold tracking-wide text-accent-foreground uppercase">
@@ -261,10 +258,6 @@ export default function LandingPage() {
   const { data: session } = useSession();
   const { banks: displayedBanks, loading: banksLoading } = useFeaturedBanks(featuredBanks);
   const { faqs } = useFaqs(fallbackFaqs);
-  // Hero mock card mirrors whichever bank leads the "Priced per bank" section below —
-  // an admin-featured bank when one exists, the curated fallback otherwise. Only read
-  // once `banksLoading` is false so the fallback never flashes before real data lands.
-  const heroBank = displayedBanks[0];
 
   return (
     <>
@@ -275,21 +268,25 @@ export default function LandingPage() {
         <section className="border-b border-border bg-gradient-to-b from-[#fcfcfe] to-background py-22">
           <div className="mx-auto grid max-w-6xl 2xl:max-w-[1440px] grid-cols-1 items-center gap-14 px-7 md:grid-cols-[1.05fr_0.95fr]">
             <motion.div variants={heroContainer} initial="hidden" animate="show">
-              <motion.div variants={heroItem}>
-                <Eyebrow>Used by 12,400+ aspirants this season</Eyebrow>
+              <motion.div
+                variants={heroItem}
+                className="inline-flex items-center gap-2 rounded-full border border-gold/30 bg-gold-pale px-3.5 py-1.5 text-[13px] font-semibold text-gold-ink"
+              >
+                <Trophy className="h-3.5 w-3.5" />
+                Used by 12,400+ aspirants this season
               </motion.div>
               <motion.h1
                 variants={heroItem}
                 className="font-heading mt-5 text-[2.6rem] leading-[1.1] font-semibold tracking-tight text-foreground md:text-[3.4rem]"
               >
-                Practice the questions that <span className="text-primary">actually show up</span> on exam day.
+                Built the way a <span className="text-primary">topper actually</span> prepares.
               </motion.h1>
               <motion.p
                 variants={heroItem}
                 className="mt-5 max-w-lg text-[17.5px] leading-relaxed text-muted-foreground"
               >
-                Exam-pattern question banks for CA Inter and Final — built by rank
-                holders, previewed before you pay, and delivered the moment you buy.
+                No bundled subscriptions or filler content — just the exact question
+                bank you need, previewed before you pay and delivered the moment you buy.
               </motion.p>
               <motion.div variants={heroItem} className="mt-8 flex flex-wrap gap-3.5">
                 <MotionButton>
@@ -327,118 +324,22 @@ export default function LandingPage() {
               transition={{ duration: 0.6, delay: 0.3, ease: [0.2, 0.65, 0.3, 0.9] }}
             >
               <motion.div
-                className="relative"
+                className="relative w-full"
                 animate={{ y: [0, -9, 0] }}
-                transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
               >
-                {banksLoading || !heroBank ? (
-                  <div className="relative -rotate-1 rounded-[14px] border border-border bg-card shadow-[0_4px_8px_rgba(27,27,47,0.05),0_24px_48px_-16px_rgba(27,27,47,0.18)]">
-                    <div className="flex items-start justify-between gap-3 p-6 pb-4.5">
-                      <div className="flex-1">
-                        <div className="h-3 w-32 animate-pulse rounded bg-muted" />
-                        <div className="mt-3 h-5 w-56 animate-pulse rounded bg-muted" />
-                        <div className="mt-2 h-5 w-36 animate-pulse rounded bg-muted" />
-                      </div>
-                      <div className="h-7 w-16 shrink-0 animate-pulse rounded-md bg-muted" />
-                    </div>
-                    <div className="mx-6 border-t-2 border-dashed border-border" />
-                    <div className="flex items-end justify-between gap-3.5 p-6 pt-5">
-                      <div>
-                        <div className="h-3 w-12 animate-pulse rounded bg-muted" />
-                        <div className="mt-1.5 h-7 w-20 animate-pulse rounded bg-muted" />
-                      </div>
-                      <div className="h-8 w-24 animate-pulse rounded bg-muted" />
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="relative -rotate-1 rounded-[14px] border border-border bg-card shadow-[0_4px_8px_rgba(27,27,47,0.05),0_24px_48px_-16px_rgba(27,27,47,0.18)]">
-                      <div className="flex items-start justify-between gap-3 p-6 pb-4.5">
-                        <div>
-                          <div className="font-mono text-[11.5px] font-bold tracking-wide text-primary uppercase">
-                            {heroBank.category}
-                          </div>
-                          <div className="font-heading mt-2 max-w-[280px] text-[19px] leading-snug font-semibold">
-                            {heroBank.title}
-                          </div>
-                        </div>
-                        {heroBank.badge.tone === "gold" && (
-                          <span className="rotate-6 rounded-md border-[1.5px] border-gold bg-gold-pale px-2.5 py-1.5 font-mono text-[10.5px] font-bold tracking-wide text-gold-ink uppercase">
-                            Early Bird
-                          </span>
-                        )}
-                      </div>
-                      <div className="mx-6 border-t-2 border-dashed border-border" />
-                      <div className="flex items-end justify-between gap-3.5 p-6 pt-5">
-                        <div>
-                          {heroBank.oldPrice && (
-                            <span className="font-mono text-sm text-muted-foreground line-through">
-                              {heroBank.oldPrice}
-                            </span>
-                          )}
-                          <span className="font-mono mt-0.5 block text-[28px] font-semibold">{heroBank.price}</span>
-                        </div>
-                        <div className="text-right text-xs text-muted-foreground">
-                          {heroBank.earlyBirdEndsAt ? (
-                            <>
-                              <span className="mb-0.5 block text-[10.5px] tracking-wide uppercase">Offer ends in</span>
-                              <HeroCountdown endsAt={heroBank.earlyBirdEndsAt} />
-                            </>
-                          ) : (
-                            <span className="text-[10.5px] tracking-wide uppercase">{heroBank.badge.label}</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <motion.div
-                      className="absolute -top-10 -right-6 hidden items-center gap-2.5 rounded-xl border border-border bg-card p-3 px-3.5 shadow-md sm:flex"
-                      animate={{ y: [0, -7, 0] }}
-                      transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                    >
-                      <CheckCircle2 className="h-5 w-5 shrink-0 text-success" />
-                      <div>
-                        <div className="text-[12.5px] font-semibold">Watermarked to you</div>
-                        <div className="text-[11px] text-muted-foreground">
-                          {session?.user?.email ?? "rahul.k@email.com"}
-                        </div>
-                      </div>
-                    </motion.div>
-                    <motion.div
-                      className="absolute -bottom-10 -left-8 hidden items-center gap-2.5 rounded-xl border border-border bg-card p-2.5 px-3.5 shadow-md sm:flex"
-                      animate={{ y: [0, -6, 0] }}
-                      transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 0.6 }}
-                    >
-                      <FileText className="h-4.5 w-4.5 shrink-0 text-primary" />
-                      <div>
-                        <div className="text-xs font-semibold">
-                          {heroBank.previewPageCount ? `${heroBank.previewPageCount}-page preview` : "Free preview"}
-                        </div>
-                        <div className="text-[11px] text-muted-foreground">before you buy</div>
-                      </div>
-                    </motion.div>
-                  </>
-                )}
+                <div className="absolute inset-8 rounded-[48%] bg-accent blur-3xl" />
+                <Image
+                  src="/hero/heroimage-removebg-preview.png"
+                  alt="Laptop showing Decode with Shakti next to CA Intermediate and CA Final question banks, a notebook reading 'Consistency + Strategy = Result', and a coffee mug"
+                  width={612}
+                  height={408}
+                  priority
+                  className="relative h-auto w-full"
+                  sizes="(min-width: 768px) 48vw, 90vw"
+                />
               </motion.div>
             </motion.div>
-          </div>
-        </section>
-
-        {/* TRUST BAR */}
-        <section className="border-b border-border py-11">
-          <div className="mx-auto max-w-6xl 2xl:max-w-[1440px] px-7">
-            <p className="mb-5 text-center font-mono text-[11.5px] tracking-wide text-muted-foreground/80 uppercase">
-              Question banks mapped to
-            </p>
-            <div className="flex flex-wrap justify-center gap-2.5">
-              {examPills.map((exam) => (
-                <span
-                  key={exam}
-                  className="rounded-full border border-border bg-secondary px-4 py-2 text-[13.5px] font-semibold text-muted-foreground"
-                >
-                  {exam}
-                </span>
-              ))}
-            </div>
           </div>
         </section>
 
@@ -502,6 +403,48 @@ export default function LandingPage() {
                   {i < steps.length - 1 && (
                     <div className="absolute top-4 left-[calc(100%-4px)] hidden h-px w-[calc(100%-24px)] border-t border-dashed border-border lg:block" />
                   )}
+                </Reveal>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* CATEGORIES */}
+        <section id="categories" className="py-22">
+          <div className="mx-auto max-w-6xl 2xl:max-w-[1440px] px-7">
+            <Reveal className="mx-auto mb-14 max-w-xl text-center">
+              <Eyebrow>Mapped to your exam</Eyebrow>
+              <h2 className="font-heading mt-4 text-[2rem] leading-tight font-semibold tracking-tight">
+                Pick your level. Start decoding.
+              </h2>
+            </Reveal>
+
+            <div className="grid grid-cols-1 gap-5.5 sm:grid-cols-2 lg:grid-cols-4">
+              {levels.map((lvl, i) => (
+                <Reveal key={lvl.slug} delay={i * 50}>
+                  <motion.div
+                    whileHover={{ y: -5 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    className="h-full rounded-[14px] border border-border bg-card hover:border-primary-light/40 hover:shadow-sm"
+                  >
+                    <div className="border-b border-border p-6.5 pb-5">
+                      <span className="font-mono text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                        Category
+                      </span>
+                      <h3 className="font-heading mt-2 text-lg leading-snug font-bold">{lvl.label}</h3>
+                    </div>
+                    <div className="p-6.5 pt-5">
+                      <p className="text-[14.5px] leading-relaxed text-muted-foreground">
+                        {lvl.desc}
+                      </p>
+                      <Link
+                        href={`/question-banks?category=${lvl.slug}`}
+                        className="mt-4 inline-flex items-center gap-1.5 text-[14.5px] font-semibold text-primary hover:underline"
+                      >
+                        Browse banks <ArrowRight className="h-3.5 w-3.5" />
+                      </Link>
+                    </div>
+                  </motion.div>
                 </Reveal>
               ))}
             </div>
@@ -649,42 +592,42 @@ export default function LandingPage() {
         {/* TESTIMONIALS */}
         <section id="testimonials" className="py-22">
           <div className="mx-auto max-w-6xl 2xl:max-w-[1440px] px-7">
-            <Reveal>
-              <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-primary-dark to-[#1b1660] px-2 py-16">
-                <div className="mx-auto mb-12 max-w-xl px-6 text-center">
-                  <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 font-mono text-xs font-semibold tracking-wide text-[#e4e1fb] uppercase">
-                    <span className="h-1.5 w-1.5 rounded-full bg-gold" />
-                    What aspirants say
-                  </span>
-                  <h2 className="font-heading mt-4 text-[2rem] leading-tight font-semibold text-white">
-                    Results, not just reviews
-                  </h2>
-                </div>
-                <div className="mx-auto grid max-w-4xl grid-cols-1 gap-5 px-6 md:grid-cols-3">
-                  {testimonials.map((t) => (
-                    <div
-                      key={t.name}
-                      className="rounded-[14px] border border-white/15 bg-white/[0.06] p-6.5 backdrop-blur"
-                    >
-                      <p className="text-[14.5px] leading-relaxed text-[#efeefb]">
-                        &ldquo;{t.quote}&rdquo;
-                      </p>
-                      <div className="mt-5 flex items-center gap-2.5">
-                        <span
-                          className={`font-heading flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white ${t.color}`}
-                        >
-                          {t.name.split(" ").map((p) => p[0]).join("")}
-                        </span>
-                        <div>
-                          <div className="text-[13.5px] font-bold text-white">{t.name}</div>
-                          <div className="text-xs text-[#c7c4ee]">{t.exam}</div>
-                        </div>
+            <Reveal className="mb-12 flex items-center justify-center gap-3.5">
+              <ArrowLeft className="h-4 w-4 shrink-0 text-primary" strokeWidth={2.25} />
+              <h2 className="font-heading text-center text-[2rem] leading-tight font-semibold tracking-tight text-primary">
+                What our students say
+              </h2>
+              <ArrowRight className="h-4 w-4 shrink-0 text-primary" strokeWidth={2.25} />
+            </Reveal>
+
+            <div className="grid grid-cols-1 gap-5.5 sm:grid-cols-2 lg:grid-cols-3">
+              {testimonials.map((t, i) => (
+                <Reveal key={t.name} delay={i * 40} className="h-full">
+                  <div className="flex h-full flex-col rounded-[14px] border border-primary-light/25 bg-card p-6.5">
+                    <Quote className="h-7 w-7 text-primary/60" fill="currentColor" strokeWidth={0} />
+                    <div className="mt-3 flex gap-0.5 text-gold">
+                      {Array.from({ length: 5 }).map((_, s) => (
+                        <Star key={s} className="h-3.5 w-3.5" fill="currentColor" strokeWidth={0} />
+                      ))}
+                    </div>
+                    <p className="mt-3.5 text-[14.5px] leading-relaxed text-foreground/90">
+                      {t.quote}
+                    </p>
+                    <div className="mt-auto flex items-center gap-2.5 pt-5">
+                      <span
+                        className={`font-heading flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white ${t.color}`}
+                      >
+                        {t.name.split(" ").map((p) => p[0]).join("")}
+                      </span>
+                      <div>
+                        <div className="text-[13.5px] font-bold text-primary">{t.name}</div>
+                        <div className="text-xs text-muted-foreground">{t.exam}</div>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-            </Reveal>
+                  </div>
+                </Reveal>
+              ))}
+            </div>
           </div>
         </section>
 

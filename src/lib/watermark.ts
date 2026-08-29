@@ -4,16 +4,18 @@ import { readFileSync } from "fs";
 import path from "path";
 
 /**
- * Every call to this module draws its stamp into its own isolated content stream
- * shaped like `q ... 0.55 0.55 0.55 rg ... <45-degree rotation matrix> ... Tj ... Q`
- * (pdf-lib's drawText appends a new stream rather than merging into existing ones).
- * If a question bank's stored file was ever re-uploaded after already passing through
- * here once (e.g. a downloaded, watermarked copy mistaken for the original), stamping
- * again would stack watermarks. Detect and drop any stream matching our own signature
- * before adding a fresh one, so a download only ever shows the current user's mark.
+ * Every call to this module draws its stamps into their own isolated content stream
+ * (pdf-lib's drawText/drawImage append a new stream rather than merging into existing
+ * ones). If a question bank's stored file was ever re-uploaded after already passing
+ * through here once (e.g. a downloaded, watermarked copy mistaken for the original),
+ * stamping again would stack watermarks. The email stamp is the only thing in this app
+ * that fills text with `grayscale(0.5)` (PDF operator `0.5 g`), so any stream containing
+ * that right before a text-draw is one of ours — detect and drop it before adding a
+ * fresh one, so a download only ever shows the current user's mark. Deliberately
+ * angle-agnostic (no hardcoded rotation matrix) so tweaking the watermark's tilt doesn't
+ * silently break this cleanup — that's what broke it the last time this changed.
  */
-const OWN_WATERMARK_SIGNATURE =
-  /0\.55 0\.55 0\.55 rg[\s\S]{0,80}?0\.70710678\d* 0\.70710678\d* -0\.70710678\d* 0\.70710678\d*[\s\S]{0,80}?Tj/;
+const OWN_WATERMARK_SIGNATURE = /0\.5 g[\s\S]{0,120}?Tj/;
 
 function stripOwnWatermarks(doc: PDFDocument): void {
   for (const page of doc.getPages()) {
@@ -71,14 +73,14 @@ export async function watermarkPdf(pdfBytes: Buffer, label: string): Promise<Uin
         const baseX = i * spacingX;
         const baseY = j * spacingY;
         
-        // Draw logo image
+        // Draw logo image — kept faint so the underlying PDF text stays easy to read
         page.drawImage(logoImage, {
           x: baseX,
           y: baseY,
           width: logoDims.width,
           height: logoDims.height,
           rotate: degrees(-45),
-          opacity: 0.2,
+          opacity: 0.08,
         });
         
         // Calculate email width to center it below the logo
