@@ -4,7 +4,7 @@ import { Award } from "lucide-react";
 import { Reveal } from "./reveal";
 
 const stats = [
-  { value: "10+", label: "Years mentoring aspirants" },
+  { value: "5+", label: "Years mentoring aspirants" },
   { value: "1,000+", label: "Students guided" },
   { value: "10+", label: "Question banks authored" },
 ];
