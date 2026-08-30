@@ -296,26 +296,6 @@ export default function LandingPage() {
                   <Button size="lg" variant="outline" render={<Link href="#how">See how it works</Link>} />
                 </MotionButton>
               </motion.div>
-              <motion.div variants={heroItem} className="mt-9 flex items-center gap-3.5">
-                <div className="flex">
-                  {["RK", "AS", "PM", "TN"].map((initials, i) => (
-                    <span
-                      key={initials}
-                      className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-background font-heading text-[11px] font-bold text-white"
-                      style={{
-                        marginLeft: i === 0 ? 0 : -9,
-                        background: ["#4F46E5", "#B8862E", "#157F4D", "#B3261E"][i],
-                      }}
-                    >
-                      {initials}
-                    </span>
-                  ))}
-                </div>
-                <p className="text-[13.5px] text-muted-foreground">
-                  <strong className="text-foreground">4.8/5</strong> average rating across
-                  3,100+ verified purchases
-                </p>
-              </motion.div>
             </motion.div>
 
             <motion.div
