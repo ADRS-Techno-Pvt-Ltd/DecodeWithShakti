@@ -330,6 +330,105 @@ export default function LandingPage() {
 
         <MentorSection />
 
+        {/* OFFERS */}
+        <section id="offers" className="border-y border-border bg-secondary py-22">
+          <div className="mx-auto max-w-6xl 2xl:max-w-[1440px] px-7">
+            <Reveal className="mx-auto mb-14 max-w-xl text-center">
+              <Eyebrow>Pricing</Eyebrow>
+              <h2 className="font-heading mt-4 text-[2rem] leading-tight font-semibold tracking-tight">
+                Pay for the paper you need, not the bundle.
+              </h2>
+              <p className="mt-3.5 text-base leading-relaxed text-muted-foreground">
+                Test series, decode sheets and mentorship — priced separately, so you only
+                ever spend on what your prep actually needs.
+              </p>
+            </Reveal>
+
+            <div className="grid grid-cols-1 items-stretch gap-5.5 lg:grid-cols-[1fr_1fr_1.1fr]">
+              <Reveal delay={0}>
+                <div className="flex h-full flex-col gap-4.5 rounded-[14px] border border-border bg-card p-6.5">
+                  <div>
+                    <h3 className="font-heading text-[19px] font-semibold">Test series</h3>
+                    <p className="mt-2 text-[13.5px] leading-relaxed text-muted-foreground">
+                      Full-length papers set to the real exam pattern, marked against a
+                      topper&apos;s answer key.
+                    </p>
+                  </div>
+                  <div className="mt-auto flex flex-col gap-2.5">
+                    <div className="flex items-baseline justify-between gap-3 rounded-[11px] border border-border px-4 py-3.5">
+                      <span className="text-[13.5px] font-semibold text-muted-foreground">Per subject</span>
+                      <span className="font-heading text-lg font-semibold whitespace-nowrap">
+                        ₹900<span className="ml-0.5 font-sans text-xs font-medium text-muted-foreground/70">/subject</span>
+                      </span>
+                    </div>
+                    <div className="flex items-baseline justify-between gap-3 rounded-[11px] border border-border px-4 py-3.5">
+                      <span className="text-[13.5px] font-semibold text-muted-foreground">Per group</span>
+                      <span className="font-heading text-lg font-semibold whitespace-nowrap">
+                        ₹2,500<span className="ml-0.5 font-sans text-xs font-medium text-muted-foreground/70">/group</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </Reveal>
+
+              <Reveal delay={60}>
+                <div className="flex h-full flex-col gap-4.5 rounded-[14px] border border-border bg-card p-6.5">
+                  <div>
+                    <h3 className="font-heading text-[19px] font-semibold">Decode sheets</h3>
+                    <p className="mt-2 text-[13.5px] leading-relaxed text-muted-foreground">
+                      A topper&apos;s own line-by-line breakdown of how each answer should be
+                      structured.
+                    </p>
+                  </div>
+                  <div className="mt-auto flex flex-col gap-2.5">
+                    <div className="flex items-baseline justify-between gap-3 rounded-[11px] border border-border px-4 py-3.5">
+                      <span className="text-[13.5px] font-semibold text-muted-foreground">Per subject</span>
+                      <span className="font-heading text-lg font-semibold whitespace-nowrap">
+                        ₹139<span className="ml-0.5 font-sans text-xs font-medium text-muted-foreground/70">/subject</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </Reveal>
+
+              <Reveal delay={120}>
+                <div className="flex h-full flex-col gap-4.5 rounded-[14px] border border-border bg-card p-6.5">
+                  <div>
+                    <h3 className="font-heading text-[19px] font-semibold">CA Final mentorship</h3>
+                    <p className="mt-2 text-[13.5px] leading-relaxed text-muted-foreground">
+                      Direct guidance from CA Shakti Tiwari — strategy, revision order, and the
+                      final stretch before the exam.
+                    </p>
+                  </div>
+                  <div className="mt-auto flex flex-col gap-2.5">
+                    <div className="flex items-baseline justify-between gap-3 rounded-[11px] border border-border px-4 py-3.5">
+                      <span className="text-[13.5px] font-semibold text-muted-foreground">Group 1</span>
+                      <span className="font-heading text-lg font-semibold whitespace-nowrap">
+                        ₹4,999<span className="ml-0.5 font-sans text-xs font-medium text-muted-foreground/70">/group</span>
+                      </span>
+                    </div>
+                    <div className="flex items-baseline justify-between gap-3 rounded-[11px] border border-border px-4 py-3.5">
+                      <span className="text-[13.5px] font-semibold text-muted-foreground">Group 2</span>
+                      <span className="font-heading text-lg font-semibold whitespace-nowrap">
+                        ₹4,999<span className="ml-0.5 font-sans text-xs font-medium text-muted-foreground/70">/group</span>
+                      </span>
+                    </div>
+                    <div className="relative flex items-baseline justify-between gap-3 rounded-[11px] bg-primary px-4 py-3.5">
+                      <span className="absolute -top-2.5 right-3.5 rounded-full bg-gold px-2.5 py-1 text-[10.5px] font-semibold text-white">
+                        Save ₹1,499
+                      </span>
+                      <span className="text-[13.5px] font-semibold text-primary-foreground/80">Both groups</span>
+                      <span className="font-heading text-lg font-semibold whitespace-nowrap text-primary-foreground">
+                        ₹8,499
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </Reveal>
+            </div>
+          </div>
+        </section>
+
         {/* FEATURES */}
         <section id="features" className="py-22">
           <div className="mx-auto max-w-6xl 2xl:max-w-[1440px] px-7">
@@ -432,105 +531,6 @@ export default function LandingPage() {
                   </motion.div>
                 </Reveal>
               ))}
-            </div>
-          </div>
-        </section>
-
-        {/* OFFERS */}
-        <section id="offers" className="border-y border-border bg-secondary py-22">
-          <div className="mx-auto max-w-6xl 2xl:max-w-[1440px] px-7">
-            <Reveal className="mx-auto mb-14 max-w-xl text-center">
-              <Eyebrow>Pricing</Eyebrow>
-              <h2 className="font-heading mt-4 text-[2rem] leading-tight font-semibold tracking-tight">
-                Pay for the paper you need, not the bundle.
-              </h2>
-              <p className="mt-3.5 text-base leading-relaxed text-muted-foreground">
-                Test series, decode sheets and mentorship — priced separately, so you only
-                ever spend on what your prep actually needs.
-              </p>
-            </Reveal>
-
-            <div className="grid grid-cols-1 items-stretch gap-5.5 lg:grid-cols-[1fr_1fr_1.1fr]">
-              <Reveal delay={0}>
-                <div className="flex h-full flex-col gap-4.5 rounded-[14px] border border-border bg-card p-6.5">
-                  <div>
-                    <h3 className="font-heading text-[19px] font-semibold">Test series</h3>
-                    <p className="mt-2 text-[13.5px] leading-relaxed text-muted-foreground">
-                      Full-length papers set to the real exam pattern, marked against a
-                      topper&apos;s answer key.
-                    </p>
-                  </div>
-                  <div className="mt-auto flex flex-col gap-2.5">
-                    <div className="flex items-baseline justify-between gap-3 rounded-[11px] border border-border px-4 py-3.5">
-                      <span className="text-[13.5px] font-semibold text-muted-foreground">Per subject</span>
-                      <span className="font-heading text-lg font-semibold whitespace-nowrap">
-                        ₹900<span className="ml-0.5 font-sans text-xs font-medium text-muted-foreground/70">/subject</span>
-                      </span>
-                    </div>
-                    <div className="flex items-baseline justify-between gap-3 rounded-[11px] border border-border px-4 py-3.5">
-                      <span className="text-[13.5px] font-semibold text-muted-foreground">Per group</span>
-                      <span className="font-heading text-lg font-semibold whitespace-nowrap">
-                        ₹2,500<span className="ml-0.5 font-sans text-xs font-medium text-muted-foreground/70">/group</span>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </Reveal>
-
-              <Reveal delay={60}>
-                <div className="flex h-full flex-col gap-4.5 rounded-[14px] border border-border bg-card p-6.5">
-                  <div>
-                    <h3 className="font-heading text-[19px] font-semibold">Decode sheets</h3>
-                    <p className="mt-2 text-[13.5px] leading-relaxed text-muted-foreground">
-                      A topper&apos;s own line-by-line breakdown of how each answer should be
-                      structured.
-                    </p>
-                  </div>
-                  <div className="mt-auto flex flex-col gap-2.5">
-                    <div className="flex items-baseline justify-between gap-3 rounded-[11px] border border-border px-4 py-3.5">
-                      <span className="text-[13.5px] font-semibold text-muted-foreground">Per subject</span>
-                      <span className="font-heading text-lg font-semibold whitespace-nowrap">
-                        ₹139<span className="ml-0.5 font-sans text-xs font-medium text-muted-foreground/70">/subject</span>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </Reveal>
-
-              <Reveal delay={120}>
-                <div className="flex h-full flex-col gap-4.5 rounded-[14px] border border-border bg-card p-6.5">
-                  <div>
-                    <h3 className="font-heading text-[19px] font-semibold">CA Final mentorship</h3>
-                    <p className="mt-2 text-[13.5px] leading-relaxed text-muted-foreground">
-                      Direct guidance from CA Shakti Tiwari — strategy, revision order, and the
-                      final stretch before the exam.
-                    </p>
-                  </div>
-                  <div className="mt-auto flex flex-col gap-2.5">
-                    <div className="flex items-baseline justify-between gap-3 rounded-[11px] border border-border px-4 py-3.5">
-                      <span className="text-[13.5px] font-semibold text-muted-foreground">Group 1</span>
-                      <span className="font-heading text-lg font-semibold whitespace-nowrap">
-                        ₹4,999<span className="ml-0.5 font-sans text-xs font-medium text-muted-foreground/70">/group</span>
-                      </span>
-                    </div>
-                    <div className="flex items-baseline justify-between gap-3 rounded-[11px] border border-border px-4 py-3.5">
-                      <span className="text-[13.5px] font-semibold text-muted-foreground">Group 2</span>
-                      <span className="font-heading text-lg font-semibold whitespace-nowrap">
-                        ₹4,999<span className="ml-0.5 font-sans text-xs font-medium text-muted-foreground/70">/group</span>
-                      </span>
-                    </div>
-                    <div className="relative flex items-baseline justify-between gap-3 rounded-[11px] bg-primary px-4 py-3.5">
-                      <span className="absolute -top-2.5 right-3.5 rounded-full bg-gold px-2.5 py-1 text-[10.5px] font-semibold text-white">
-                        Save ₹1,499
-                      </span>
-                      <span className="text-[13.5px] font-semibold text-primary-foreground/80">Both groups</span>
-                      <span className="font-heading text-lg font-semibold whitespace-nowrap text-primary-foreground">
-                        ₹8,499
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </Reveal>
             </div>
           </div>
         </section>
