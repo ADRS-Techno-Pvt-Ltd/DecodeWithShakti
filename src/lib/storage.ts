@@ -22,6 +22,7 @@ cloudinary.config({
  */
 const QUESTION_BANK_FOLDER = "question-bank";
 const INVOICE_FOLDER = "invoices";
+const VIDEO_FOLDER = "videos";
 
 function uploadBuffer(
   bytes: Buffer | Uint8Array,
@@ -101,6 +102,84 @@ export async function readStoredFile(publicId: string): Promise<Buffer> {
     throw new Error(`Cloudinary fetch failed (${response.status}) for ${publicId}`);
   }
   return Buffer.from(await response.arrayBuffer());
+}
+
+/**
+ * Uploaded (non-YouTube) lecture videos. Stored `type: "authenticated"` like the PDFs —
+ * never publicly reachable. Unlike PDFs, playback never buffers the file through our own
+ * server (a multi-hundred-MB video in Node memory per request doesn't scale, and it loses
+ * range-request seeking); instead `getSignedVideoUrl` mints a short-lived signed delivery
+ * URL and the browser streams straight from Cloudinary's CDN.
+ */
+export async function saveVideoFile(videoId: string, bytes: Buffer): Promise<string> {
+  const result = await uploadBuffer(bytes, {
+    resource_type: "video",
+    type: "authenticated",
+    overwrite: true,
+    invalidate: true,
+    folder: `${VIDEO_FOLDER}/${videoId}`,
+    public_id: "original",
+  });
+  return result.public_id;
+}
+
+export async function saveVideoThumbnailFile(videoId: string, bytes: Buffer): Promise<string> {
+  const result = await uploadBuffer(bytes, {
+    resource_type: "image",
+    type: "upload",
+    overwrite: true,
+    invalidate: true,
+    folder: `${VIDEO_FOLDER}/${videoId}`,
+    public_id: "thumbnail",
+  });
+  return result.secure_url;
+}
+
+export function getSignedVideoUrl(publicId: string, expirySeconds = 60 * 15): { url: string; expiresAt: string } {
+  const expiresAt = Math.floor(Date.now() / 1000) + expirySeconds;
+  const url = cloudinary.url(publicId, {
+    resource_type: "video",
+    type: "authenticated",
+    sign_url: true,
+    secure: true,
+    expires_at: expiresAt,
+  });
+  return { url, expiresAt: new Date(expiresAt * 1000).toISOString() };
+}
+
+/**
+ * Same signed-delivery approach as `getSignedVideoUrl`, but with Cloudinary's `fl_attachment`
+ * flag so the response carries a `Content-Disposition: attachment` header — the browser
+ * downloads the file instead of streaming it inline. Still served straight from Cloudinary,
+ * never buffered through our server.
+ */
+export function getSignedVideoDownloadUrl(publicId: string, downloadName: string, expirySeconds = 60 * 5): string {
+  const expiresAt = Math.floor(Date.now() / 1000) + expirySeconds;
+  return cloudinary.url(publicId, {
+    resource_type: "video",
+    type: "authenticated",
+    sign_url: true,
+    secure: true,
+    expires_at: expiresAt,
+    flags: `attachment:${downloadName}`,
+  });
+}
+
+export async function deleteVideoFiles(videoId: string): Promise<void> {
+  const prefix = `${VIDEO_FOLDER}/${videoId}/`;
+  await Promise.all([
+    cloudinary.api.delete_resources_by_prefix(prefix, {
+      resource_type: "video",
+      type: "authenticated",
+    }),
+    cloudinary.api.delete_resources_by_prefix(prefix, {
+      resource_type: "image",
+      type: "upload",
+    }),
+  ]);
+  await cloudinary.api.delete_folder(`${VIDEO_FOLDER}/${videoId}`).catch(() => {
+    // folder may not be empty / may already be gone — non-fatal
+  });
 }
 
 export async function deleteQuestionBankFiles(questionBankId: string): Promise<void> {

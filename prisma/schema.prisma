@@ -26,18 +26,23 @@ enum DiscountType {
   FLAT
 }
 
+enum VideoSource {
+  YOUTUBE
+  UPLOAD
+}
+
 model User {
-  id                  String               @id @default(cuid())
-  name                String
-  email               String               @unique
-  phone               String?
+  id                   String               @id @default(cuid())
+  name                 String
+  email                String               @unique
+  phone                String?
   caRegistrationNumber String?
-  passwordHash        String
-  role                Role                 @default(STUDENT)
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
-  purchases           Purchase[]
-  passwordResetTokens PasswordResetToken[]
+  passwordHash         String
+  role                 Role                 @default(STUDENT)
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  purchases            Purchase[]
+  passwordResetTokens  PasswordResetToken[]
 }
 
 model Category {
@@ -45,15 +50,16 @@ model Category {
   name          String
   slug          String         @unique
   questionBanks QuestionBank[]
+  videos        Video[]
 }
 
 model QuestionBank {
-  id               String    @id @default(cuid())
+  id               String     @id @default(cuid())
   title            String
-  slug             String    @unique
+  slug             String     @unique
   description      String
   categoryId       String
-  category         Category  @relation(fields: [categoryId], references: [id])
+  category         Category   @relation(fields: [categoryId], references: [id])
   price            Int
   earlyBirdPrice   Int?
   earlyBirdEndsAt  DateTime?
@@ -61,16 +67,36 @@ model QuestionBank {
   filePath         String
   fileSizeBytes    Int
   totalPages       Int?
-  previewEnabled   Boolean   @default(false)
+  previewEnabled   Boolean    @default(false)
   previewPageCount Int?
   previewFilePath  String?
   thumbnailPath    String?
-  isPublished      Boolean   @default(true)
-  isFeatured       Boolean   @default(false)
-  features         String[]  @default([])
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  isPublished      Boolean    @default(true)
+  isFeatured       Boolean    @default(false)
+  features         String[]   @default([])
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
   purchases        Purchase[]
+}
+
+model Video {
+  id             String      @id @default(cuid())
+  title          String
+  slug           String      @unique
+  description    String
+  categoryId     String?
+  category       Category?   @relation(fields: [categoryId], references: [id])
+  sourceType     VideoSource
+  youtubeVideoId String?
+  videoPath      String?
+  thumbnailPath  String?
+  durationSec    Int?
+  fileSizeBytes  Int?
+  isPublished    Boolean     @default(true)
+  isFeatured     Boolean     @default(false)
+  sortOrder      Int         @default(0)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 }
 
 model Coupon {
@@ -87,13 +113,13 @@ model Coupon {
 }
 
 model FaqItem {
-  id        String   @id @default(cuid())
-  question  String
-  answer    String
-  sortOrder Int      @default(0)
-  isPublished Boolean @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  question    String
+  answer      String
+  sortOrder   Int      @default(0)
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([sortOrder])
 }

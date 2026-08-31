@@ -18,10 +18,16 @@ const csp = [
   // no obvious injection point for this to matter in practice.
   `script-src 'self' 'unsafe-inline'${devOnlyScriptSrc} ${CASHFREE_DOMAINS}`,
   "style-src 'self' 'unsafe-inline'", // Tailwind + inline style props
-  "img-src 'self' data: blob: https://res.cloudinary.com",
+  // img.youtube.com serves YouTube video thumbnails for the video-library catalog cards.
+  "img-src 'self' data: blob: https://res.cloudinary.com https://img.youtube.com",
+  // Uploaded lecture videos stream from a signed Cloudinary URL straight into a <video>
+  // tag — without media-src this falls back to default-src 'self' and silently blocks
+  // playback (no explicit error beyond a CSP console warning).
+  "media-src 'self' https://res.cloudinary.com",
   "font-src 'self' data:", // next/font self-hosts at build time — no runtime Google Fonts calls
   `connect-src 'self' ${CASHFREE_DOMAINS}`,
-  `frame-src ${CASHFREE_DOMAINS}`, // Cashfree Drop-in payment modal
+  // youtube.com/embed for the video-library player; Cashfree for the Drop-in payment modal.
+  `frame-src ${CASHFREE_DOMAINS} https://www.youtube.com`,
   "object-src 'none'",
   "base-uri 'self'",
   // Cashfree's Drop-in SDK submits a real form POST to its hosted checkout
