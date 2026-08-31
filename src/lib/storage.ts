@@ -23,6 +23,7 @@ cloudinary.config({
 const QUESTION_BANK_FOLDER = "question-bank";
 const INVOICE_FOLDER = "invoices";
 const VIDEO_FOLDER = "videos";
+const BANNER_FOLDER = "banners";
 
 function uploadBuffer(
   bytes: Buffer | Uint8Array,
@@ -178,6 +179,27 @@ export async function deleteVideoFiles(videoId: string): Promise<void> {
     }),
   ]);
   await cloudinary.api.delete_folder(`${VIDEO_FOLDER}/${videoId}`).catch(() => {
+    // folder may not be empty / may already be gone — non-fatal
+  });
+}
+
+/** Homepage carousel banner image — public, served straight from the Cloudinary CDN. */
+export async function saveBannerImageFile(bannerId: string, bytes: Buffer): Promise<string> {
+  const result = await uploadBuffer(bytes, {
+    resource_type: "image",
+    type: "upload",
+    overwrite: true,
+    invalidate: true,
+    folder: `${BANNER_FOLDER}/${bannerId}`,
+    public_id: "image",
+  });
+  return result.secure_url;
+}
+
+export async function deleteBannerImageFile(bannerId: string): Promise<void> {
+  const prefix = `${BANNER_FOLDER}/${bannerId}/`;
+  await cloudinary.api.delete_resources_by_prefix(prefix, { resource_type: "image", type: "upload" });
+  await cloudinary.api.delete_folder(`${BANNER_FOLDER}/${bannerId}`).catch(() => {
     // folder may not be empty / may already be gone — non-fatal
   });
 }

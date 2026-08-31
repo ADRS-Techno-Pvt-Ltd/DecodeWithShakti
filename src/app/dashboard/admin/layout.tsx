@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
-import { LayoutDashboard, BookOpen, Tag, Wallet, HelpCircle, FolderOpen, Users, Video } from "lucide-react";
+import { LayoutDashboard, BookOpen, Tag, Wallet, HelpCircle, FolderOpen, Users, Video, GalleryHorizontal } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { DashboardShell, type NavItem } from "@/components/dashboard/dashboard-shell";
 
 const navItems: NavItem[] = [
   { href: "/dashboard/admin", label: "Overview", icon: <LayoutDashboard /> },
+  { href: "/dashboard/admin/banners", label: "Banners", icon: <GalleryHorizontal /> },
   { href: "/dashboard/admin/question-banks", label: "Question Banks", icon: <BookOpen /> },
   { href: "/dashboard/admin/videos", label: "Videos", icon: <Video /> },
   { href: "/dashboard/admin/categories", label: "Categories", icon: <FolderOpen /> },

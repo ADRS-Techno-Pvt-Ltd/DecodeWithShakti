@@ -112,6 +112,22 @@ model Coupon {
   purchases     Purchase[]
 }
 
+/// Homepage carousel banner — image-only slide (admin-uploaded), optionally linking
+/// somewhere on click. Rendered above the hero on the marketing landing page; the
+/// 44px side areas auto-peek the previous/next slide, so no separate side content exists.
+model Banner {
+  id          String   @id @default(cuid())
+  imagePath   String
+  linkUrl     String?
+  altText     String   @default("")
+  sortOrder   Int      @default(0)
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([sortOrder])
+}
+
 model FaqItem {
   id          String   @id @default(cuid())
   question    String
