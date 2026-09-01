@@ -8,8 +8,8 @@ import type { Banner } from "@/features/banners/types";
 
 const AUTOPLAY_MS = 5500;
 // Matches BANNER_CROP_ASPECT in banner-image-crop-dialog.tsx — every uploaded banner is
-// already cropped to this ratio, so sizing the row to it means object-cover never has to
-// crop or letterbox the image, at any screen width.
+// already cropped to this ratio, so sizing the row to it means object-cover fills it
+// exactly with no crop and no leftover white space, at any screen width.
 const ROW_ASPECT = "aspect-[1284/220]";
 
 /**
@@ -24,7 +24,7 @@ function Peek({ banner, side, onClick }: { banner: Banner; side: "left" | "right
       type="button"
       onClick={onClick}
       aria-label={side === "left" ? "Previous slide" : "Next slide"}
-      className="group hidden h-full w-6 shrink-0 overflow-hidden rounded-lg bg-muted sm:block md:w-11"
+      className="group hidden h-full w-6 shrink-0 overflow-hidden rounded-lg bg-white sm:block md:w-11"
     >
       <img
         src={banner.imagePath}
@@ -81,28 +81,32 @@ export function BannerCarousel({ banners, loading }: { banners: Banner[]; loadin
   const slide = (
     <div className="relative h-full w-full overflow-hidden">
       <AnimatePresence initial={false} mode="popLayout">
-        <motion.img
+        <motion.div
           key={current.id}
-          src={current.imagePath}
-          alt={current.altText}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.5, ease: "easeInOut" }}
-          className="absolute inset-0 h-full w-full object-cover"
-        />
+          className="absolute inset-0"
+        >
+          <img
+            src={current.imagePath}
+            alt={current.altText}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        </motion.div>
       </AnimatePresence>
     </div>
   );
 
   return (
     <section className="pt-6">
-      <div className="mx-auto max-w-6xl 2xl:max-w-[1440px] px-10 sm:px-7">
+      <div className="mx-auto max-w-6xl 2xl:max-w-[1440px] px-5 sm:px-7">
         <div className={`flex gap-1.5 ${ROW_ASPECT}`}>
           {prev && <Peek banner={prev} side="left" onClick={() => go(-1)} />}
 
           <div
-            className="group relative min-w-0 flex-1 overflow-hidden rounded-lg bg-muted shadow-sm"
+            className="group relative min-w-0 flex-1 overflow-hidden rounded-lg bg-white"
             onMouseEnter={() => setPaused(true)}
             onMouseLeave={() => setPaused(false)}
           >
