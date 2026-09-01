@@ -178,7 +178,7 @@ export function SiteHeader() {
           )}
           <Button
             className="h-9 px-3 text-sm shadow-sm sm:px-5"
-            render={<Link href="/question-banks">Products</Link>}
+            render={<Link href="/question-banks">Browse Products</Link>}
           />
         </div>
       </div>
