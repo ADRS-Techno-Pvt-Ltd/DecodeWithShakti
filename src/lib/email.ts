@@ -42,6 +42,22 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string): Prom
   });
 }
 
+export async function sendNewUserNotification(input: {
+  name: string;
+  email: string;
+  caRegistrationNumber: string;
+}): Promise<void> {
+  const recipients = [process.env.ADMIN_EMAIL, process.env.ADMIN2_EMAIL].filter(
+    (v): v is string => !!v,
+  );
+  await send({
+    to: recipients.length > 0 ? recipients : FROM,
+    subject: `New student registered: ${input.name}`,
+    text: `A new student account was created.\n\nName: ${input.name}\nEmail: ${input.email}\nCA Registration Number: ${input.caRegistrationNumber}`,
+    html: `<p>A new student account was created.</p><p><strong>Name:</strong> ${input.name}<br /><strong>Email:</strong> ${input.email}<br /><strong>CA Registration Number:</strong> ${input.caRegistrationNumber}</p>`,
+  });
+}
+
 export async function sendContactMessage(input: {
   name: string;
   email: string;

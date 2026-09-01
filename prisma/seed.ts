@@ -7,7 +7,7 @@ const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  const email = process.env.ADMIN_EMAIL;
+  const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
   const password = process.env.ADMIN_PASSWORD;
   if (!email || !password) {
     throw new Error("ADMIN_EMAIL and ADMIN_PASSWORD must be set to seed the admin account.");
@@ -27,6 +27,23 @@ async function main() {
   });
 
   console.log(`Seeded admin account: ${email}`);
+
+  const email2 = process.env.ADMIN2_EMAIL?.trim().toLowerCase();
+  const password2 = process.env.ADMIN2_PASSWORD;
+  if (email2 && password2) {
+    const passwordHash2 = await bcrypt.hash(password2, 12);
+    await prisma.user.upsert({
+      where: { email: email2 },
+      update: {},
+      create: {
+        name: "Admin",
+        email: email2,
+        passwordHash: passwordHash2,
+        role: "ADMIN",
+      },
+    });
+    console.log(`Seeded admin account: ${email2}`);
+  }
 
   const categories = [
     { name: "CA Inter — Costing", slug: "ca-inter-costing" },

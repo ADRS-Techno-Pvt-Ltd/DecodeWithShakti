@@ -356,7 +356,12 @@ export default function LandingPage() {
                   </div>
                   <div className="mt-auto flex flex-col gap-2.5">
                     <div className="flex items-baseline justify-between gap-3 rounded-[11px] border border-border px-4 py-3.5">
-                      <span className="text-[13.5px] font-semibold text-muted-foreground">Per subject</span>
+                      <span className="text-[13.5px] font-semibold text-muted-foreground">
+                        Per subject
+                        <span className="mt-0.5 block text-[11.5px] font-normal text-muted-foreground/70">
+                          3 unit tests + 1 full test
+                        </span>
+                      </span>
                       <span className="font-heading text-lg font-semibold whitespace-nowrap">
                         ₹900<span className="ml-0.5 font-sans text-xs font-medium text-muted-foreground/70">/subject</span>
                       </span>

@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { registerSchema } from "@/lib/validation/auth";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { sendNewUserNotification } from "@/lib/email";
 
 export async function POST(request: Request) {
   if (!rateLimit(`register:${getClientIp(request)}`, 10, 15 * 60 * 1000)) {
@@ -26,6 +27,12 @@ export async function POST(request: Request) {
   const user = await prisma.user.create({
     data: { name, email, caRegistrationNumber, passwordHash, role: "STUDENT" },
   });
+
+  try {
+    await sendNewUserNotification({ name, email, caRegistrationNumber });
+  } catch (err) {
+    console.error("Failed to send new user notification email:", err);
+  }
 
   return NextResponse.json({ id: user.id, email: user.email }, { status: 201 });
 }
