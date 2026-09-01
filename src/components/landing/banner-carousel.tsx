@@ -7,11 +7,16 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Banner } from "@/features/banners/types";
 
 const AUTOPLAY_MS = 5500;
-const ROW_HEIGHT = "h-[140px] sm:h-[180px] md:h-[220px]";
+// Matches BANNER_CROP_ASPECT in banner-image-crop-dialog.tsx — every uploaded banner is
+// already cropped to this ratio, so sizing the row to it means object-cover never has to
+// crop or letterbox the image, at any screen width.
+const ROW_ASPECT = "aspect-[1284/220]";
 
 /**
  * 44px sliver of the previous/next slide, cropped to its near edge so it reads as
  * "more content this way" — clicking it navigates the main carousel to that slide.
+ * Hidden on mobile: at narrow widths the peeks skew the row away from the banner's
+ * native aspect ratio, which is what caused cropped/letterboxed banners there.
  */
 function Peek({ banner, side, onClick }: { banner: Banner; side: "left" | "right"; onClick: () => void }) {
   return (
@@ -19,7 +24,7 @@ function Peek({ banner, side, onClick }: { banner: Banner; side: "left" | "right
       type="button"
       onClick={onClick}
       aria-label={side === "left" ? "Previous slide" : "Next slide"}
-      className="group h-full w-11 shrink-0 overflow-hidden rounded-lg bg-muted"
+      className="group hidden h-full w-6 shrink-0 overflow-hidden rounded-lg bg-muted sm:block md:w-11"
     >
       <img
         src={banner.imagePath}
@@ -56,7 +61,7 @@ export function BannerCarousel({ banners, loading }: { banners: Banner[]; loadin
     return (
       <section className="pt-6">
         <div className="mx-auto max-w-6xl 2xl:max-w-[1440px] px-7">
-          <div className={`w-full animate-pulse rounded-lg bg-muted ${ROW_HEIGHT}`} />
+          <div className={`w-full animate-pulse rounded-lg bg-muted ${ROW_ASPECT}`} />
         </div>
       </section>
     );
@@ -92,8 +97,8 @@ export function BannerCarousel({ banners, loading }: { banners: Banner[]; loadin
 
   return (
     <section className="pt-6">
-      <div className="mx-auto max-w-6xl 2xl:max-w-[1440px] px-7">
-        <div className={`flex gap-1.5 ${ROW_HEIGHT}`}>
+      <div className="mx-auto max-w-6xl 2xl:max-w-[1440px] px-10 sm:px-7">
+        <div className={`flex gap-1.5 ${ROW_ASPECT}`}>
           {prev && <Peek banner={prev} side="left" onClick={() => go(-1)} />}
 
           <div
