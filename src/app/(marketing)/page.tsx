@@ -144,12 +144,12 @@ const testimonials = [
     quote:
       "Decode with Shakti's test series is a game changer. The level of questions and detailed solutions helped me improve my scores drastically.",
     name: "Riya Singh",
-    exam: "CA Intermediate Topper",
+    exam: "CA Intermediate Student",
     color: "bg-primary",
   },
   {
     quote:
-      "The questions are exam oriented and explained so well. It feels like learning from toppers. Highly recommended!",
+      "The questions are exam oriented and explained so well. It feels like learning directly from a mentor. Highly recommended!",
     name: "Aman Verma",
     exam: "CA Inter Student",
     color: "bg-primary",
@@ -158,7 +158,7 @@ const testimonials = [
     quote:
       "I scored 70% in CA Inter just because of consistent practice on Decode with Shakti.",
     name: "Manan Jain",
-    exam: "CA Inter Topper",
+    exam: "CA Inter Student",
     color: "bg-primary",
   },
 ];
@@ -284,7 +284,7 @@ export default function LandingPage() {
                 variants={heroItem}
                 className="font-heading text-[2.6rem] leading-[1.1] font-semibold tracking-tight text-foreground md:text-[3.4rem]"
               >
-                Built the way a <span className="text-primary">topper actually</span> prepares.
+                Built the way <span className="text-primary">smart prep</span> actually happens.
               </motion.h1>
               <motion.p
                 variants={heroItem}
@@ -351,7 +351,7 @@ export default function LandingPage() {
                     <h3 className="font-heading text-[19px] font-semibold">Test series</h3>
                     <p className="mt-2 text-[13.5px] leading-relaxed text-muted-foreground">
                       Full-length papers set to the real exam pattern, marked against a
-                      topper&apos;s answer key.
+                      mentor-curated answer key.
                     </p>
                   </div>
                   <div className="mt-auto flex flex-col gap-2.5">
@@ -376,7 +376,7 @@ export default function LandingPage() {
                   <div>
                     <h3 className="font-heading text-[19px] font-semibold">Decode sheets</h3>
                     <p className="mt-2 text-[13.5px] leading-relaxed text-muted-foreground">
-                      A topper&apos;s own line-by-line breakdown of how each answer should be
+                      A mentor&apos;s own line-by-line breakdown of how each answer should be
                       structured.
                     </p>
                   </div>
@@ -435,7 +435,7 @@ export default function LandingPage() {
             <Reveal className="mx-auto mb-14 max-w-xl text-center">
               <Eyebrow>Why aspirants choose us</Eyebrow>
               <h2 className="font-heading mt-4 text-[2rem] leading-tight font-semibold tracking-tight">
-                Built the way a topper actually prepares
+                Built the way smart prep actually happens
               </h2>
               <p className="mt-3.5 text-base leading-relaxed text-muted-foreground">
                 No bundled subscriptions or filler content — just the specific bank you need,
