@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -15,8 +15,9 @@ const ROW_ASPECT = "aspect-[1284/220]";
 /**
  * 44px sliver of the previous/next slide, cropped to its near edge so it reads as
  * "more content this way" — clicking it navigates the main carousel to that slide.
- * Hidden on mobile: at narrow widths the peeks skew the row away from the banner's
- * native aspect ratio, which is what caused cropped/letterboxed banners there.
+ * Hidden below `lg`: at narrower widths (including tablets) the peeks eat width from the
+ * main slide while the row's height stays sized to the full row width, which skews the
+ * main image away from the banner's native aspect ratio and made object-cover crop it.
  */
 function Peek({ banner, side, onClick }: { banner: Banner; side: "left" | "right"; onClick: () => void }) {
   return (
@@ -24,7 +25,7 @@ function Peek({ banner, side, onClick }: { banner: Banner; side: "left" | "right
       type="button"
       onClick={onClick}
       aria-label={side === "left" ? "Previous slide" : "Next slide"}
-      className="group hidden h-full w-6 shrink-0 overflow-hidden rounded-lg bg-white sm:block md:w-11"
+      className="group hidden h-full w-11 shrink-0 overflow-hidden rounded-lg bg-white lg:block"
     >
       <img
         src={banner.imagePath}
@@ -57,6 +58,12 @@ export function BannerCarousel({ banners, loading }: { banners: Banner[]; loadin
     return () => clearInterval(id);
   }, [paused, banners.length]);
 
+  // Touch swipe for mobile, where the peek slivers are hidden and the arrow buttons only
+  // reveal on hover (no equivalent on touch). `swiped` suppresses the click-through Link
+  // navigation that would otherwise fire from the same tap that ended the swipe.
+  const touchStartX = useRef<number | null>(null);
+  const swiped = useRef(false);
+
   if (loading) {
     return (
       <section className="pt-6">
@@ -76,6 +83,32 @@ export function BannerCarousel({ banners, loading }: { banners: Banner[]; loadin
 
   function go(direction: -1 | 1) {
     setIndex((safeIndex + direction + banners.length) % banners.length);
+  }
+
+  const SWIPE_THRESHOLD_PX = 40;
+
+  function handleTouchStart(e: React.TouchEvent) {
+    touchStartX.current = e.touches[0].clientX;
+    setPaused(true);
+  }
+
+  function handleTouchEnd(e: React.TouchEvent) {
+    if (touchStartX.current === null) return;
+    const delta = e.changedTouches[0].clientX - touchStartX.current;
+    if (hasMultiple && Math.abs(delta) > SWIPE_THRESHOLD_PX) {
+      go(delta < 0 ? 1 : -1);
+      swiped.current = true;
+    }
+    touchStartX.current = null;
+    setPaused(false);
+  }
+
+  function handleClickCapture(e: React.MouseEvent) {
+    if (swiped.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      swiped.current = false;
+    }
   }
 
   const slide = (
@@ -106,9 +139,12 @@ export function BannerCarousel({ banners, loading }: { banners: Banner[]; loadin
           {prev && <Peek banner={prev} side="left" onClick={() => go(-1)} />}
 
           <div
-            className="group relative min-w-0 flex-1 overflow-hidden rounded-lg bg-white"
+            className="group relative min-w-0 flex-1 touch-pan-y overflow-hidden rounded-lg bg-white"
             onMouseEnter={() => setPaused(true)}
             onMouseLeave={() => setPaused(false)}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            onClickCapture={handleClickCapture}
           >
             {current.linkUrl ? (
               <Link
