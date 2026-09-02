@@ -30,6 +30,7 @@ import {
   createQuestionBank,
   updateQuestionBank,
   replaceQuestionBankThumbnail,
+  replaceQuestionBankFile,
   createCategory,
 } from "@/features/question-banks/api";
 
@@ -191,6 +192,9 @@ export function QuestionBankSheet({
         if (values.thumbnail && values.thumbnail.length > 0) {
           await replaceQuestionBankThumbnail(editing.id, values.thumbnail[0]);
         }
+        if (values.file && values.file.length > 0) {
+          await replaceQuestionBankFile(editing.id, values.file[0]);
+        }
         toast.success("Question bank updated.");
       } else {
         if (!values.file || values.file.length === 0) {
@@ -297,12 +301,18 @@ export function QuestionBankSheet({
             </div>
           </div>
 
-          {!editing && (
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="file">Question Bank File (PDF)</Label>
-              <Input id="file" type="file" accept="application/pdf" {...register("file")} />
-            </div>
-          )}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="file">
+              Question Bank File (PDF) {editing ? "(replace)" : ""}
+            </Label>
+            <Input id="file" type="file" accept="application/pdf" {...register("file")} />
+            {editing && (
+              <span className="text-muted-foreground text-xs">
+                Leave empty to keep the current file. Only replace it if the stored file is
+                missing or needs correcting — this regenerates the preview too.
+              </span>
+            )}
+          </div>
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="thumbnail">

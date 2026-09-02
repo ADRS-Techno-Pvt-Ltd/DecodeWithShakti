@@ -72,3 +72,11 @@ export async function replaceQuestionBankThumbnail(id: string, file: File): Prom
     await fetch(`/api/v1/question-banks/${id}/thumbnail`, { method: "POST", body: formData }),
   );
 }
+
+export async function replaceQuestionBankFile(id: string, file: File): Promise<QuestionBank> {
+  const formData = new FormData();
+  formData.set("file", file);
+  return unwrap(
+    await fetch(`/api/v1/question-banks/${id}/file`, { method: "POST", body: formData }),
+  );
+}

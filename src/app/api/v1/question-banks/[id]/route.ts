@@ -83,8 +83,10 @@ export async function DELETE(
       );
     }
 
-    await prisma.questionBank.delete({ where: { id } });
+    // Delete storage first — if this fails, the DB row (and the admin's ability
+    // to retry) stays intact instead of leaving orphaned files with no owner.
     await deleteQuestionBankFiles(id);
+    await prisma.questionBank.delete({ where: { id } });
 
     return NextResponse.json({ ok: true });
   } catch (err) {
