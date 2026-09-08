@@ -162,23 +162,23 @@ const featuredBanks: FeaturedBankCard[] = [
 
 const testimonials = [
   {
-    quote:
-      "Bhaiya, mera Group 1 clear ho gaya! Aapke guidance ne AFM mein bahut help ki. Bahut bahut thank you, dil se. 🙏",
-    name: "Sonu Goel",
-    exam: "CA Final — Group I cleared",
+    quote: "Thank you sir for being part of my journey. 🤍",
+    name: "CA Ayush Jain",
+    exam: "CA Final — Both groups cleared",
     color: "bg-primary",
   },
   {
     quote:
       "I cleared Group 1 with your guidance. Your approach to breaking down complex topics and your structured strategy made a massive difference in my preparation. All the test papers you gave me made my preparation even better.",
-    name: "CA Final Aspirant",
+    name: "Arya Gupta",
     exam: "Group I cleared",
     color: "bg-primary",
   },
   {
-    quote: "Thank you sir for being part of my journey. 🤍",
-    name: "Ayush Jain",
-    exam: "CA Final — Both groups cleared",
+    quote:
+      "Bhaiya, mera Group 1 clear ho gaya! Aapke guidance ne AFM mein bahut help ki. Bahut bahut thank you, dil se. 🙏",
+    name: "Sonu Goel",
+    exam: "CA Final — Group I cleared",
     color: "bg-primary",
   },
 ];

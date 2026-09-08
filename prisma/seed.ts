@@ -6,6 +6,24 @@ import { PrismaPg } from "@prisma/adapter-pg";
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
+async function seedAdminAccount(email: string, password: string, label: string) {
+  const passwordHash = await bcrypt.hash(password, 12);
+  await prisma.user.upsert({
+    where: { email },
+    update: {
+      passwordHash,
+      role: "ADMIN",
+    },
+    create: {
+      name: "Admin",
+      email,
+      passwordHash,
+      role: "ADMIN",
+    },
+  });
+  console.log(`Seeded ${label} admin account: ${email}`);
+}
+
 async function main() {
   const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
   const password = process.env.ADMIN_PASSWORD;
@@ -15,35 +33,13 @@ async function main() {
     // step. Reference data below still seeds.
     console.warn("Seed: ADMIN_EMAIL / ADMIN_PASSWORD not set — skipping admin account.");
   } else {
-    const passwordHash = await bcrypt.hash(password, 12);
-    await prisma.user.upsert({
-      where: { email },
-      update: {},
-      create: {
-        name: "Admin",
-        email,
-        passwordHash,
-        role: "ADMIN",
-      },
-    });
-    console.log(`Seeded admin account: ${email}`);
+    await seedAdminAccount(email, password, "primary");
   }
 
   const email2 = process.env.ADMIN2_EMAIL?.trim().toLowerCase();
   const password2 = process.env.ADMIN2_PASSWORD;
   if (email2 && password2) {
-    const passwordHash2 = await bcrypt.hash(password2, 12);
-    await prisma.user.upsert({
-      where: { email: email2 },
-      update: {},
-      create: {
-        name: "Admin",
-        email: email2,
-        passwordHash: passwordHash2,
-        role: "ADMIN",
-      },
-    });
-    console.log(`Seeded admin account: ${email2}`);
+    await seedAdminAccount(email2, password2, "secondary");
   }
 
   const categories = [

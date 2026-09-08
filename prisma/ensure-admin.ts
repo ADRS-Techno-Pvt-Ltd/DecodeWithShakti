@@ -3,10 +3,9 @@ import bcrypt from "bcryptjs";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 
-// Runs before `npm run dev` / `npm start` (see package.json predev/prestart).
-// If the ADMIN_EMAIL account from the environment is not already in the database,
-// it is created. Existing accounts are left untouched. Never throws — a missing
-// DB or missing env vars just logs and exits 0 so app startup is never blocked.
+// Runs before `npm run dev` (see package.json predev). It creates or promotes
+// the ADMIN_EMAIL account from the environment. Never throws — a missing DB or
+// missing env vars just logs and exits 0 so app startup is never blocked.
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
@@ -18,13 +17,17 @@ async function main() {
     return;
   }
 
+  const passwordHash = await bcrypt.hash(password, 12);
   const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } });
   if (existing) {
-    console.log(`ensure-admin: admin ${email} already present — nothing to do.`);
+    await prisma.user.update({
+      where: { email },
+      data: { passwordHash, role: "ADMIN" },
+    });
+    console.log(`ensure-admin: updated admin account ${email}.`);
     return;
   }
 
-  const passwordHash = await bcrypt.hash(password, 12);
   await prisma.user.create({
     data: { name: "Admin", email, passwordHash, role: "ADMIN" },
   });
