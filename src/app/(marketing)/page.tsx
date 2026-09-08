@@ -19,7 +19,7 @@ import {
   Quote,
   Star,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Accordion,
   AccordionContent,
@@ -438,91 +438,97 @@ export default function LandingPage() {
                   ))
                 : displayedBanks.map((bank, i) => (
                 <Reveal key={bank.title} delay={i * 60}>
-                  <motion.div
-                    whileHover={{ y: -6 }}
-                    transition={{ duration: 0.2, ease: "easeOut" }}
-                    className={`relative flex h-full flex-col rounded-[14px] border bg-card shadow-sm hover:shadow-lg ${
-                      bank.popular ? "border-primary ring-1 ring-primary" : "border-border"
-                    }`}
+                  <Link
+                    href={bank.href}
+                    prefetch={false}
+                    className="block h-full rounded-[14px] outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                   >
-                    {bank.popular && (
-                      <span className="absolute -top-3 left-6 rounded-full bg-primary px-3 py-1 text-[11.5px] font-bold text-primary-foreground">
-                        Most purchased
-                      </span>
-                    )}
-                    <div className="p-6.5 pb-5">
-                      <Link
-                        href={bank.href}
-                        className="mb-4 flex aspect-video items-center justify-center overflow-hidden rounded-[10px] bg-muted text-primary"
-                      >
-                        {bank.thumbnailUrl ? (
-                          <img
-                            src={bank.thumbnailUrl}
-                            alt=""
-                            className="h-full w-full object-contain"
-                          />
-                        ) : (
-                          <FileText className="h-7 w-7" strokeWidth={1.5} />
-                        )}
-                      </Link>
-                      <div className="font-mono text-[11px] font-semibold tracking-wide text-primary uppercase">
-                        {bank.category}
-                      </div>
-                      <div className="font-heading mt-2 text-[19px] leading-snug font-semibold">
-                        {bank.title}
-                      </div>
-                      <p className="mt-2.5 line-clamp-3 text-[13.5px] leading-relaxed text-muted-foreground">
-                        {bank.desc}
-                      </p>
-                    </div>
-                    <div className="mx-6 border-t-2 border-dashed border-border" />
-                    <div className="flex flex-wrap items-baseline gap-2.5 px-6.5 pt-5">
-                      {bank.oldPrice && (
-                        <span className="font-mono text-[15px] text-muted-foreground line-through">
-                          {bank.oldPrice}
+                    <motion.div
+                      whileHover={{ y: -6 }}
+                      transition={{ duration: 0.2, ease: "easeOut" }}
+                      className={`relative flex h-full cursor-pointer flex-col rounded-[14px] border bg-card shadow-sm hover:shadow-lg ${
+                        bank.popular ? "border-primary ring-1 ring-primary" : "border-border"
+                      }`}
+                    >
+                      {bank.popular && (
+                        <span className="absolute -top-3 left-6 rounded-full bg-primary px-3 py-1 text-[11.5px] font-bold text-primary-foreground">
+                          Most purchased
                         </span>
                       )}
-                      <span className="font-mono text-[27px] font-semibold">{bank.price}</span>
-                    </div>
-                    <div className="mt-1 px-6.5">
-                      <span
-                        className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold ${
-                          bank.badge.tone === "gold"
-                            ? "border border-gold/40 bg-gold-pale text-gold-ink"
-                            : "border border-success/30 bg-success/10 text-success"
-                        }`}
-                      >
-                        {bank.badge.tone === "gold" && <Clock className="h-3.5 w-3.5" />}
-                        {bank.badge.tone === "gold" ? (
-                          <EarlyBirdBadgeLabel
-                            endsAt={bank.earlyBirdEndsAt}
-                            fallback={bank.badge.label}
-                          />
-                        ) : (
-                          bank.badge.label
+                      <div className="p-6.5 pb-5">
+                        <div className="mb-4 flex aspect-video items-center justify-center overflow-hidden rounded-[10px] bg-muted text-primary">
+                          {bank.thumbnailUrl ? (
+                            <img
+                              src={bank.thumbnailUrl}
+                              alt=""
+                              className="h-full w-full object-contain"
+                            />
+                          ) : (
+                            <FileText className="h-7 w-7" strokeWidth={1.5} />
+                          )}
+                        </div>
+                        <div className="font-mono text-[11px] font-semibold tracking-wide text-primary uppercase">
+                          {bank.category}
+                        </div>
+                        <div className="font-heading mt-2 text-[19px] leading-snug font-semibold">
+                          {bank.title}
+                        </div>
+                        <p className="mt-2.5 line-clamp-3 text-[13.5px] leading-relaxed text-muted-foreground">
+                          {bank.desc}
+                        </p>
+                      </div>
+                      <div className="mx-6 border-t-2 border-dashed border-border" />
+                      <div className="flex flex-wrap items-baseline gap-2.5 px-6.5 pt-5">
+                        {bank.oldPrice && (
+                          <span className="font-mono text-[15px] text-muted-foreground line-through">
+                            {bank.oldPrice}
+                          </span>
                         )}
-                      </span>
-                    </div>
-                    {bank.bullets.length > 0 && (
-                      <ul className="mt-4.5 flex flex-col gap-2.5 px-6.5 text-[13.8px] text-muted-foreground">
-                        {bank.bullets.map((b) => (
-                          <li key={b} className="flex items-start gap-2.5">
-                            <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" strokeWidth={2.5} />
-                            {b}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    <div className="mt-auto p-6.5 pt-5.5">
-                      <MotionButton block>
-                        <Button
-                          variant={bank.popular ? "default" : "outline"}
-                          className="w-full"
-                          render={<Link href={bank.href}>{bank.popular ? "Buy this bank" : "Preview sample"}</Link>}
-                        />
-                      </MotionButton>
-                    </div>
-                  </motion.div>
+                        <span className="font-mono text-[27px] font-semibold">{bank.price}</span>
+                      </div>
+                      <div className="mt-1 px-6.5">
+                        <span
+                          className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold ${
+                            bank.badge.tone === "gold"
+                              ? "border border-gold/40 bg-gold-pale text-gold-ink"
+                              : "border border-success/30 bg-success/10 text-success"
+                          }`}
+                        >
+                          {bank.badge.tone === "gold" && <Clock className="h-3.5 w-3.5" />}
+                          {bank.badge.tone === "gold" ? (
+                            <EarlyBirdBadgeLabel
+                              endsAt={bank.earlyBirdEndsAt}
+                              fallback={bank.badge.label}
+                            />
+                          ) : (
+                            bank.badge.label
+                          )}
+                        </span>
+                      </div>
+                      {bank.bullets.length > 0 && (
+                        <ul className="mt-4.5 flex flex-col gap-2.5 px-6.5 text-[13.8px] text-muted-foreground">
+                          {bank.bullets.map((b) => (
+                            <li key={b} className="flex items-start gap-2.5">
+                              <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" strokeWidth={2.5} />
+                              {b}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      <div className="mt-auto p-6.5 pt-5.5">
+                        <MotionButton block>
+                          <span
+                            className={buttonVariants({
+                              variant: bank.popular ? "default" : "outline",
+                              className: "w-full",
+                            })}
+                          >
+                            {bank.popular ? "Buy this bank" : "Preview sample"}
+                          </span>
+                        </MotionButton>
+                      </div>
+                    </motion.div>
+                  </Link>
                 </Reveal>
               ))}
             </div>
