@@ -142,23 +142,22 @@ const featuredBanks: FeaturedBankCard[] = [
 const testimonials = [
   {
     quote:
-      "Decode with Shakti's test series is a game changer. The level of questions and detailed solutions helped me improve my scores drastically.",
-    name: "Riya Singh",
-    exam: "CA Intermediate Student",
+      "Bhaiya, mera Group 1 clear ho gaya! Aapke guidance ne AFM mein bahut help ki. Bahut bahut thank you, dil se. 🙏",
+    name: "Sonu Goel",
+    exam: "CA Final — Group I cleared",
     color: "bg-primary",
   },
   {
     quote:
-      "The questions are exam oriented and explained so well. It feels like learning directly from a mentor. Highly recommended!",
-    name: "Aman Verma",
-    exam: "CA Inter Student",
+      "I cleared Group 1 with your guidance. Your approach to breaking down complex topics and your structured strategy made a massive difference in my preparation. All the test papers you gave me made my preparation even better.",
+    name: "CA Final Aspirant",
+    exam: "Group I cleared",
     color: "bg-primary",
   },
   {
-    quote:
-      "I scored 70% in CA Inter just because of consistent practice on Decode with Shakti.",
-    name: "Manan Jain",
-    exam: "CA Inter Student",
+    quote: "Thank you sir for being part of my journey. 🤍",
+    name: "Ayush Jain",
+    exam: "CA Final — Both groups cleared",
     color: "bg-primary",
   },
 ];
@@ -230,6 +229,54 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
       <span className="h-1.5 w-1.5 rounded-full bg-success shadow-[0_0_0_3px_var(--success)]/20" />
       {children}
     </span>
+  );
+}
+
+/** Testimonial card — clamps long quotes behind a Read more / Show less toggle. */
+function TestimonialCard({
+  t,
+}: {
+  t: { quote: string; name: string; exam: string; color: string };
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const isLong = t.quote.length > 180;
+
+  return (
+    <div className="flex h-full flex-col rounded-[14px] border border-primary-light/25 bg-card p-6.5">
+      <Quote className="h-7 w-7 text-primary/60" fill="currentColor" strokeWidth={0} />
+      <div className="mt-3 flex gap-0.5 text-gold">
+        {Array.from({ length: 5 }).map((_, s) => (
+          <Star key={s} className="h-3.5 w-3.5" fill="currentColor" strokeWidth={0} />
+        ))}
+      </div>
+      <p
+        className={`mt-3.5 text-[14.5px] leading-relaxed text-foreground/90${
+          isLong && !expanded ? " line-clamp-4" : ""
+        }`}
+      >
+        {t.quote}
+      </p>
+      {isLong && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-2 self-start text-[13px] font-semibold text-primary hover:underline"
+        >
+          {expanded ? "Show less" : "Read more"}
+        </button>
+      )}
+      <div className="mt-auto flex items-center gap-2.5 pt-5">
+        <span
+          className={`font-heading flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white ${t.color}`}
+        >
+          {t.name.split(" ").map((p) => p[0]).join("")}
+        </span>
+        <div>
+          <div className="text-[13.5px] font-bold text-primary">{t.name}</div>
+          <div className="text-xs text-muted-foreground">{t.exam}</div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -692,28 +739,7 @@ export default function LandingPage() {
             <div className="grid grid-cols-1 gap-5.5 sm:grid-cols-2 lg:grid-cols-3">
               {testimonials.map((t, i) => (
                 <Reveal key={t.name} delay={i * 40} className="h-full">
-                  <div className="flex h-full flex-col rounded-[14px] border border-primary-light/25 bg-card p-6.5">
-                    <Quote className="h-7 w-7 text-primary/60" fill="currentColor" strokeWidth={0} />
-                    <div className="mt-3 flex gap-0.5 text-gold">
-                      {Array.from({ length: 5 }).map((_, s) => (
-                        <Star key={s} className="h-3.5 w-3.5" fill="currentColor" strokeWidth={0} />
-                      ))}
-                    </div>
-                    <p className="mt-3.5 text-[14.5px] leading-relaxed text-foreground/90">
-                      {t.quote}
-                    </p>
-                    <div className="mt-auto flex items-center gap-2.5 pt-5">
-                      <span
-                        className={`font-heading flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white ${t.color}`}
-                      >
-                        {t.name.split(" ").map((p) => p[0]).join("")}
-                      </span>
-                      <div>
-                        <div className="text-[13.5px] font-bold text-primary">{t.name}</div>
-                        <div className="text-xs text-muted-foreground">{t.exam}</div>
-                      </div>
-                    </div>
-                  </div>
+                  <TestimonialCard t={t} />
                 </Reveal>
               ))}
             </div>
