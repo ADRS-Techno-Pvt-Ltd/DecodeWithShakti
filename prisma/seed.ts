@@ -10,23 +10,23 @@ async function main() {
   const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
   const password = process.env.ADMIN_PASSWORD;
   if (!email || !password) {
-    throw new Error("ADMIN_EMAIL and ADMIN_PASSWORD must be set to seed the admin account.");
+    // Don't hard-fail deploy startup (prestart runs this) — just skip the admin
+    // step. Reference data below still seeds.
+    console.warn("Seed: ADMIN_EMAIL / ADMIN_PASSWORD not set — skipping admin account.");
+  } else {
+    const passwordHash = await bcrypt.hash(password, 12);
+    await prisma.user.upsert({
+      where: { email },
+      update: {},
+      create: {
+        name: "Admin",
+        email,
+        passwordHash,
+        role: "ADMIN",
+      },
+    });
+    console.log(`Seeded admin account: ${email}`);
   }
-
-  const passwordHash = await bcrypt.hash(password, 12);
-
-  await prisma.user.upsert({
-    where: { email },
-    update: {},
-    create: {
-      name: "Admin",
-      email,
-      passwordHash,
-      role: "ADMIN",
-    },
-  });
-
-  console.log(`Seeded admin account: ${email}`);
 
   const email2 = process.env.ADMIN2_EMAIL?.trim().toLowerCase();
   const password2 = process.env.ADMIN2_PASSWORD;
