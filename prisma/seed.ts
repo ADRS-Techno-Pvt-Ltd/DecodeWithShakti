@@ -54,15 +54,13 @@ async function main() {
     { name: "CA Final — Law", slug: "ca-final-law" },
   ];
 
-  for (const category of categories) {
-    await prisma.category.upsert({
-      where: { slug: category.slug },
-      update: {},
-      create: category,
-    });
+  const categoryCount = await prisma.category.count();
+  if (categoryCount === 0) {
+    await prisma.category.createMany({ data: categories });
+    console.log(`Seeded ${categories.length} categories.`);
+  } else {
+    console.log(`Skipped category seed (${categoryCount} already present).`);
   }
-
-  console.log(`Seeded ${categories.length} categories.`);
 
   const subjects = [
     { name: "Accounting", slug: "accounting" },
@@ -81,15 +79,13 @@ async function main() {
     { name: "Business Correspondence & Reporting", slug: "business-correspondence-and-reporting" },
   ];
 
-  for (const subject of subjects) {
-    await prisma.subject.upsert({
-      where: { slug: subject.slug },
-      update: {},
-      create: subject,
-    });
+  const subjectCount = await prisma.subject.count();
+  if (subjectCount === 0) {
+    await prisma.subject.createMany({ data: subjects });
+    console.log(`Seeded ${subjects.length} subjects.`);
+  } else {
+    console.log(`Skipped subject seed (${subjectCount} already present).`);
   }
-
-  console.log(`Seeded ${subjects.length} subjects.`);
 
   // FAQ — seed the initial set only if an admin hasn't started managing them yet.
   const faqCount = await prisma.faqItem.count();

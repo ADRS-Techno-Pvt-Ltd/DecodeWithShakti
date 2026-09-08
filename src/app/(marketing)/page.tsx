@@ -39,27 +39,28 @@ import type { Category } from "@/features/categories/api";
 
 const levels = [
   {
-    slug: "ca-final-audit",
-    label: "CA Final — Audit",
-    desc: "Audit exam-pattern sets, each one reviewed personally by Shakti before it's published.",
+    slug: "ca-final",
+    category: "CA-Final",
+    title: "Financial Reporting (FR)",
+    desc: "Decode sheets and test-series practice for Financial Reporting under the CA Final category.",
   },
   {
-    slug: "ca-inter-accounts",
-    label: "CA Inter — Accounts",
-    desc: "Paper-mapped Accounts question sets for CA Inter, built to the current ICAI pattern.",
-    comingSoon: true,
+    slug: "ca-final",
+    category: "CA-Final",
+    title: "Advanced Financial Management (AFM)",
+    desc: "Subject-focused practice for Advanced Financial Management with exam-style preparation support.",
   },
   {
-    slug: "ca-inter-costing",
-    label: "CA Inter — Costing",
-    desc: "Costing banks with exam-style problems and worked, step-by-step solutions.",
-    comingSoon: true,
+    slug: "ca-final",
+    category: "CA-Final",
+    title: "Advanced Auditing, Assurance and Professional Ethics",
+    desc: "Audit, assurance and ethics preparation mapped for CA Final answer-writing practice.",
   },
   {
-    slug: "ca-inter-taxation",
-    label: "CA Inter — Taxation",
-    desc: "Taxation question sets covering direct and indirect tax topics for CA Inter.",
-    comingSoon: true,
+    slug: "ca-final",
+    category: "CA-Final",
+    title: "Direct Tax Laws and International Taxation",
+    desc: "Direct tax and international taxation practice for CA Final revision and exam readiness.",
   },
 ];
 
@@ -736,7 +737,7 @@ export default function LandingPage() {
 
             <div className="grid grid-cols-1 gap-5.5 sm:grid-cols-2 lg:grid-cols-4">
               {levels.map((lvl, i) => (
-                <Reveal key={lvl.slug} delay={i * 50}>
+                <Reveal key={lvl.title} delay={i * 50}>
                   <motion.div
                     whileHover={{ y: -5 }}
                     transition={{ duration: 0.2, ease: "easeOut" }}
@@ -744,9 +745,9 @@ export default function LandingPage() {
                   >
                     <div className="border-b border-border p-6.5 pb-5">
                       <span className="font-mono text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                        Category
+                        {lvl.category}
                       </span>
-                      <h3 className="font-heading mt-2 text-lg leading-snug font-bold">{lvl.label}</h3>
+                      <h3 className="font-heading mt-2 text-lg leading-snug font-bold">{lvl.title}</h3>
                     </div>
                     <div className="p-6.5 pt-5">
                       <p className="text-[14.5px] leading-relaxed text-muted-foreground">
