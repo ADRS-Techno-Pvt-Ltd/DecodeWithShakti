@@ -3,8 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "tsx prisma/ensure-admin.ts",
     "dev": "next dev",
     "build": "next build",
+    "prestart": "tsx prisma/ensure-admin.ts",
     "start": "next start",
     "lint": "eslint",
     "postinstall": "prisma generate",

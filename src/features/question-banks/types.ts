@@ -1,6 +1,6 @@
 export type Category = { id: string; name: string; slug: string };
 
-export type Subject = { id: string; name: string; slug: string };
+export type Subject = { id: string; name: string; slug: string; categoryId: string | null };
 
 export type ProductType = "QUESTION_BANK" | "TEST_SERIES";
 

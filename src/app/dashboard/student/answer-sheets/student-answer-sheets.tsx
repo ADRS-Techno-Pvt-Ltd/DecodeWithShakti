@@ -5,8 +5,15 @@ import { useState } from "react";
 import { CheckCircle2, Download, FileCheck2, FileText, Loader2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatusBadge } from "@/components/dashboard/status-badge";
 import { EmptyState } from "@/components/dashboard/empty-state";
 
@@ -31,11 +38,24 @@ type Series = {
   answerKey: { id: string; title: string; fileName: string } | null;
 };
 
+function formatDate(value: string | null): string {
+  if (!value) return "—";
+  return new Date(value).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+function statusBadge(item: Series) {
+  if (!item.submission) return <StatusBadge tone="warning">Answer Not Submitted</StatusBadge>;
+  if (item.submission.status === "EVALUATED") return <StatusBadge tone="success"><CheckCircle2 /> Evaluated</StatusBadge>;
+  return <StatusBadge tone="warning">Evaluation Pending</StatusBadge>;
+}
+
 export function StudentAnswerSheets({ series }: { series: Series[] }) {
   const router = useRouter();
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [detailId, setDetailId] = useState<string | null>(null);
   const [files, setFiles] = useState<Record<string, File | null>>({});
   const [uploading, setUploading] = useState<string | null>(null);
+
+  const active = series.find((item) => item.questionBank.id === detailId) ?? null;
 
   async function uploadAnswer(questionBankId: string) {
     const file = files[questionBankId];
@@ -75,61 +95,178 @@ export function StudentAnswerSheets({ series }: { series: Series[] }) {
         <h1 className="font-heading text-2xl font-bold">Uploads / Evaluated Answer</h1>
         <p className="text-sm text-muted-foreground">Submit answers for your purchased Test Series.</p>
       </div>
-      <div className="grid gap-4 lg:grid-cols-2">
-        {series.map((item) => {
-          const isOpen = openId === item.questionBank.id;
-          const hasSubmission = item.submission !== null;
-          return (
-            <Card key={item.questionBank.id}>
-              <CardHeader>
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <CardTitle className="text-base">{item.questionBank.title}</CardTitle>
-                    <p className="mt-1 text-sm text-muted-foreground">{item.questionBank.category.name}</p>
-                  </div>
-                  {hasSubmission ? (
-                    <StatusBadge tone="success"><CheckCircle2 /> Answer Submitted</StatusBadge>
+
+      <div className="rounded-lg border bg-card overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="whitespace-nowrap">Test Series</TableHead>
+                <TableHead className="whitespace-nowrap">Category</TableHead>
+                <TableHead className="whitespace-nowrap">Submitted On</TableHead>
+                <TableHead className="whitespace-nowrap">Status</TableHead>
+                <TableHead className="whitespace-nowrap text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {series.map((item) => (
+                <TableRow key={item.questionBank.id}>
+                  <TableCell>
+                    <div className="font-semibold whitespace-nowrap">{item.questionBank.title}</div>
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap text-muted-foreground">
+                    {item.questionBank.category.name}
+                  </TableCell>
+                  <TableCell suppressHydrationWarning className="whitespace-nowrap text-muted-foreground">
+                    {formatDate(item.submission?.submittedAt ?? null)}
+                  </TableCell>
+                  <TableCell>{statusBadge(item)}</TableCell>
+                  <TableCell>
+                    <div className="flex justify-end gap-2 whitespace-nowrap">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        render={
+                          <a href={`/api/v1/files/download/${item.purchaseId}`} className="gap-1.5">
+                            <Download className="h-3.5 w-3.5" /> Question Bank
+                          </a>
+                        }
+                      />
+                      <Button size="sm" onClick={() => setDetailId(item.questionBank.id)}>
+                        View Details
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
+      <Dialog open={active !== null} onOpenChange={(open) => !open && setDetailId(null)}>
+        <DialogContent className="sm:max-w-lg">
+          {active && (
+            <>
+              <DialogHeader>
+                <DialogTitle>{active.questionBank.title}</DialogTitle>
+                <DialogDescription>{active.questionBank.category.name}</DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4">
+                <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+                  <dt className="text-muted-foreground">Status</dt>
+                  <dd>{statusBadge(active)}</dd>
+                  <dt className="text-muted-foreground">File name</dt>
+                  <dd className="break-all">{active.questionBank.fileName}</dd>
+                  <dt className="text-muted-foreground">Submitted on</dt>
+                  <dd suppressHydrationWarning>{formatDate(active.submission?.submittedAt ?? null)}</dd>
+                  <dt className="text-muted-foreground">Evaluated on</dt>
+                  <dd suppressHydrationWarning>{formatDate(active.submission?.evaluatedAt ?? null)}</dd>
+                  {active.submission?.studentFileName && (
+                    <>
+                      <dt className="text-muted-foreground">Your answer</dt>
+                      <dd className="break-all">{active.submission.studentFileName}</dd>
+                    </>
+                  )}
+                  {active.submission?.evaluatedFileName && (
+                    <>
+                      <dt className="text-muted-foreground">Evaluated file</dt>
+                      <dd className="break-all">{active.submission.evaluatedFileName}</dd>
+                    </>
+                  )}
+                </dl>
+
+                {active.questionBank.description && (
+                  <p className="text-sm text-muted-foreground">{active.questionBank.description}</p>
+                )}
+
+                <div className="space-y-3 rounded-md border p-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    render={
+                      <a href={`/api/v1/files/download/${active.purchaseId}`}>
+                        <Download /> Download Question Bank
+                      </a>
+                    }
+                  />
+
+                  {!active.submission ? (
+                    <div className="space-y-2">
+                      <Input
+                        type="file"
+                        accept="application/pdf,.pdf"
+                        onChange={(event) =>
+                          setFiles({ ...files, [active.questionBank.id]: event.target.files?.[0] ?? null })
+                        }
+                      />
+                      <Button
+                        onClick={() => void uploadAnswer(active.questionBank.id)}
+                        disabled={uploading === active.questionBank.id}
+                      >
+                        {uploading === active.questionBank.id ? <Loader2 className="animate-spin" /> : <Upload />} Upload Answer
+                      </Button>
+                    </div>
                   ) : (
-                    <StatusBadge tone="warning">Answer Not Submitted</StatusBadge>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        render={
+                          <a
+                            href={`/api/v1/files/answer-sheets/${active.submission.id}`}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            <FileText /> View My Answer
+                          </a>
+                        }
+                      />
+                      {active.submission.status === "EVALUATED" && (
+                        <Button
+                          size="sm"
+                          render={
+                            <a
+                              href={`/api/v1/files/answer-sheets/${active.submission.id}/evaluated`}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              <FileCheck2 /> View Evaluated Answer
+                            </a>
+                          }
+                        />
+                      )}
+                      {active.answerKey && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          render={
+                            <a
+                              href={`/api/v1/files/answer-keys/${active.answerKey.id}`}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              <FileCheck2 /> Download Answer Key
+                            </a>
+                          }
+                        />
+                      )}
+                    </div>
+                  )}
+
+                  {active.submission && !active.answerKey && (
+                    <p className="text-sm text-muted-foreground">Answer Key is not available yet.</p>
+                  )}
+                  {active.submission?.status === "PENDING_EVALUATION" && (
+                    <StatusBadge tone="warning">Evaluation Pending ...</StatusBadge>
                   )}
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button variant="outline" size="sm" render={<a href={`/api/v1/files/download/${item.purchaseId}`}><Download /> Download Question Bank</a>} />
-                <Button variant="ghost" size="sm" onClick={() => setOpenId(isOpen ? null : item.questionBank.id)}>
-                  {isOpen ? "Hide Test Series" : "Open Test Series"}
-                </Button>
-                {isOpen && (
-                  <div className="space-y-3 rounded-md border p-4">
-                    <p className="text-sm text-muted-foreground">{item.questionBank.description}</p>
-                    {!hasSubmission ? (
-                      <div className="space-y-2">
-                        <Input type="file" accept="application/pdf,.pdf" onChange={(event) => setFiles({ ...files, [item.questionBank.id]: event.target.files?.[0] ?? null })} />
-                        <div className="flex gap-2">
-                          <Button onClick={() => void uploadAnswer(item.questionBank.id)} disabled={uploading === item.questionBank.id}>
-                            {uploading === item.questionBank.id ? <Loader2 className="animate-spin" /> : <Upload />} Upload Answer
-                          </Button>
-                          <Button variant="outline" onClick={() => setOpenId(null)}>Cancel</Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex flex-wrap gap-2">
-                        {item.submission && <Button variant="outline" size="sm" render={<a href={`/api/v1/files/answer-sheets/${item.submission.id}`} target="_blank" rel="noreferrer"><FileText /> View My Answer</a>} />}
-                      </div>
-                    )}
-                    <div className="flex flex-wrap items-center gap-2">
-                      {item.submission?.status === "EVALUATED" && <Button size="sm" render={<a href={`/api/v1/files/answer-sheets/${item.submission.id}/evaluated`} target="_blank" rel="noreferrer"><FileCheck2 /> View Evaluated Answer</a>} />}
-                      {item.answerKey && <Button variant="outline" size="sm" render={<a href={`/api/v1/files/answer-keys/${item.answerKey.id}`} target="_blank" rel="noreferrer"><FileCheck2 /> Download Answer Key</a>} />}
-                    </div>
-                    {hasSubmission && !item.answerKey && <p className="text-sm text-muted-foreground">Answer Key is not available yet.</p>}
-                    {item.submission?.status === "PENDING_EVALUATION" && <StatusBadge tone="warning">Evaluation Pending ...</StatusBadge>}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

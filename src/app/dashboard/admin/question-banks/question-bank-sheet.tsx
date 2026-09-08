@@ -309,7 +309,18 @@ export function QuestionBankSheet({
               <Select
                 value={watch("categoryId")}
                 onValueChange={(v) => {
-                  setValue("categoryId", v ?? "");
+                  const next = v ?? "";
+                  setValue("categoryId", next);
+                  // Drop the selected subject if it no longer belongs to this category.
+                  const current = watch("subjectId");
+                  if (
+                    current &&
+                    !subjects.some(
+                      (s) => s.id === current && (s.categoryId === next || s.categoryId == null),
+                    )
+                  ) {
+                    setValue("subjectId", "");
+                  }
                 }}
               >
                 <SelectTrigger className="w-full">
@@ -355,13 +366,20 @@ export function QuestionBankSheet({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">No subject</SelectItem>
-                {subjects.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.name}
-                  </SelectItem>
-                ))}
+                {subjects
+                  .filter(
+                    (s) => s.categoryId == null || s.categoryId === watch("categoryId"),
+                  )
+                  .map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
+            <span className="text-muted-foreground text-xs">
+              Only subjects for the selected category are shown.
+            </span>
           </div>
 
           <div className="flex flex-col gap-1.5">
