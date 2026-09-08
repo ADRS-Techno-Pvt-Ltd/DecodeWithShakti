@@ -5,10 +5,28 @@ const emailField = z
   .email()
   .transform((v) => v.trim().toLowerCase());
 
+/** ICAI regional office codes — the prefix of every CA registration number. */
+export const CA_REGIONS = [
+  { code: "WRO", label: "WRO" },
+  { code: "SRO", label: "SRO" },
+  { code: "NRO", label: "NRO" },
+  { code: "ERO", label: "ERO" },
+  { code: "CRO", label: "CRO" },
+  { code: "FRO", label: "FRO" },
+] as const;
+
+export const CA_REGION_CODES = CA_REGIONS.map((r) => r.code);
+
 export const registerSchema = z.object({
   name: z.string().min(2, "Name is too short").max(100),
   email: emailField,
-  caRegistrationNumber: z.string().length(10, "CA registration number must be exactly 10 characters").regex(/^[A-Z]{3}\d{7}$/, "Invalid format. Example: NRO1234567"),
+  caRegistrationNumber: z
+    .string()
+    .length(10, "CA registration number must be exactly 10 characters")
+    .regex(
+      new RegExp(`^(${CA_REGION_CODES.join("|")})\\d{7}$`),
+      "Invalid format. Example: NRO1234567",
+    ),
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
 export type RegisterInput = z.infer<typeof registerSchema>;

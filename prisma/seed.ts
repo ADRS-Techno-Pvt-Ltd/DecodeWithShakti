@@ -10,6 +10,7 @@ async function main() {
   const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
   const password = process.env.ADMIN_PASSWORD;
   if (!email || !password) {
+
     // Don't hard-fail deploy startup (prestart runs this) — just skip the admin
     // step. Reference data below still seeds.
     console.warn("Seed: ADMIN_EMAIL / ADMIN_PASSWORD not set — skipping admin account.");
