@@ -1,5 +1,7 @@
 export type Category = { id: string; name: string; slug: string };
 
+export type Subject = { id: string; name: string; slug: string };
+
 export type ProductType = "QUESTION_BANK" | "TEST_SERIES";
 
 export type QuestionBank = {
@@ -10,6 +12,7 @@ export type QuestionBank = {
   description: string;
   categoryId: string;
   category: Category;
+  subjectId: string | null;
   price: number;
   earlyBirdPrice: number | null;
   earlyBirdEndsAt: string | null;

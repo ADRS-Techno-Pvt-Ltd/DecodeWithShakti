@@ -1,4 +1,4 @@
-import type { Category, ProductType, QuestionBank } from "./types";
+import type { Category, ProductType, QuestionBank, Subject } from "./types";
 
 async function unwrap<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -22,6 +22,10 @@ export async function fetchCategories(): Promise<Category[]> {
   return unwrap(await fetch("/api/v1/categories"));
 }
 
+export async function fetchSubjects(): Promise<Subject[]> {
+  return unwrap(await fetch("/api/v1/subjects"));
+}
+
 export async function createCategory(name: string): Promise<Category> {
   return unwrap(
     await fetch("/api/v1/categories", {
@@ -41,6 +45,7 @@ export type QuestionBankUpdateInput = {
   type: ProductType;
   description: string;
   categoryId: string;
+  subjectId?: string | null;
   price: number;
   previewEnabled: boolean;
   previewPageCount?: number;

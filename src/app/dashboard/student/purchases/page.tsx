@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Download, Receipt, BookOpen } from "lucide-react";
+import { Download, Receipt, BookOpen, FileCheck2 } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,19 @@ export default async function StudentPurchasesPage() {
   const session = await auth();
   const purchases = await prisma.purchase.findMany({
     where: { userId: session!.user.id },
-    include: { questionBank: true, invoice: true },
+    include: {
+      questionBank: {
+        include: {
+          answerKeys: {
+            where: { isPublished: true, questionBankId: { not: null } },
+            select: { id: true },
+            orderBy: { createdAt: "desc" },
+            take: 1,
+          },
+        },
+      },
+      invoice: true,
+    },
     orderBy: { createdAt: "desc" },
   });
 
@@ -106,6 +118,23 @@ export default async function StudentPurchasesPage() {
                                 </a>
                               }
                             />
+                            {p.questionBank.type === "QUESTION_BANK" &&
+                              p.questionBank.answerKeys[0] && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  render={
+                                    <a
+                                      href={`/api/v1/files/answer-keys/${p.questionBank.answerKeys[0].id}`}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="gap-1.5"
+                                    >
+                                      <FileCheck2 className="h-3.5 w-3.5" /> Answer Key
+                                    </a>
+                                  }
+                                />
+                              )}
                             {p.invoice && (
                               <Button
                                 variant="ghost"

@@ -43,7 +43,7 @@ export default async function QuestionBankDetailPage({
 
   const bank = await prisma.questionBank.findUnique({
     where: { slug },
-    include: { category: true },
+    include: { category: true, subject: true },
   });
   if (!bank || !bank.isPublished) notFound();
 
@@ -74,7 +74,8 @@ export default async function QuestionBankDetailPage({
         </Link>
         <div className="mb-7">
           <span className="inline-block rounded-[5px] border border-primary/25 bg-accent px-3 py-1.5 font-mono text-[11.5px] tracking-[0.11em] text-primary-dark uppercase">
-            {bank.category.name} · {bank.type === "TEST_SERIES" ? "Test Series" : "Question Bank"}
+            {bank.category.name}
+            {bank.subject ? ` · ${bank.subject.name}` : ""} · {bank.type === "TEST_SERIES" ? "Test Series" : "Question Bank"}
           </span>
         </div>
 

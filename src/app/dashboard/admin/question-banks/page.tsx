@@ -12,7 +12,7 @@ import { StatusBadge } from "@/components/dashboard/status-badge";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Reveal } from "@/components/landing/reveal";
-import { fetchAdminQuestionBanks, fetchCategories, deleteQuestionBank } from "@/features/question-banks/api";
+import { fetchAdminQuestionBanks, fetchCategories, fetchSubjects, deleteQuestionBank } from "@/features/question-banks/api";
 import type { ProductType } from "@/features/question-banks/types";
 import type { QuestionBank } from "@/features/question-banks/types";
 import { QuestionBankSheet } from "./question-bank-sheet";
@@ -34,6 +34,7 @@ export function AdminQuestionBanksPage({ mode = "question-banks" }: { mode?: "qu
     queryFn: () => fetchAdminQuestionBanks(productType),
   });
   const { data: categories } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
+  const { data: subjects } = useQuery({ queryKey: ["subjects"], queryFn: fetchSubjects });
 
   function openCreate() {
     setEditing(null);
@@ -146,6 +147,7 @@ export function AdminQuestionBanksPage({ mode = "question-banks" }: { mode?: "qu
         open={sheetOpen}
         onOpenChange={setSheetOpen}
         categories={categories ?? []}
+        subjects={subjects ?? []}
         editing={editing}
         mode={mode}
         onSaved={() => queryClient.invalidateQueries({ queryKey: ["admin-question-banks"] })}

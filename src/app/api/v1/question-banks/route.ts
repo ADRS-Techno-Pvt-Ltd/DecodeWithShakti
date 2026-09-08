@@ -135,6 +135,7 @@ async function createQuestionBank(request: Request) {
       slug,
       description: input.description,
       categoryId: input.categoryId,
+      subjectId: input.subjectId ?? null,
       price: input.price,
       earlyBirdPrice: input.earlyBirdPrice ?? null,
       earlyBirdEndsAt: input.earlyBirdEndsAt ?? null,

@@ -45,6 +45,7 @@ export async function PATCH(
         ...(input.type != null ? { type: input.type } : {}),
         ...(input.description != null ? { description: input.description } : {}),
         ...(input.categoryId != null ? { categoryId: input.categoryId } : {}),
+        ...(input.subjectId !== undefined ? { subjectId: input.subjectId || null } : {}),
         ...(input.price != null ? { price: input.price } : {}),
         earlyBirdPrice: input.earlyBirdPrice ?? null,
         earlyBirdEndsAt: input.earlyBirdEndsAt ?? null,

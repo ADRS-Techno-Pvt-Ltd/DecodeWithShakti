@@ -393,7 +393,10 @@ export default function LandingPage() {
 
             <div className="grid grid-cols-1 items-stretch gap-5.5 lg:grid-cols-[1fr_1fr_1.1fr]">
               <Reveal delay={0}>
-                <div className="flex h-full flex-col gap-4.5 rounded-[14px] border border-border bg-card p-6.5">
+                <Link
+                  href="/question-banks?type=test_series"
+                  className="flex h-full flex-col gap-4.5 rounded-[14px] border border-border bg-card p-6.5 transition-colors hover:border-primary/40"
+                >
                   <div>
                     <h3 className="font-heading text-[19px] font-semibold">Test series</h3>
                     <p className="mt-2 text-[13.5px] leading-relaxed text-muted-foreground">
@@ -420,11 +423,14 @@ export default function LandingPage() {
                       </span>
                     </div>
                   </div>
-                </div>
+                </Link>
               </Reveal>
 
               <Reveal delay={60}>
-                <div className="flex h-full flex-col gap-4.5 rounded-[14px] border border-border bg-card p-6.5">
+                <Link
+                  href="/question-banks?type=question_bank"
+                  className="flex h-full flex-col gap-4.5 rounded-[14px] border border-border bg-card p-6.5 transition-colors hover:border-primary/40"
+                >
                   <div>
                     <h3 className="font-heading text-[19px] font-semibold">Decode sheets</h3>
                     <p className="mt-2 text-[13.5px] leading-relaxed text-muted-foreground">
@@ -440,7 +446,7 @@ export default function LandingPage() {
                       </span>
                     </div>
                   </div>
-                </div>
+                </Link>
               </Reveal>
 
               <Reveal delay={120}>

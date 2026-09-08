@@ -63,6 +63,33 @@ async function main() {
 
   console.log(`Seeded ${categories.length} categories.`);
 
+  const subjects = [
+    { name: "Accounting", slug: "accounting" },
+    { name: "Advanced Accounting", slug: "advanced-accounting" },
+    { name: "Corporate & Other Laws", slug: "corporate-and-other-laws" },
+    { name: "Taxation", slug: "taxation" },
+    { name: "Direct Tax", slug: "direct-tax" },
+    { name: "Indirect Tax / GST", slug: "indirect-tax-gst" },
+    { name: "Cost & Management Accounting", slug: "cost-and-management-accounting" },
+    { name: "Auditing & Ethics", slug: "auditing-and-ethics" },
+    { name: "Financial Management", slug: "financial-management" },
+    { name: "Strategic Management", slug: "strategic-management" },
+    { name: "Economics for Finance", slug: "economics-for-finance" },
+    { name: "Financial Reporting", slug: "financial-reporting" },
+    { name: "Strategic Financial Management", slug: "strategic-financial-management" },
+    { name: "Business Correspondence & Reporting", slug: "business-correspondence-and-reporting" },
+  ];
+
+  for (const subject of subjects) {
+    await prisma.subject.upsert({
+      where: { slug: subject.slug },
+      update: {},
+      create: subject,
+    });
+  }
+
+  console.log(`Seeded ${subjects.length} subjects.`);
+
   // FAQ — seed the initial set only if an admin hasn't started managing them yet.
   const faqCount = await prisma.faqItem.count();
   if (faqCount === 0) {

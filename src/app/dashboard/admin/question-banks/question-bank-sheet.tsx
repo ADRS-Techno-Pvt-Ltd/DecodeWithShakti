@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Category, ProductType, QuestionBank } from "@/features/question-banks/types";
+import type { Category, ProductType, QuestionBank, Subject } from "@/features/question-banks/types";
 import {
   createQuestionBank,
   updateQuestionBank,
@@ -38,6 +38,7 @@ type FormValues = {
   type: ProductType;
   description: string;
   categoryId: string;
+  subjectId: string;
   price: string;
   previewEnabled: boolean;
   previewPageCount: string;
@@ -69,6 +70,7 @@ export function QuestionBankSheet({
   open,
   onOpenChange,
   categories,
+  subjects,
   editing,
   onSaved,
   mode = "question-banks",
@@ -76,6 +78,7 @@ export function QuestionBankSheet({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   categories: Category[];
+  subjects: Subject[];
   editing: QuestionBank | null;
   onSaved: () => void;
   mode?: "question-banks" | "test-series";
@@ -96,6 +99,7 @@ export function QuestionBankSheet({
       type: "QUESTION_BANK",
       description: "",
       categoryId: "",
+      subjectId: "",
       price: "",
       previewEnabled: false,
       previewPageCount: "",
@@ -123,6 +127,7 @@ export function QuestionBankSheet({
         type: editing.type,
         description: editing.description,
         categoryId: editing.categoryId,
+        subjectId: editing.subjectId ?? "",
         price: paiseToRupees(editing.price),
         previewEnabled: editing.previewEnabled,
         previewPageCount: editing.previewPageCount ? String(editing.previewPageCount) : "",
@@ -142,6 +147,7 @@ export function QuestionBankSheet({
         type: isTestSeries ? "TEST_SERIES" : "QUESTION_BANK",
         description: "",
         categoryId: categories[0]?.id ?? "",
+        subjectId: "",
         price: "",
         previewEnabled: false,
         previewPageCount: "",
@@ -188,6 +194,7 @@ export function QuestionBankSheet({
           type: values.type,
           description: values.description,
           categoryId: values.categoryId,
+          subjectId: values.subjectId ? values.subjectId : null,
           price: rupeesToPaise(values.price),
           previewEnabled: values.previewEnabled,
           previewPageCount: values.previewEnabled ? Number(values.previewPageCount) : undefined,
@@ -205,7 +212,7 @@ export function QuestionBankSheet({
         if (values.file && values.file.length > 0) {
           await replaceQuestionBankFile(editing.id, Array.from(values.file));
         }
-        if (values.type === "TEST_SERIES" && values.answerKey && values.answerKey.length > 0) {
+        if (values.answerKey && values.answerKey.length > 0) {
           await replaceQuestionBankAnswerKey(editing.id, values.answerKey[0]);
         }
         toast.success("Question bank updated.");
@@ -220,6 +227,7 @@ export function QuestionBankSheet({
         formData.set("type", values.type);
         formData.set("description", values.description);
         formData.set("categoryId", values.categoryId);
+        if (values.subjectId) formData.set("subjectId", values.subjectId);
         formData.set("price", String(rupeesToPaise(values.price)));
         formData.set("previewEnabled", String(values.previewEnabled));
         if (values.previewEnabled) formData.set("previewPageCount", values.previewPageCount);
@@ -232,7 +240,7 @@ export function QuestionBankSheet({
         formData.set("features", JSON.stringify(features));
         // Multiple PDFs are merged server-side into one stored file, in the order listed.
         Array.from(values.file).forEach((file) => formData.append("file", file));
-        if (values.type === "TEST_SERIES" && values.answerKey && values.answerKey.length > 0) {
+        if (values.answerKey && values.answerKey.length > 0) {
           formData.set("answerKey", values.answerKey[0]);
         }
         if (values.thumbnail && values.thumbnail.length > 0) {
@@ -290,16 +298,6 @@ export function QuestionBankSheet({
             </Select>
           </div>
 
-          {productType === "TEST_SERIES" && (
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="answerKey">Official Answer Key (PDF, optional)</Label>
-              <Input id="answerKey" type="file" accept="application/pdf" {...register("answerKey")} />
-              <span className="text-muted-foreground text-xs">
-                This key is linked to this Test Series and unlocks after a student submits their answer.
-              </span>
-            </div>
-          )}
-
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="description">Description</Label>
             <Textarea id="description" rows={3} {...register("description")} />
@@ -343,6 +341,30 @@ export function QuestionBankSheet({
           </div>
 
           <div className="flex flex-col gap-1.5">
+            <Label>Subject (optional)</Label>
+            <Select
+              value={watch("subjectId") || "none"}
+              onValueChange={(v) => setValue("subjectId", !v || v === "none" ? "" : v)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="No subject">
+                  {(value) =>
+                    subjects.find((s) => s.id === value)?.name ?? "No subject"
+                  }
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No subject</SelectItem>
+                {subjects.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
             <Label htmlFor="file">
               {isTestSeries ? "Test Series File" : "Question Bank File"} (PDF) {editing ? "(replace)" : ""}
             </Label>
@@ -358,6 +380,16 @@ export function QuestionBankSheet({
               {editing
                 ? "Leave empty to keep the current file. Select one or more PDFs to replace it — multiple files are merged into a single document in the order listed, and the preview is regenerated."
                 : "Select one or more PDFs. Multiple files are merged into a single document in the order listed."}
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="answerKey">Answer key / solutions PDF (optional)</Label>
+            <Input id="answerKey" type="file" accept="application/pdf" {...register("answerKey")} />
+            <span className="text-muted-foreground text-xs">
+              {productType === "TEST_SERIES"
+                ? "Linked to this Test Series and unlocked for a student only after they submit their answer sheet."
+                : "Linked to this question bank and available to students to download immediately after purchase."}
             </span>
           </div>
 

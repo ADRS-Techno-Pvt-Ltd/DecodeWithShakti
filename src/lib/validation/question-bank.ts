@@ -31,6 +31,11 @@ const questionBankBaseSchema = z.object({
   type: z.enum(["QUESTION_BANK", "TEST_SERIES"]).default("QUESTION_BANK"),
   description: z.string(),
   categoryId: z.string().min(1, "Category is required"),
+  // Optional. "" / "none" (from the form's placeholder option) and missing all mean "no subject".
+  subjectId: z.preprocess(
+    (v) => (v == null || (typeof v === "string" && (v.trim() === "" || v === "none")) ? null : v),
+    z.string().min(1).nullable(),
+  ).optional(),
   price: z.coerce.number().int().positive("Price must be a positive integer (paise)"),
   previewEnabled: booleanField(false),
   previewPageCount: z.coerce.number().int().positive().optional(),

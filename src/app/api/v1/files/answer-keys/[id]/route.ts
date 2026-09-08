@@ -19,6 +19,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
         fileName: true,
         isPublished: true,
         questionBankId: true,
+        questionBank: { select: { type: true } },
       },
     });
     if (!answerKey || (session.user.role !== "ADMIN" && !answerKey.isPublished)) {
@@ -29,15 +30,19 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       if (!answerKey.questionBankId) {
         return NextResponse.json({ error: "Answer key not found." }, { status: 404 });
       }
+      // Test Series keys require a submitted answer sheet first; question-bank keys unlock on purchase alone.
+      const requiresSubmission = answerKey.questionBank?.type !== "QUESTION_BANK";
       const [purchase, submission] = await Promise.all([
         prisma.purchase.findFirst({
           where: { userId: session.user.id, questionBankId: answerKey.questionBankId, status: "SUCCESS" },
           select: { id: true },
         }),
-        prisma.answerSheetSubmission.findFirst({
-          where: { studentId: session.user.id, questionBankId: answerKey.questionBankId },
-          select: { id: true },
-        }),
+        requiresSubmission
+          ? prisma.answerSheetSubmission.findFirst({
+              where: { studentId: session.user.id, questionBankId: answerKey.questionBankId },
+              select: { id: true },
+            })
+          : Promise.resolve(true),
       ]);
       if (!purchase || !submission) {
         return NextResponse.json({ error: "Answer key not available." }, { status: 404 });

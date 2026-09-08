@@ -19,7 +19,11 @@ export async function GET(request: Request) {
               questionBank: {
                 is: {
                   purchases: { some: { userId: session.user.id, status: "SUCCESS" } },
-                  answerSubmissions: { some: { studentId: session.user.id } },
+                  // Test Series keys stay submission-gated; question-bank keys unlock on purchase alone.
+                  OR: [
+                    { type: "QUESTION_BANK" },
+                    { answerSubmissions: { some: { studentId: session.user.id } } },
+                  ],
                 },
               },
             }),

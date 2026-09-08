@@ -15,7 +15,7 @@ export async function POST(
       where: { id },
       select: { id: true, title: true, description: true, categoryId: true },
     });
-    if (!questionBank) return NextResponse.json({ error: "Test Series not found." }, { status: 404 });
+    if (!questionBank) return NextResponse.json({ error: "Question bank not found." }, { status: 404 });
 
     const formData = await request.formData();
     const file = formData.get("file");
