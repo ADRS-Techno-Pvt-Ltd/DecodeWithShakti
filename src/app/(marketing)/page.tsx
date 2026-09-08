@@ -363,7 +363,7 @@ export default function LandingPage() {
               </motion.p>
               <motion.div variants={heroItem} className="mt-8 flex flex-wrap gap-3.5">
                 <MotionButton>
-                  <Button size="lg" render={<Link href="/question-banks">Let&apos;s Prep <ArrowRight className="ml-1 h-4 w-4" /></Link>} />
+                  <Button size="lg" render={<Link href="/question-banks">Browse question banks <ArrowRight className="ml-1 h-4 w-4" /></Link>} />
                 </MotionButton>
                 <MotionButton>
                   <Button size="lg" variant="outline" render={<Link href="#how">See how it works</Link>} />
@@ -873,7 +873,7 @@ export default function LandingPage() {
                     <Button
                       size="lg"
                       className="bg-white text-primary-dark hover:bg-[#f1f0ff]"
-                      render={<Link href="/question-banks">Let&apos;s Prep</Link>}
+                      render={<Link href="/question-banks">Browse question banks</Link>}
                     />
                   </MotionButton>
                   {!session?.user && (
