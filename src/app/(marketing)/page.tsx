@@ -102,10 +102,27 @@ const features = [
 ];
 
 const steps = [
-  { title: "Find your paper", body: "Filter by exam and category to land on the exact bank you need." },
-  { title: "Preview a sample", body: "Open a few real pages to check the pattern and difficulty first." },
-  { title: "Pay securely", body: "Apply a coupon if you have one, then complete checkout in seconds." },
-  { title: "Download & practice", body: "Your file and invoice land on your dashboard immediately." },
+  {
+    title: "Find your paper",
+    body: "Filter by exam and category to land on the exact bank you need.",
+    tag: "Browse",
+  },
+  {
+    title: "Preview a sample",
+    body: "Open a few real pages to check the pattern and difficulty first.",
+    tag: "Preview",
+  },
+  {
+    title: "Pay securely",
+    body: "Apply a coupon if you have one, then complete checkout in seconds.",
+    tag: "Checkout",
+    active: true,
+  },
+  {
+    title: "Download & practice",
+    body: "Your file and invoice land on your dashboard immediately.",
+    tag: "Delivered",
+  },
 ];
 
 // Fallback cards for the landing "Priced per bank" section, shown only when no question
@@ -632,25 +649,39 @@ export default function LandingPage() {
         {/* HOW IT WORKS */}
         <section id="how" className="border-y border-border bg-secondary py-22">
           <div className="mx-auto max-w-6xl 2xl:max-w-[1440px] px-7">
-            <Reveal className="mb-14 max-w-xl">
+            <Reveal className="mb-12 max-w-xl">
               <Eyebrow>From browse to download</Eyebrow>
               <h2 className="font-heading mt-4 text-[2rem] leading-tight font-semibold tracking-tight">
                 Four steps, no detours
               </h2>
             </Reveal>
-            <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="overflow-visible rounded-[18px] bg-card shadow-[0_1px_2px_rgba(21,20,44,0.04),0_12px_32px_-16px_rgba(21,20,44,0.18)] lg:flex">
               {steps.map((s, i) => (
-                <Reveal key={s.title} delay={i * 50} className="relative">
-                  <div className="font-mono mb-4 flex h-8 w-8 items-center justify-center rounded-full border-[1.5px] border-primary bg-card text-[13px] font-semibold text-primary">
+                <Reveal
+                  key={s.title}
+                  delay={i * 50}
+                  className={`relative flex-1 px-7 py-8 lg:px-7.5 lg:py-8.5 ${
+                    s.active ? "bg-gradient-to-b from-primary/5 to-primary/0" : ""
+                  } ${
+                    i > 0
+                      ? "before:absolute before:top-0 before:right-6 before:left-6 before:border-t-2 before:border-dashed before:border-primary-light/45 after:absolute after:-top-2.5 after:left-1/2 after:h-5 after:w-5 after:-translate-x-1/2 after:rounded-full after:bg-secondary lg:before:top-0 lg:before:bottom-0 lg:before:left-0 lg:before:right-auto lg:before:border-t-0 lg:before:border-l-2 lg:after:top-1/2 lg:after:-left-2.5 lg:after:h-5.5 lg:after:w-5.5 lg:after:-translate-x-0 lg:after:-translate-y-1/2"
+                      : ""
+                  }`}
+                >
+                  <div
+                    className={`font-mono mb-5 flex h-8.5 w-8.5 items-center justify-center rounded-full text-[13px] font-bold text-white ${
+                      s.active ? "bg-primary" : "bg-foreground"
+                    }`}
+                  >
                     {i + 1}
                   </div>
                   <h3 className="text-[15.5px] font-bold">{s.title}</h3>
-                  <p className="mt-1.5 text-[13.8px] leading-relaxed text-muted-foreground">
+                  <p className="mt-2.5 max-w-[26ch] text-[14.2px] leading-relaxed text-muted-foreground">
                     {s.body}
                   </p>
-                  {i < steps.length - 1 && (
-                    <div className="absolute top-4 left-[calc(100%-4px)] hidden h-px w-[calc(100%-24px)] border-t border-dashed border-border lg:block" />
-                  )}
+                  <span className="mt-5 inline-flex rounded-md bg-accent px-2.5 py-1 text-xs font-semibold text-accent-foreground">
+                    {s.tag}
+                  </span>
                 </Reveal>
               ))}
             </div>
