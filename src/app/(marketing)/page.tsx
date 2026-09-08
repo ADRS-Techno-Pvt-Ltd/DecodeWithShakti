@@ -39,6 +39,11 @@ import type { Category } from "@/features/categories/api";
 
 const levels = [
   {
+    slug: "ca-final-audit",
+    label: "CA Final — Audit",
+    desc: "Audit exam-pattern sets, each one reviewed personally by Shakti before it's published.",
+  },
+  {
     slug: "ca-inter-accounts",
     label: "CA Inter — Accounts",
     desc: "Paper-mapped Accounts question sets for CA Inter, built to the current ICAI pattern.",
@@ -52,11 +57,6 @@ const levels = [
     slug: "ca-inter-taxation",
     label: "CA Inter — Taxation",
     desc: "Taxation question sets covering direct and indirect tax topics for CA Inter.",
-  },
-  {
-    slug: "ca-final-audit",
-    label: "CA Final — Audit",
-    desc: "Audit exam-pattern sets, each one reviewed personally by Shakti before it's published.",
   },
 ];
 
@@ -487,42 +487,6 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* FEATURES */}
-        <section id="features" className="py-22">
-          <div className="mx-auto max-w-6xl 2xl:max-w-[1440px] px-7">
-            <Reveal className="mx-auto mb-14 max-w-xl text-center">
-              <Eyebrow>Why aspirants choose us</Eyebrow>
-              <h2 className="font-heading mt-4 text-[2rem] leading-tight font-semibold tracking-tight">
-                Built the way smart prep actually happens
-              </h2>
-              <p className="mt-3.5 text-base leading-relaxed text-muted-foreground">
-                No bundled subscriptions or filler content — just the specific bank you need,
-                priced fairly and delivered instantly.
-              </p>
-            </Reveal>
-
-            <div className="grid grid-cols-1 gap-5.5 sm:grid-cols-2 lg:grid-cols-3">
-              {features.map((f, i) => (
-                <Reveal key={f.title} delay={i * 40}>
-                  <motion.div
-                    whileHover={{ y: -5 }}
-                    transition={{ duration: 0.2, ease: "easeOut" }}
-                    className="h-full rounded-[14px] border border-border bg-card p-6.5 hover:border-primary-light/40 hover:shadow-sm"
-                  >
-                    <div className="mb-4 flex h-10.5 w-10.5 items-center justify-center rounded-[10px] bg-accent text-primary">
-                      <f.icon className="h-5 w-5" strokeWidth={1.8} />
-                    </div>
-                    <h3 className="text-[16.5px] font-bold">{f.title}</h3>
-                    <p className="mt-2 text-[14.5px] leading-relaxed text-muted-foreground">
-                      {f.body}
-                    </p>
-                  </motion.div>
-                </Reveal>
-              ))}
-            </div>
-          </div>
-        </section>
-
         {/* HOW IT WORKS */}
         <section id="how" className="border-y border-border bg-secondary py-22">
           <div className="mx-auto max-w-6xl 2xl:max-w-[1440px] px-7">
@@ -728,6 +692,42 @@ export default function LandingPage() {
                 browse all question banks →
               </Link>
             </p>
+          </div>
+        </section>
+
+        {/* FEATURES */}
+        <section id="features" className="py-22">
+          <div className="mx-auto max-w-6xl 2xl:max-w-[1440px] px-7">
+            <Reveal className="mx-auto mb-14 max-w-xl text-center">
+              <Eyebrow>Why aspirants choose us</Eyebrow>
+              <h2 className="font-heading mt-4 text-[2rem] leading-tight font-semibold tracking-tight">
+                Built the way smart prep actually happens
+              </h2>
+              <p className="mt-3.5 text-base leading-relaxed text-muted-foreground">
+                No bundled subscriptions or filler content — just the specific bank you need,
+                priced fairly and delivered instantly.
+              </p>
+            </Reveal>
+
+            <div className="grid grid-cols-1 gap-5.5 sm:grid-cols-2 lg:grid-cols-3">
+              {features.map((f, i) => (
+                <Reveal key={f.title} delay={i * 40}>
+                  <motion.div
+                    whileHover={{ y: -5 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    className="h-full rounded-[14px] border border-border bg-card p-6.5 hover:border-primary-light/40 hover:shadow-sm"
+                  >
+                    <div className="mb-4 flex h-10.5 w-10.5 items-center justify-center rounded-[10px] bg-accent text-primary">
+                      <f.icon className="h-5 w-5" strokeWidth={1.8} />
+                    </div>
+                    <h3 className="text-[16.5px] font-bold">{f.title}</h3>
+                    <p className="mt-2 text-[14.5px] leading-relaxed text-muted-foreground">
+                      {f.body}
+                    </p>
+                  </motion.div>
+                </Reveal>
+              ))}
+            </div>
           </div>
         </section>
 

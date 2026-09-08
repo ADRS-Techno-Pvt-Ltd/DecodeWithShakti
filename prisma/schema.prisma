@@ -66,15 +66,20 @@ model Category {
   videos        Video[]
   answerSubmissions AnswerSheetSubmission[]
   answerKeys        AnswerKey[]
+  subjects      Subject[]
 }
 
 model Subject {
   id            String         @id @default(cuid())
   name          String
   slug          String         @unique
+  categoryId    String?
+  category      Category?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   questionBanks QuestionBank[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+
+  @@index([categoryId])
 }
 
 model AnswerSheetSubmission {
