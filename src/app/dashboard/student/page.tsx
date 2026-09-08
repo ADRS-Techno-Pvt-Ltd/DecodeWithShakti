@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/dashboard/status-badge";
+import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { Reveal } from "@/components/landing/reveal";
 
@@ -112,7 +113,12 @@ export default async function StudentOverviewPage() {
                 {purchases.map((p) => (
                   <li key={p.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 px-4 sm:px-5 py-4">
                     <div className="min-w-0 flex-1">
-                      <div className="font-semibold line-clamp-2 sm:truncate">{p.questionBank.title}</div>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <div className="font-semibold line-clamp-2 sm:truncate">{p.questionBank.title}</div>
+                        <Badge variant="secondary" className="text-[10px]">
+                          {p.questionBank.type === "TEST_SERIES" ? "Test Series" : "Question Bank"}
+                        </Badge>
+                      </div>
                       <div className="text-xs text-muted-foreground mt-1" suppressHydrationWarning>
                         {new Date(p.createdAt).toLocaleDateString("en-IN")} · {formatRupees(p.amount)}
                       </div>

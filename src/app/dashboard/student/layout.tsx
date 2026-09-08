@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { LayoutDashboard, ShoppingBag, UserRound, Video } from "lucide-react";
+import { FileCheck2, LayoutDashboard, ShoppingBag, UserRound, Video } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { DashboardShell, type NavItem } from "@/components/dashboard/dashboard-shell";
 
@@ -7,6 +7,7 @@ const navItems: NavItem[] = [
   { href: "/dashboard/student", label: "Overview", icon: <LayoutDashboard /> },
   { href: "/dashboard/student/purchases", label: "My Purchases", icon: <ShoppingBag /> },
   { href: "/dashboard/student/videos", label: "Videos", icon: <Video /> },
+  { href: "/dashboard/student/answer-sheets", label: "Uploads / Evaluated Answer", icon: <FileCheck2 /> },
   { href: "/dashboard/student/settings", label: "Account Settings", icon: <UserRound /> },
 ];
 

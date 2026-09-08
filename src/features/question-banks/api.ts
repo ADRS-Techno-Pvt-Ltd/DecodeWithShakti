@@ -1,4 +1,4 @@
-import type { Category, QuestionBank } from "./types";
+import type { Category, ProductType, QuestionBank } from "./types";
 
 async function unwrap<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -12,8 +12,10 @@ async function unwrap<T>(res: Response): Promise<T> {
   return res.json();
 }
 
-export async function fetchAdminQuestionBanks(): Promise<QuestionBank[]> {
-  return unwrap(await fetch("/api/v1/question-banks?admin=true"));
+export async function fetchAdminQuestionBanks(type?: ProductType): Promise<QuestionBank[]> {
+  const query = new URLSearchParams({ admin: "true" });
+  if (type) query.set("type", type);
+  return unwrap(await fetch(`/api/v1/question-banks?${query.toString()}`));
 }
 
 export async function fetchCategories(): Promise<Category[]> {
@@ -36,6 +38,7 @@ export async function createQuestionBank(formData: FormData): Promise<QuestionBa
 
 export type QuestionBankUpdateInput = {
   title: string;
+  type: ProductType;
   description: string;
   categoryId: string;
   price: number;
@@ -79,4 +82,10 @@ export async function replaceQuestionBankFile(id: string, file: File): Promise<Q
   return unwrap(
     await fetch(`/api/v1/question-banks/${id}/file`, { method: "POST", body: formData }),
   );
+}
+
+export async function replaceQuestionBankAnswerKey(id: string, file: File): Promise<void> {
+  const formData = new FormData();
+  formData.set("file", file);
+  await unwrap(await fetch(`/api/v1/question-banks/${id}/answer-key`, { method: "POST", body: formData }));
 }

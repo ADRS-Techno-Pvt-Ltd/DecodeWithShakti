@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, toErrorResponse } from "@/lib/auth-guards";
 import { questionBankUpdateSchema } from "@/lib/validation/question-bank";
-import { deleteQuestionBankFiles, readStoredFile, savePreviewFile } from "@/lib/storage";
+import { deleteAnswerKeyFiles, deleteQuestionBankFiles, readStoredFile, savePreviewFile } from "@/lib/storage";
 import { buildPreview } from "@/lib/preview";
 import { thumbnailUrlFor } from "@/lib/thumbnail";
 
@@ -42,6 +42,7 @@ export async function PATCH(
       where: { id },
       data: {
         ...(input.title != null ? { title: input.title } : {}),
+        ...(input.type != null ? { type: input.type } : {}),
         ...(input.description != null ? { description: input.description } : {}),
         ...(input.categoryId != null ? { categoryId: input.categoryId } : {}),
         ...(input.price != null ? { price: input.price } : {}),
@@ -55,6 +56,15 @@ export async function PATCH(
         ...(input.features != null ? { features: input.features } : {}),
       },
       include: { category: true },
+    });
+
+    await prisma.answerKey.updateMany({
+      where: { questionBankId: id },
+      data: {
+        title: updated.title,
+        description: updated.description,
+        categoryId: updated.categoryId,
+      },
     });
 
     const { thumbnailPath, ...bankDto } = updated;
@@ -75,17 +85,24 @@ export async function DELETE(
     await requireAdmin();
     const { id } = await params;
 
-    const purchaseCount = await prisma.purchase.count({ where: { questionBankId: id } });
-    if (purchaseCount > 0) {
+    const [purchaseCount, submissionCount] = await Promise.all([
+      prisma.purchase.count({ where: { questionBankId: id } }),
+      prisma.answerSheetSubmission.count({ where: { questionBankId: id } }),
+    ]);
+    if (purchaseCount > 0 || submissionCount > 0) {
       return NextResponse.json(
-        { error: "This question bank has purchases and cannot be deleted. Unpublish it instead." },
+        { error: "This Test Series has purchases or submissions and cannot be deleted. Unpublish it instead." },
         { status: 409 },
       );
     }
 
+    const answerKeys = await prisma.answerKey.findMany({ where: { questionBankId: id }, select: { id: true } });
+
     // Delete storage first — if this fails, the DB row (and the admin's ability
     // to retry) stays intact instead of leaving orphaned files with no owner.
     await deleteQuestionBankFiles(id);
+    await Promise.all(answerKeys.map((key) => deleteAnswerKeyFiles(key.id)));
+    await prisma.answerKey.deleteMany({ where: { questionBankId: id } });
     await prisma.questionBank.delete({ where: { id } });
 
     return NextResponse.json({ ok: true });

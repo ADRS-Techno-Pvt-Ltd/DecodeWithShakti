@@ -13,6 +13,7 @@ import { EmptyState } from "@/components/dashboard/empty-state";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Reveal } from "@/components/landing/reveal";
 import { fetchAdminQuestionBanks, fetchCategories, deleteQuestionBank } from "@/features/question-banks/api";
+import type { ProductType } from "@/features/question-banks/types";
 import type { QuestionBank } from "@/features/question-banks/types";
 import { QuestionBankSheet } from "./question-bank-sheet";
 
@@ -20,15 +21,17 @@ function formatRupees(paise: number): string {
   return `₹${(paise / 100).toFixed(0)}`;
 }
 
-export default function AdminQuestionBanksPage() {
+export function AdminQuestionBanksPage({ mode = "question-banks" }: { mode?: "question-banks" | "test-series" }) {
+  const isTestSeries = mode === "test-series";
+  const productType: ProductType = isTestSeries ? "TEST_SERIES" : "QUESTION_BANK";
   const queryClient = useQueryClient();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<QuestionBank | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<QuestionBank | null>(null);
 
   const { data: banks, isLoading } = useQuery({
-    queryKey: ["admin-question-banks"],
-    queryFn: fetchAdminQuestionBanks,
+    queryKey: ["admin-question-banks", productType],
+    queryFn: () => fetchAdminQuestionBanks(productType),
   });
   const { data: categories } = useQuery({ queryKey: ["categories"], queryFn: fetchCategories });
 
@@ -57,12 +60,12 @@ export default function AdminQuestionBanksPage() {
     <div>
       <div className="mb-6 flex items-end justify-between">
         <div>
-          <h1 className="font-heading text-2xl font-bold">Question Banks</h1>
+          <h1 className="font-heading text-2xl font-bold">{isTestSeries ? "Test Series" : "Question Banks"}</h1>
           <p className="text-muted-foreground text-sm">
             {banks ? `${banks.filter((b) => b.isPublished).length} published · ${banks.filter((b) => !b.isPublished).length} unpublished` : "Loading…"}
           </p>
         </div>
-        <Button onClick={openCreate}>+ Upload Question Bank</Button>
+        <Button onClick={openCreate}>{isTestSeries ? "+ Create Test Series" : "+ Upload Question Bank"}</Button>
       </div>
 
       <Reveal delay={60}>
@@ -77,8 +80,8 @@ export default function AdminQuestionBanksPage() {
             <EmptyState
               icon={<BookOpen />}
               title="No question banks yet"
-              description="Upload your first PDF question bank to publish it to the catalog."
-              action={<Button onClick={openCreate}>+ Upload Question Bank</Button>}
+              description={isTestSeries ? "Create your first Test Series with a question paper and optional answer key." : "Upload your first PDF question bank to publish it to the catalog."}
+              action={<Button onClick={openCreate}>{isTestSeries ? "+ Create Test Series" : "+ Upload Question Bank"}</Button>}
             />
           ) : (
             <Table>
@@ -144,6 +147,7 @@ export default function AdminQuestionBanksPage() {
         onOpenChange={setSheetOpen}
         categories={categories ?? []}
         editing={editing}
+        mode={mode}
         onSaved={() => queryClient.invalidateQueries({ queryKey: ["admin-question-banks"] })}
       />
 
@@ -164,4 +168,8 @@ export default function AdminQuestionBanksPage() {
       />
     </div>
   );
+}
+
+export default function QuestionBanksPage() {
+  return <AdminQuestionBanksPage mode="question-banks" />;
 }

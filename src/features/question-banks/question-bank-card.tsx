@@ -20,6 +20,7 @@ export function QuestionBankCard({
   effectivePrice,
   previewEnabled,
   thumbnailUrl,
+  type,
 }: {
   slug: string;
   title: string;
@@ -29,6 +30,7 @@ export function QuestionBankCard({
   effectivePrice: number;
   previewEnabled: boolean;
   thumbnailUrl: string | null;
+  type: "QUESTION_BANK" | "TEST_SERIES";
 }) {
   const hasEarlyBird = effectivePrice < price;
   const href = `/question-banks/${slug}`;
@@ -52,7 +54,10 @@ export function QuestionBankCard({
                 <BookOpen className="h-6 w-6" strokeWidth={1.5} />
               )}
             </div>
-            <Badge variant="secondary">{categoryName}</Badge>
+            <div className="flex flex-wrap gap-1.5">
+              <Badge variant="secondary">{type === "TEST_SERIES" ? "Test Series" : "Question Bank"}</Badge>
+              <Badge variant="outline">{categoryName}</Badge>
+            </div>
             <h3 className="font-heading mt-2.5 font-semibold">{title}</h3>
             <p className="mt-1.5 line-clamp-2 text-sm text-muted-foreground">{description}</p>
             <div className="mt-3 flex items-baseline gap-2">

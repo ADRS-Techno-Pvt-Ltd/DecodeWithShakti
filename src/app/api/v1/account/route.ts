@@ -80,12 +80,16 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Incorrect password" }, { status: 400 });
     }
 
-    const purchaseCount = await prisma.purchase.count({ where: { userId: user.id } });
+    const [purchaseCount, answerSubmissionCount, answerKeyCount] = await Promise.all([
+      prisma.purchase.count({ where: { userId: user.id } }),
+      prisma.answerSheetSubmission.count({ where: { studentId: user.id } }),
+      prisma.answerKey.count({ where: { createdById: user.id } }),
+    ]);
 
     await prisma.$transaction(async (tx) => {
       await tx.passwordResetToken.deleteMany({ where: { userId: user.id } });
 
-      if (purchaseCount === 0) {
+      if (purchaseCount === 0 && answerSubmissionCount === 0 && answerKeyCount === 0) {
         await tx.user.delete({ where: { id: user.id } });
       } else {
         await tx.user.update({

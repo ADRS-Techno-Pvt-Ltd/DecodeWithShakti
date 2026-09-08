@@ -1,8 +1,11 @@
 export type Category = { id: string; name: string; slug: string };
 
+export type ProductType = "QUESTION_BANK" | "TEST_SERIES";
+
 export type QuestionBank = {
   id: string;
   title: string;
+  type: ProductType;
   slug: string;
   description: string;
   categoryId: string;

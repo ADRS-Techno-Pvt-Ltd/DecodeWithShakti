@@ -35,6 +35,21 @@
 | FR-20 | Terms & Conditions / Privacy Policy pages | UI/Design System | `src/app/(marketing)/terms`, `src/app/(marketing)/privacy`, `src/components/landing/legal-layout.tsx` | Visual review; footer links on landing page point to both routes | **Verified** — both routes return 200, footer links updated from placeholder `#` hrefs |
 | FR-21 | Student self-service account deletion | Auth, Purchases | `api/v1/account/route.ts`, `dashboard/student/settings/**` | Delete an account with no purchases (hard delete) and one with purchases (anonymized, `Purchase`/`Invoice` rows retained); confirm unauthenticated `DELETE` is rejected | Implemented — password-gated deletion verified against unauth (401) and route-guard (redirect) cases; full hard-delete vs. anonymize branch not yet exercised against seeded purchase data |
 
+## Test Series Answer Workflow Extension
+
+| Requirement | Implementing Module / File(s) | Verification Step | Status |
+|---|---|---|---|
+| QuestionBank-centered Test Series | `QuestionBank.answerKeys`, `QuestionBank.answerSubmissions`, `dashboard/admin/question-banks/**` | Create a Test Series with the existing question PDF fields and optional linked Answer Key PDF | Implemented — Answer Key is created/replaced through the existing Test Series form |
+| Student purchased Test Series area | `dashboard/student/answer-sheets/**`, `Purchase.questionBankId` | Student sees only successful purchases and opens each bank for answer submission | Implemented — build/type/lint validated; live workflow not yet exercised |
+| Student answer-sheet upload | `AnswerSheetSubmission`, `api/v1/answer-sheets`, `dashboard/student/answer-sheets/**` | Upload only a PDF from a purchased Test Series; confirm bank-derived metadata and pending state | Implemented — server verifies matching successful purchase and exact QuestionBank ID |
+| Submission-gated Answer Key | `api/v1/answer-keys`, `api/v1/files/answer-keys/[id]` | Purchased bank without submission remains locked; matching submission unlocks only its key | Implemented — list and file routes require exact purchase plus exact student submission |
+| Private original answer-sheet access | `api/v1/files/answer-sheets/[id]`, `lib/storage.ts` | Student and admin can view the original; another student receives 404 | Implemented — authorization is route-enforced; live Cloudinary access not yet exercised |
+| Admin evaluation upload | `api/v1/answer-sheets/[id]`, `dashboard/admin/answer-sheets/**` | Admin sees Test Series context and uploads a separate evaluated PDF; status becomes `EVALUATED` | Implemented — existing evaluation interaction preserved |
+| Private evaluated answer access | `api/v1/files/answer-sheets/[id]/evaluated` | Student cannot access before evaluation and can access only their own evaluated PDF afterward | Implemented — route gates null evaluated paths and ownership |
+| Legacy Answer Key/submission preservation | Nullable `questionBankId`, migration `link_test_series_answer_workflow` | Existing category-only rows remain stored and are excluded from new student unlock logic | Implemented — migration applied without data reset |
+| Submission/evaluation email notifications | `src/lib/email.ts`, answer-sheet route handlers | Confirm student/admin submission email and student evaluation email; email failure must not undo persistence | Implemented — best-effort Resend calls; live Resend delivery not yet exercised |
+| Answer-sheet authorization and file validation | `auth-guards.ts`, answer-sheet routes, `features/answer-sheets/validation.ts` | Reject non-PDF, oversized, malformed, duplicate, cross-student, and non-admin requests | Implemented — server-side checks added; focused automated tests not yet present |
+
 **Explicitly untraced (out of scope, per BRD § 5):** Phase 2 roadmap items, real Cashfree integration (tracked separately once its follow-up plan exists).
 
 ## Bugs found and fixed during verification

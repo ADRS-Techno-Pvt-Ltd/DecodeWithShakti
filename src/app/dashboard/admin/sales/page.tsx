@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/dashboard/status-badge";
+import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { Reveal } from "@/components/landing/reveal";
 import { ReconcileButton } from "@/components/dashboard/reconcile-button";
@@ -51,6 +52,7 @@ export default async function AdminSalesPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Question Bank</TableHead>
+                  <TableHead>Type</TableHead>
                   <TableHead>Student</TableHead>
                   <TableHead>Base Price</TableHead>
                   <TableHead>Coupon</TableHead>
@@ -67,6 +69,11 @@ export default async function AdminSalesPage() {
                 {purchases.map((p) => (
                   <TableRow key={p.id}>
                     <TableCell className="font-medium">{p.questionBank.title}</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">
+                        {p.questionBank.type === "TEST_SERIES" ? "Test Series" : "Question Bank"}
+                      </Badge>
+                    </TableCell>
                     <TableCell>
                       {p.user.name}
                       <div className="text-muted-foreground text-xs">{p.user.email}</div>

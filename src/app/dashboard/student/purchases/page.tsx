@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatusBadge } from "@/components/dashboard/status-badge";
+import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { Reveal } from "@/components/landing/reveal";
 
@@ -73,6 +74,7 @@ export default async function StudentPurchasesPage() {
                     <TableHead className="whitespace-nowrap">Purchased On</TableHead>
                     <TableHead className="whitespace-nowrap">Amount Paid</TableHead>
                     <TableHead className="whitespace-nowrap">Status</TableHead>
+                    <TableHead className="whitespace-nowrap">Type</TableHead>
                     <TableHead className="whitespace-nowrap">Files</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -87,6 +89,11 @@ export default async function StudentPurchasesPage() {
                       </TableCell>
                       <TableCell className="whitespace-nowrap">{formatRupees(p.amount)}</TableCell>
                       <TableCell>{statusBadge[p.status]}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">
+                          {p.questionBank.type === "TEST_SERIES" ? "Test Series" : "Question Bank"}
+                        </Badge>
+                      </TableCell>
                       <TableCell>
                         {p.status === "SUCCESS" ? (
                           <div className="flex gap-2 whitespace-nowrap">

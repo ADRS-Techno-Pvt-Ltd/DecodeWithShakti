@@ -3,9 +3,17 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin, toErrorResponse } from "@/lib/auth-guards";
 import { questionBankInputSchema } from "@/lib/validation/question-bank";
 import { uniqueSlug } from "@/lib/slug";
-import { saveOriginalFile, savePreviewFile, saveThumbnailFile } from "@/lib/storage";
+import {
+  deleteAnswerKeyFiles,
+  deleteQuestionBankFiles,
+  saveAnswerKeyFile,
+  saveOriginalFile,
+  savePreviewFile,
+  saveThumbnailFile,
+} from "@/lib/storage";
 import { getPageCount, buildPreview } from "@/lib/preview";
 import { extForThumbnailMime, thumbnailUrlFor, MAX_THUMBNAIL_BYTES } from "@/lib/thumbnail";
+import { readPdfUpload } from "@/features/answer-sheets/validation";
 
 const MAX_UPLOAD_BYTES = Number(process.env.MAX_UPLOAD_MB ?? 50) * 1024 * 1024;
 
@@ -15,6 +23,7 @@ export async function GET(request: Request) {
     const category = searchParams.get("category");
     const admin = searchParams.get("admin") === "true";
     const featured = searchParams.get("featured") === "true";
+    const type = searchParams.get("type");
 
     if (admin) {
       await requireAdmin();
@@ -25,6 +34,7 @@ export async function GET(request: Request) {
         ...(admin ? {} : { isPublished: true }),
         ...(category ? { category: { slug: category } } : {}),
         ...(featured ? { isFeatured: true } : {}),
+        ...(type === "QUESTION_BANK" || type === "TEST_SERIES" ? { type } : {}),
       },
       include: { category: true },
       orderBy: admin
@@ -52,60 +62,70 @@ export async function POST(request: Request) {
 }
 
 async function createQuestionBank(request: Request) {
-  await requireAdmin();
+  const session = await requireAdmin();
+  let bankId: string | undefined;
+  let answerKeyId: string | undefined;
 
-  const formData = await request.formData();
-  const file = formData.get("file");
-  if (!(file instanceof File)) {
-    return NextResponse.json({ error: "A PDF file is required." }, { status: 400 });
-  }
-  if (file.type !== "application/pdf") {
-    return NextResponse.json({ error: "Only PDF files are accepted." }, { status: 400 });
-  }
-  if (file.size > MAX_UPLOAD_BYTES) {
-    return NextResponse.json(
-      { error: `File exceeds the ${process.env.MAX_UPLOAD_MB ?? 50}MB limit.` },
-      { status: 400 },
-    );
-  }
-
-  const thumbnail = formData.get("thumbnail");
-  let thumbnailExt: string | null = null;
-  if (thumbnail instanceof File && thumbnail.size > 0) {
-    thumbnailExt = extForThumbnailMime(thumbnail.type);
-    if (!thumbnailExt) {
+  try {
+    const formData = await request.formData();
+    const file = formData.get("file");
+    if (!(file instanceof File)) {
+      return NextResponse.json({ error: "A PDF file is required." }, { status: 400 });
+    }
+    if (file.type !== "application/pdf") {
+      return NextResponse.json({ error: "Only PDF files are accepted." }, { status: 400 });
+    }
+    if (file.size > MAX_UPLOAD_BYTES) {
       return NextResponse.json(
-        { error: "Thumbnail must be a JPEG, PNG, or WebP image." },
+        { error: `File exceeds the ${process.env.MAX_UPLOAD_MB ?? 50}MB limit.` },
         { status: 400 },
       );
     }
-    if (thumbnail.size > MAX_THUMBNAIL_BYTES) {
-      return NextResponse.json({ error: "Thumbnail exceeds the 5MB limit." }, { status: 400 });
+
+    const answerKeyFile = formData.get("answerKey");
+    const answerKeyBytes =
+      answerKeyFile instanceof File && answerKeyFile.size > 0
+        ? await readPdfUpload(answerKeyFile)
+        : null;
+
+    const thumbnail = formData.get("thumbnail");
+    let thumbnailExt: string | null = null;
+    if (thumbnail instanceof File && thumbnail.size > 0) {
+      thumbnailExt = extForThumbnailMime(thumbnail.type);
+      if (!thumbnailExt) {
+        return NextResponse.json(
+          { error: "Thumbnail must be a JPEG, PNG, or WebP image." },
+          { status: 400 },
+        );
+      }
+      if (thumbnail.size > MAX_THUMBNAIL_BYTES) {
+        return NextResponse.json({ error: "Thumbnail exceeds the 5MB limit." }, { status: 400 });
+      }
     }
-  }
 
-  const raw = Object.fromEntries(formData.entries());
-  const parsed = questionBankInputSchema.safeParse(raw);
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
-  }
-  const input = parsed.data;
+    const raw = Object.fromEntries(formData.entries());
+    const parsed = questionBankInputSchema.safeParse(raw);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    }
+    const input = parsed.data;
 
-  const bytes = Buffer.from(await file.arrayBuffer());
-  const totalPages = await getPageCount(bytes);
+    const bytes = Buffer.from(await file.arrayBuffer());
+    const totalPages = await getPageCount(bytes);
 
-  if (input.previewPageCount != null && input.previewPageCount > totalPages) {
-    return NextResponse.json(
-      { error: `previewPageCount cannot exceed the document's ${totalPages} pages.` },
-      { status: 400 },
-    );
-  }
+    if (input.previewPageCount != null && input.previewPageCount > totalPages) {
+      return NextResponse.json(
+        { error: `previewPageCount cannot exceed the document's ${totalPages} pages.` },
+        { status: 400 },
+      );
+    }
 
-  const slug = uniqueSlug(input.title);
+    const slug = uniqueSlug(input.title);
 
-  const bank = await prisma.questionBank.create({
-    data: {
+    const bank = await prisma.questionBank.create({
+      data: {
       title: input.title,
+      type: input.type,
       slug,
       description: input.description,
       categoryId: input.categoryId,
@@ -121,32 +141,62 @@ async function createQuestionBank(request: Request) {
       isPublished: input.isPublished,
       isFeatured: input.isFeatured,
       features: input.features,
-    },
-  });
+      },
+    });
+    bankId = bank.id;
 
-  const filePath = await saveOriginalFile(bank.id, bytes);
-  let previewFilePathValue: string | null = null;
+    const filePath = await saveOriginalFile(bank.id, bytes);
+    let previewFilePathValue: string | null = null;
 
-  if (input.previewEnabled && input.previewPageCount) {
-    const previewBytes = await buildPreview(bytes, input.previewPageCount);
-    previewFilePathValue = await savePreviewFile(bank.id, previewBytes);
+    if (input.previewEnabled && input.previewPageCount) {
+      const previewBytes = await buildPreview(bytes, input.previewPageCount);
+      previewFilePathValue = await savePreviewFile(bank.id, previewBytes);
+    }
+
+    let thumbnailPathValue: string | null = null;
+    if (thumbnail instanceof File && thumbnailExt) {
+      const thumbnailBytes = Buffer.from(await thumbnail.arrayBuffer());
+      thumbnailPathValue = await saveThumbnailFile(bank.id, thumbnailBytes);
+    }
+
+    const updated = await prisma.questionBank.update({
+      where: { id: bank.id },
+      data: { filePath, previewFilePath: previewFilePathValue, thumbnailPath: thumbnailPathValue },
+      include: { category: true },
+    });
+
+    if (answerKeyFile instanceof File && answerKeyBytes) {
+      const answerKey = await prisma.answerKey.create({
+        data: {
+          title: updated.title,
+          description: updated.description,
+          questionBankId: updated.id,
+          categoryId: updated.categoryId,
+          filePath: "",
+          fileName: answerKeyFile.name,
+          fileSizeBytes: answerKeyFile.size,
+          createdById: session.user.id,
+        },
+      });
+      answerKeyId = answerKey.id;
+      const answerKeyPath = await saveAnswerKeyFile(answerKey.id, answerKeyBytes);
+      await prisma.answerKey.update({ where: { id: answerKey.id }, data: { filePath: answerKeyPath } });
+    }
+
+    const { thumbnailPath, ...bankDto } = updated;
+    return NextResponse.json(
+      { ...bankDto, thumbnailUrl: thumbnailUrlFor(thumbnailPath) },
+      { status: 201 },
+    );
+  } catch (error) {
+    if (answerKeyId) {
+      await prisma.answerKey.delete({ where: { id: answerKeyId } }).catch(() => undefined);
+      await deleteAnswerKeyFiles(answerKeyId).catch(() => undefined);
+    }
+    if (bankId) {
+      await prisma.questionBank.delete({ where: { id: bankId } }).catch(() => undefined);
+      await deleteQuestionBankFiles(bankId).catch(() => undefined);
+    }
+    throw error;
   }
-
-  let thumbnailPathValue: string | null = null;
-  if (thumbnail instanceof File && thumbnailExt) {
-    const thumbnailBytes = Buffer.from(await thumbnail.arrayBuffer());
-    thumbnailPathValue = await saveThumbnailFile(bank.id, thumbnailBytes);
-  }
-
-  const updated = await prisma.questionBank.update({
-    where: { id: bank.id },
-    data: { filePath, previewFilePath: previewFilePathValue, thumbnailPath: thumbnailPathValue },
-    include: { category: true },
-  });
-
-  const { thumbnailPath, ...bankDto } = updated;
-  return NextResponse.json(
-    { ...bankDto, thumbnailUrl: thumbnailUrlFor(thumbnailPath) },
-    { status: 201 },
-  );
 }

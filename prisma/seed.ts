@@ -50,6 +50,7 @@ async function main() {
     { name: "CA Inter — Taxation", slug: "ca-inter-taxation" },
     { name: "CA Inter — Accounts", slug: "ca-inter-accounts" },
     { name: "CA Final — Audit", slug: "ca-final-audit" },
+    { name: "CA Final — Law", slug: "ca-final-law" },
   ];
 
   for (const category of categories) {

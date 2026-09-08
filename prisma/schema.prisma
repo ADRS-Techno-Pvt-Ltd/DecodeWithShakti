@@ -31,6 +31,16 @@ enum VideoSource {
   UPLOAD
 }
 
+enum AnswerSheetStatus {
+  PENDING_EVALUATION
+  EVALUATED
+}
+
+enum ProductType {
+  QUESTION_BANK
+  TEST_SERIES
+}
+
 model User {
   id                   String               @id @default(cuid())
   name                 String
@@ -43,6 +53,9 @@ model User {
   updatedAt            DateTime             @updatedAt
   purchases            Purchase[]
   passwordResetTokens  PasswordResetToken[]
+  answerSubmissions    AnswerSheetSubmission[] @relation("AnswerSheetStudent")
+  evaluatedSubmissions AnswerSheetSubmission[] @relation("AnswerSheetEvaluator")
+  answerKeys           AnswerKey[]             @relation("AnswerKeyCreator")
 }
 
 model Category {
@@ -51,11 +64,65 @@ model Category {
   slug          String         @unique
   questionBanks QuestionBank[]
   videos        Video[]
+  answerSubmissions AnswerSheetSubmission[]
+  answerKeys        AnswerKey[]
+}
+
+model AnswerSheetSubmission {
+  id                    String             @id @default(cuid())
+  studentId             String
+  student               User               @relation("AnswerSheetStudent", fields: [studentId], references: [id])
+  questionBankId        String?
+  questionBank          QuestionBank?      @relation(fields: [questionBankId], references: [id], onDelete: Restrict)
+  categoryId            String
+  category              Category           @relation(fields: [categoryId], references: [id])
+  title                 String
+  description           String
+  studentFilePath       String
+  studentFileName       String
+  studentFileSizeBytes  Int
+  evaluatedFilePath     String?
+  evaluatedFileName     String?
+  evaluatedFileSizeBytes Int?
+  status                AnswerSheetStatus  @default(PENDING_EVALUATION)
+  evaluatedById         String?
+  evaluatedBy           User?              @relation("AnswerSheetEvaluator", fields: [evaluatedById], references: [id])
+  submittedAt           DateTime           @default(now())
+  evaluatedAt           DateTime?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  @@unique([studentId, questionBankId])
+  @@index([studentId, status, submittedAt])
+  @@index([questionBankId, studentId, status])
+  @@index([categoryId, status, submittedAt])
+}
+
+model AnswerKey {
+  id                   String   @id @default(cuid())
+  title                String
+  description          String
+  questionBankId       String?
+  questionBank         QuestionBank? @relation(fields: [questionBankId], references: [id], onDelete: Restrict)
+  categoryId           String
+  category             Category @relation(fields: [categoryId], references: [id])
+  filePath             String
+  fileName             String
+  fileSizeBytes        Int
+  createdById           String
+  createdBy             User     @relation("AnswerKeyCreator", fields: [createdById], references: [id])
+  isPublished           Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([categoryId, isPublished, createdAt])
+  @@index([questionBankId, isPublished, createdAt])
 }
 
 model QuestionBank {
   id               String     @id @default(cuid())
   title            String
+  type             ProductType @default(QUESTION_BANK)
   slug             String     @unique
   description      String
   categoryId       String
@@ -77,6 +144,8 @@ model QuestionBank {
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
   purchases        Purchase[]
+  answerKeys       AnswerKey[]
+  answerSubmissions AnswerSheetSubmission[]
 }
 
 model Video {

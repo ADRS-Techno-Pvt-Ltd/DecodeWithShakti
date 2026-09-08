@@ -74,7 +74,7 @@ export default async function QuestionBankDetailPage({
         </Link>
         <div className="mb-7">
           <span className="inline-block rounded-[5px] border border-primary/25 bg-accent px-3 py-1.5 font-mono text-[11.5px] tracking-[0.11em] text-primary-dark uppercase">
-            {bank.category.name} · Question bank
+            {bank.category.name} · {bank.type === "TEST_SERIES" ? "Test Series" : "Question Bank"}
           </span>
         </div>
 

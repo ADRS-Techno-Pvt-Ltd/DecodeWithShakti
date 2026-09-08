@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
-import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2, Plus, X } from "lucide-react";
 import {
@@ -25,17 +24,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Category, QuestionBank } from "@/features/question-banks/types";
+import type { Category, ProductType, QuestionBank } from "@/features/question-banks/types";
 import {
   createQuestionBank,
   updateQuestionBank,
   replaceQuestionBankThumbnail,
   replaceQuestionBankFile,
-  createCategory,
+  replaceQuestionBankAnswerKey,
 } from "@/features/question-banks/api";
 
 type FormValues = {
   title: string;
+  type: ProductType;
   description: string;
   categoryId: string;
   price: string;
@@ -49,6 +49,7 @@ type FormValues = {
   features: { value: string }[];
   file: FileList | null;
   thumbnail: FileList | null;
+  answerKey: FileList | null;
 };
 
 function toDatetimeLocal(iso: string | null): string {
@@ -70,15 +71,17 @@ export function QuestionBankSheet({
   categories,
   editing,
   onSaved,
+  mode = "question-banks",
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   categories: Category[];
   editing: QuestionBank | null;
   onSaved: () => void;
+  mode?: "question-banks" | "test-series";
 }) {
+  const isTestSeries = mode === "test-series";
   const [submitting, setSubmitting] = useState(false);
-  const queryClient = useQueryClient();
   const {
     register,
     handleSubmit,
@@ -90,6 +93,7 @@ export function QuestionBankSheet({
   } = useForm<FormValues>({
     defaultValues: {
       title: "",
+      type: "QUESTION_BANK",
       description: "",
       categoryId: "",
       price: "",
@@ -103,6 +107,7 @@ export function QuestionBankSheet({
       features: [],
       file: null,
       thumbnail: null,
+      answerKey: null,
     },
   });
 
@@ -115,6 +120,7 @@ export function QuestionBankSheet({
     if (editing) {
       reset({
         title: editing.title,
+        type: editing.type,
         description: editing.description,
         categoryId: editing.categoryId,
         price: paiseToRupees(editing.price),
@@ -128,10 +134,12 @@ export function QuestionBankSheet({
         features: (editing.features ?? []).map((value) => ({ value })),
         file: null,
         thumbnail: null,
+        answerKey: null,
       });
     } else {
       reset({
         title: "",
+        type: isTestSeries ? "TEST_SERIES" : "QUESTION_BANK",
         description: "",
         categoryId: categories[0]?.id ?? "",
         price: "",
@@ -147,9 +155,10 @@ export function QuestionBankSheet({
         thumbnail: null,
       });
     }
-  }, [editing, categories, reset, open]);
+  }, [editing, categories, reset, open, isTestSeries]);
 
   const previewEnabled = watch("previewEnabled");
+  const productType = watch("type");
   const earlyBirdEnabled = watch("earlyBirdEnabled");
   const thumbnailFile = watch("thumbnail");
 
@@ -176,6 +185,7 @@ export function QuestionBankSheet({
       if (editing) {
         await updateQuestionBank(editing.id, {
           title: values.title,
+          type: values.type,
           description: values.description,
           categoryId: values.categoryId,
           price: rupeesToPaise(values.price),
@@ -195,6 +205,9 @@ export function QuestionBankSheet({
         if (values.file && values.file.length > 0) {
           await replaceQuestionBankFile(editing.id, values.file[0]);
         }
+        if (values.type === "TEST_SERIES" && values.answerKey && values.answerKey.length > 0) {
+          await replaceQuestionBankAnswerKey(editing.id, values.answerKey[0]);
+        }
         toast.success("Question bank updated.");
       } else {
         if (!values.file || values.file.length === 0) {
@@ -204,6 +217,7 @@ export function QuestionBankSheet({
         }
         const formData = new FormData();
         formData.set("title", values.title);
+        formData.set("type", values.type);
         formData.set("description", values.description);
         formData.set("categoryId", values.categoryId);
         formData.set("price", String(rupeesToPaise(values.price)));
@@ -217,6 +231,9 @@ export function QuestionBankSheet({
         formData.set("isFeatured", String(values.isFeatured));
         formData.set("features", JSON.stringify(features));
         formData.set("file", values.file[0]);
+        if (values.type === "TEST_SERIES" && values.answerKey && values.answerKey.length > 0) {
+          formData.set("answerKey", values.answerKey[0]);
+        }
         if (values.thumbnail && values.thumbnail.length > 0) {
           formData.set("thumbnail", values.thumbnail[0]);
         }
@@ -247,7 +264,7 @@ export function QuestionBankSheet({
     >
       <DialogContent className="flex max-h-[85vh] w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
         <DialogHeader className="border-b px-6 py-4">
-          <DialogTitle>{editing ? "Edit Question Bank" : "Upload Question Bank"}</DialogTitle>
+          <DialogTitle>{editing ? (isTestSeries ? "Edit Test Series" : "Edit Question Bank") : (isTestSeries ? "Create Test Series" : "Upload Question Bank")}</DialogTitle>
           <DialogDescription>PDF only</DialogDescription>
         </DialogHeader>
         <form
@@ -258,6 +275,29 @@ export function QuestionBankSheet({
             <Label htmlFor="title">Title</Label>
             <Input id="title" {...register("title", { required: true })} />
           </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label>Type</Label>
+            <Select value={productType} onValueChange={(value) => setValue("type", value as ProductType)}>
+              <SelectTrigger className="w-full">
+                <SelectValue>{productType === "TEST_SERIES" ? "Test Series" : "Question Bank"}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="QUESTION_BANK">Question Bank</SelectItem>
+                <SelectItem value="TEST_SERIES">Test Series</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {productType === "TEST_SERIES" && (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="answerKey">Official Answer Key (PDF, optional)</Label>
+              <Input id="answerKey" type="file" accept="application/pdf" {...register("answerKey")} />
+              <span className="text-muted-foreground text-xs">
+                This key is linked to this Test Series and unlocks after a student submits their answer.
+              </span>
+            </div>
+          )}
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="description">Description</Label>
@@ -493,7 +533,7 @@ export function QuestionBankSheet({
             Cancel
           </Button>
           <Button onClick={handleSubmit(onSubmit)} disabled={submitting}>
-            {submitting ? "Saving…" : "Save Question Bank"}
+            {submitting ? "Saving…" : isTestSeries ? "Save Test Series" : "Save Question Bank"}
           </Button>
         </DialogFooter>
       </DialogContent>
