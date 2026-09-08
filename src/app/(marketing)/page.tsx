@@ -558,9 +558,27 @@ export default function LandingPage() {
                   <div>
                     <h3 className="font-heading text-[19px] font-semibold">Test series</h3>
                     <p className="mt-2 text-[13.5px] leading-relaxed text-muted-foreground">
-                      Full-length papers set to the real exam pattern, marked against a
-                      mentor-curated answer key.
+                      Exam-pattern writing practice with unit tests and one full-syllabus
+                      paper for every subject.
                     </p>
+                    <ul className="mt-5 space-y-2 text-[13.5px] leading-relaxed text-muted-foreground">
+                      <li className="flex gap-2.5">
+                        <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-muted-foreground" />
+                        <span>3 unit tests + 1 full test</span>
+                      </li>
+                      <li className="flex gap-2.5">
+                        <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-muted-foreground" />
+                        <span>Real exam-style question papers</span>
+                      </li>
+                      <li className="flex gap-2.5">
+                        <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-muted-foreground" />
+                        <span>Mentor-curated answer key</span>
+                      </li>
+                      <li className="flex gap-2.5">
+                        <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-muted-foreground" />
+                        <span>Detailed checking and feedback</span>
+                      </li>
+                    </ul>
                   </div>
                   <div className="mt-auto flex flex-col gap-2.5">
                     <div className="flex items-baseline justify-between gap-3 rounded-[11px] border border-border px-4 py-3.5">
@@ -595,6 +613,24 @@ export default function LandingPage() {
                       A mentor&apos;s own line-by-line breakdown of how each answer should be
                       structured.
                     </p>
+                    <ul className="mt-5 space-y-2 text-[13.5px] leading-relaxed text-muted-foreground">
+                      <li className="flex gap-2.5">
+                        <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-muted-foreground" />
+                        <span>Step-by-step answer structure</span>
+                      </li>
+                      <li className="flex gap-2.5">
+                        <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-muted-foreground" />
+                        <span>Presentation and flow guidance</span>
+                      </li>
+                      <li className="flex gap-2.5">
+                        <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-muted-foreground" />
+                        <span>Key points examiners look for</span>
+                      </li>
+                      <li className="flex gap-2.5">
+                        <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-muted-foreground" />
+                        <span>Subject-wise writing support</span>
+                      </li>
+                    </ul>
                   </div>
                   <div className="mt-auto flex flex-col gap-2.5">
                     <div className="flex items-baseline justify-between gap-3 rounded-[11px] border border-border px-4 py-3.5">
