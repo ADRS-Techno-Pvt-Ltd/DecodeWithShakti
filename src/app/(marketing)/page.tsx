@@ -226,7 +226,7 @@ function EarlyBirdBadgeLabel({
 
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-2 rounded-full border border-accent bg-accent px-3.5 py-1.5 font-mono text-xs font-semibold tracking-wide text-accent-foreground uppercase">
+    <span className="inline-flex items-center gap-2 rounded-full border border-accent bg-accent px-3.5 py-1.5 text-[13px] font-medium tracking-normal text-accent-foreground">
       <span className="h-1.5 w-1.5 rounded-full bg-success shadow-[0_0_0_3px_var(--success)]/20" />
       {children}
     </span>

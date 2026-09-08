@@ -203,7 +203,7 @@ export function QuestionBankSheet({
           await replaceQuestionBankThumbnail(editing.id, values.thumbnail[0]);
         }
         if (values.file && values.file.length > 0) {
-          await replaceQuestionBankFile(editing.id, values.file[0]);
+          await replaceQuestionBankFile(editing.id, Array.from(values.file));
         }
         if (values.type === "TEST_SERIES" && values.answerKey && values.answerKey.length > 0) {
           await replaceQuestionBankAnswerKey(editing.id, values.answerKey[0]);
@@ -230,7 +230,8 @@ export function QuestionBankSheet({
         formData.set("isPublished", String(values.isPublished));
         formData.set("isFeatured", String(values.isFeatured));
         formData.set("features", JSON.stringify(features));
-        formData.set("file", values.file[0]);
+        // Multiple PDFs are merged server-side into one stored file, in the order listed.
+        Array.from(values.file).forEach((file) => formData.append("file", file));
         if (values.type === "TEST_SERIES" && values.answerKey && values.answerKey.length > 0) {
           formData.set("answerKey", values.answerKey[0]);
         }
@@ -343,15 +344,21 @@ export function QuestionBankSheet({
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="file">
-              Question Bank File (PDF) {editing ? "(replace)" : ""}
+              {isTestSeries ? "Test Series File" : "Question Bank File"} (PDF) {editing ? "(replace)" : ""}
             </Label>
-            <Input id="file" type="file" accept="application/pdf" {...register("file")} />
-            {editing && (
-              <span className="text-muted-foreground text-xs">
-                Leave empty to keep the current file. Only replace it if the stored file is
-                missing or needs correcting — this regenerates the preview too.
-              </span>
-            )}
+            <input
+              id="file"
+              type="file"
+              accept="application/pdf"
+              multiple
+              className="h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base outline-none file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
+              {...register("file")}
+            />
+            <span className="text-muted-foreground text-xs">
+              {editing
+                ? "Leave empty to keep the current file. Select one or more PDFs to replace it — multiple files are merged into a single document in the order listed, and the preview is regenerated."
+                : "Select one or more PDFs. Multiple files are merged into a single document in the order listed."}
+            </span>
           </div>
 
           <div className="flex flex-col gap-1.5">

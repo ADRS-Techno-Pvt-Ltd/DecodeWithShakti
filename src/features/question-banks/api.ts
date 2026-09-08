@@ -76,9 +76,13 @@ export async function replaceQuestionBankThumbnail(id: string, file: File): Prom
   );
 }
 
-export async function replaceQuestionBankFile(id: string, file: File): Promise<QuestionBank> {
+export async function replaceQuestionBankFile(
+  id: string,
+  files: File[],
+): Promise<QuestionBank> {
   const formData = new FormData();
-  formData.set("file", file);
+  // Multiple PDFs are merged server-side into the single stored file, in order.
+  files.forEach((file) => formData.append("file", file));
   return unwrap(
     await fetch(`/api/v1/question-banks/${id}/file`, { method: "POST", body: formData }),
   );

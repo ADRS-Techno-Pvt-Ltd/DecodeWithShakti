@@ -4,7 +4,8 @@ import { Award } from "lucide-react";
 import { Reveal } from "./reveal";
 
 const stats = [
-  { value: "5+", label: "Years mentoring aspirants" },
+  { value: "8+", label: "Years teaching" },
+  { value: "1 yr", label: "Mentorship" },
   { value: "1,000+", label: "Students guided" },
   { value: "10+", label: "Question banks authored" },
 ];
@@ -28,7 +29,7 @@ export function MentorSection() {
               </span>
             </div>
             <div>
-              <span className="inline-flex items-center gap-2 rounded-full border border-accent bg-accent px-3.5 py-1.5 font-mono text-xs font-semibold tracking-wide text-accent-foreground uppercase">
+              <span className="inline-flex items-center gap-2 rounded-full border border-accent bg-accent px-3.5 py-1.5 text-[13px] font-medium tracking-normal text-accent-foreground">
                 <span className="h-1.5 w-1.5 rounded-full bg-success" />
                 The person behind the papers
               </span>

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, toErrorResponse } from "@/lib/auth-guards";
 import { saveOriginalFile, savePreviewFile } from "@/lib/storage";
-import { getPageCount, buildPreview } from "@/lib/preview";
+import { getPageCount, buildPreview, mergePdfs } from "@/lib/preview";
 import { thumbnailUrlFor } from "@/lib/thumbnail";
 
 const MAX_UPLOAD_BYTES = Number(process.env.MAX_UPLOAD_MB ?? 50) * 1024 * 1024;
@@ -23,21 +23,27 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
 
     const formData = await request.formData();
-    const file = formData.get("file");
-    if (!(file instanceof File) || file.size === 0) {
+    const files = formData
+      .getAll("file")
+      .filter((f): f is File => f instanceof File && f.size > 0);
+    if (files.length === 0) {
       return NextResponse.json({ error: "A PDF file is required." }, { status: 400 });
     }
-    if (file.type !== "application/pdf") {
+    if (files.some((f) => f.type !== "application/pdf")) {
       return NextResponse.json({ error: "Only PDF files are accepted." }, { status: 400 });
     }
-    if (file.size > MAX_UPLOAD_BYTES) {
+    const totalUploadBytes = files.reduce((sum, f) => sum + f.size, 0);
+    if (totalUploadBytes > MAX_UPLOAD_BYTES) {
       return NextResponse.json(
-        { error: `File exceeds the ${process.env.MAX_UPLOAD_MB ?? 50}MB limit.` },
+        { error: `Files exceed the ${process.env.MAX_UPLOAD_MB ?? 50}MB combined limit.` },
         { status: 400 },
       );
     }
+    const file = files[0];
 
-    const bytes = Buffer.from(await file.arrayBuffer());
+    const bytes = await mergePdfs(
+      await Promise.all(files.map(async (f) => Buffer.from(await f.arrayBuffer()))),
+    );
     const totalPages = await getPageCount(bytes);
 
     if (existing.previewEnabled && existing.previewPageCount != null && existing.previewPageCount > totalPages) {
@@ -62,7 +68,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       data: {
         filePath,
         fileName: file.name,
-        fileSizeBytes: file.size,
+        fileSizeBytes: bytes.length,
         totalPages,
         previewFilePath,
       },
