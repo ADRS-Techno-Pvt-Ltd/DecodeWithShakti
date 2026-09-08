@@ -47,16 +47,19 @@ const levels = [
     slug: "ca-inter-accounts",
     label: "CA Inter — Accounts",
     desc: "Paper-mapped Accounts question sets for CA Inter, built to the current ICAI pattern.",
+    comingSoon: true,
   },
   {
     slug: "ca-inter-costing",
     label: "CA Inter — Costing",
     desc: "Costing banks with exam-style problems and worked, step-by-step solutions.",
+    comingSoon: true,
   },
   {
     slug: "ca-inter-taxation",
     label: "CA Inter — Taxation",
     desc: "Taxation question sets covering direct and indirect tax topics for CA Inter.",
+    comingSoon: true,
   },
 ];
 
@@ -681,12 +684,18 @@ export default function LandingPage() {
                       <p className="text-[14.5px] leading-relaxed text-muted-foreground">
                         {lvl.desc}
                       </p>
-                      <Link
-                        href={`/question-banks?category=${lvl.slug}`}
-                        className="mt-4 inline-flex items-center gap-1.5 text-[14.5px] font-semibold text-primary hover:underline"
-                      >
-                        Browse banks <ArrowRight className="h-3.5 w-3.5" />
-                      </Link>
+                      {"comingSoon" in lvl && lvl.comingSoon ? (
+                        <span className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary px-2.5 py-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                          Coming soon
+                        </span>
+                      ) : (
+                        <Link
+                          href={`/question-banks?category=${lvl.slug}`}
+                          className="mt-4 inline-flex items-center gap-1.5 text-[14.5px] font-semibold text-primary hover:underline"
+                        >
+                          Browse banks <ArrowRight className="h-3.5 w-3.5" />
+                        </Link>
+                      )}
                     </div>
                   </motion.div>
                 </Reveal>
