@@ -487,77 +487,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* HOW IT WORKS */}
-        <section id="how" className="border-y border-border bg-secondary py-22">
-          <div className="mx-auto max-w-6xl 2xl:max-w-[1440px] px-7">
-            <Reveal className="mb-14 max-w-xl">
-              <Eyebrow>From browse to download</Eyebrow>
-              <h2 className="font-heading mt-4 text-[2rem] leading-tight font-semibold tracking-tight">
-                Four steps, no detours
-              </h2>
-            </Reveal>
-            <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-              {steps.map((s, i) => (
-                <Reveal key={s.title} delay={i * 50} className="relative">
-                  <div className="font-mono mb-4 flex h-8 w-8 items-center justify-center rounded-full border-[1.5px] border-primary bg-card text-[13px] font-semibold text-primary">
-                    {i + 1}
-                  </div>
-                  <h3 className="text-[15.5px] font-bold">{s.title}</h3>
-                  <p className="mt-1.5 text-[13.8px] leading-relaxed text-muted-foreground">
-                    {s.body}
-                  </p>
-                  {i < steps.length - 1 && (
-                    <div className="absolute top-4 left-[calc(100%-4px)] hidden h-px w-[calc(100%-24px)] border-t border-dashed border-border lg:block" />
-                  )}
-                </Reveal>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* CATEGORIES */}
-        <section id="categories" className="py-22">
-          <div className="mx-auto max-w-6xl 2xl:max-w-[1440px] px-7">
-            <Reveal className="mx-auto mb-14 max-w-xl text-center">
-              <Eyebrow>Mapped to your exam</Eyebrow>
-              <h2 className="font-heading mt-4 text-[2rem] leading-tight font-semibold tracking-tight">
-                Pick your level. Start decoding.
-              </h2>
-            </Reveal>
-
-            <div className="grid grid-cols-1 gap-5.5 sm:grid-cols-2 lg:grid-cols-4">
-              {levels.map((lvl, i) => (
-                <Reveal key={lvl.slug} delay={i * 50}>
-                  <motion.div
-                    whileHover={{ y: -5 }}
-                    transition={{ duration: 0.2, ease: "easeOut" }}
-                    className="h-full rounded-[14px] border border-border bg-card hover:border-primary-light/40 hover:shadow-sm"
-                  >
-                    <div className="border-b border-border p-6.5 pb-5">
-                      <span className="font-mono text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                        Category
-                      </span>
-                      <h3 className="font-heading mt-2 text-lg leading-snug font-bold">{lvl.label}</h3>
-                    </div>
-                    <div className="p-6.5 pt-5">
-                      <p className="text-[14.5px] leading-relaxed text-muted-foreground">
-                        {lvl.desc}
-                      </p>
-                      <Link
-                        href={`/question-banks?category=${lvl.slug}`}
-                        className="mt-4 inline-flex items-center gap-1.5 text-[14.5px] font-semibold text-primary hover:underline"
-                      >
-                        Browse banks <ArrowRight className="h-3.5 w-3.5" />
-                      </Link>
-                    </div>
-                  </motion.div>
-                </Reveal>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* PRICING */}
+        {/* FEATURED QUESTION BANKS */}
         <section id="pricing" className="py-22">
           <div className="mx-auto max-w-6xl 2xl:max-w-[1440px] px-7">
             <Reveal className="mx-auto mb-14 max-w-xl text-center">
@@ -692,6 +622,76 @@ export default function LandingPage() {
                 browse all question banks →
               </Link>
             </p>
+          </div>
+        </section>
+
+        {/* HOW IT WORKS */}
+        <section id="how" className="border-y border-border bg-secondary py-22">
+          <div className="mx-auto max-w-6xl 2xl:max-w-[1440px] px-7">
+            <Reveal className="mb-14 max-w-xl">
+              <Eyebrow>From browse to download</Eyebrow>
+              <h2 className="font-heading mt-4 text-[2rem] leading-tight font-semibold tracking-tight">
+                Four steps, no detours
+              </h2>
+            </Reveal>
+            <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+              {steps.map((s, i) => (
+                <Reveal key={s.title} delay={i * 50} className="relative">
+                  <div className="font-mono mb-4 flex h-8 w-8 items-center justify-center rounded-full border-[1.5px] border-primary bg-card text-[13px] font-semibold text-primary">
+                    {i + 1}
+                  </div>
+                  <h3 className="text-[15.5px] font-bold">{s.title}</h3>
+                  <p className="mt-1.5 text-[13.8px] leading-relaxed text-muted-foreground">
+                    {s.body}
+                  </p>
+                  {i < steps.length - 1 && (
+                    <div className="absolute top-4 left-[calc(100%-4px)] hidden h-px w-[calc(100%-24px)] border-t border-dashed border-border lg:block" />
+                  )}
+                </Reveal>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* CATEGORIES */}
+        <section id="categories" className="py-22">
+          <div className="mx-auto max-w-6xl 2xl:max-w-[1440px] px-7">
+            <Reveal className="mx-auto mb-14 max-w-xl text-center">
+              <Eyebrow>Mapped to your exam</Eyebrow>
+              <h2 className="font-heading mt-4 text-[2rem] leading-tight font-semibold tracking-tight">
+                Pick your level. Start decoding.
+              </h2>
+            </Reveal>
+
+            <div className="grid grid-cols-1 gap-5.5 sm:grid-cols-2 lg:grid-cols-4">
+              {levels.map((lvl, i) => (
+                <Reveal key={lvl.slug} delay={i * 50}>
+                  <motion.div
+                    whileHover={{ y: -5 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    className="h-full rounded-[14px] border border-border bg-card hover:border-primary-light/40 hover:shadow-sm"
+                  >
+                    <div className="border-b border-border p-6.5 pb-5">
+                      <span className="font-mono text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                        Category
+                      </span>
+                      <h3 className="font-heading mt-2 text-lg leading-snug font-bold">{lvl.label}</h3>
+                    </div>
+                    <div className="p-6.5 pt-5">
+                      <p className="text-[14.5px] leading-relaxed text-muted-foreground">
+                        {lvl.desc}
+                      </p>
+                      <Link
+                        href={`/question-banks?category=${lvl.slug}`}
+                        className="mt-4 inline-flex items-center gap-1.5 text-[14.5px] font-semibold text-primary hover:underline"
+                      >
+                        Browse banks <ArrowRight className="h-3.5 w-3.5" />
+                      </Link>
+                    </div>
+                  </motion.div>
+                </Reveal>
+              ))}
+            </div>
           </div>
         </section>
 
