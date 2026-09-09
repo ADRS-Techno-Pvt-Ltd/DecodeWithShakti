@@ -55,9 +55,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     // admins get the clean original. Watermarking happens in memory, never persisted.
     const body =
       session.user.role === "ADMIN"
-        ? new Uint8Array(bytes)
-        : await watermarkPdf(bytes, session.user.email ?? "");
-    return new NextResponse(body, {
+        ? bytes
+        : Buffer.from(await watermarkPdf(bytes, session.user.email ?? ""));
+    return new NextResponse(new Uint8Array(body), {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `inline; filename="${safeFileName(answerKey.fileName)}"`,
