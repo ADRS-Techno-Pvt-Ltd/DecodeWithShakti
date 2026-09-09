@@ -56,6 +56,25 @@ model User {
   answerSubmissions    AnswerSheetSubmission[] @relation("AnswerSheetStudent")
   evaluatedSubmissions AnswerSheetSubmission[] @relation("AnswerSheetEvaluator")
   answerKeys           AnswerKey[]             @relation("AnswerKeyCreator")
+  impersonationsMade     ImpersonationSession[] @relation("ImpersonationAdmin")
+  impersonationsReceived ImpersonationSession[] @relation("ImpersonationTarget")
+}
+
+/// Audit trail for admin "View as user". One row per session: written when an
+/// admin starts viewing a user's account, closed (endedAt set) when they exit.
+/// Never deleted — this is the record of who looked at whose account and when.
+model ImpersonationSession {
+  id           String    @id @default(cuid())
+  adminId      String
+  admin        User      @relation("ImpersonationAdmin", fields: [adminId], references: [id])
+  targetUserId String
+  targetUser   User      @relation("ImpersonationTarget", fields: [targetUserId], references: [id])
+  reason       String?
+  startedAt    DateTime  @default(now())
+  endedAt      DateTime?
+
+  @@index([adminId, startedAt])
+  @@index([targetUserId, startedAt])
 }
 
 model Category {

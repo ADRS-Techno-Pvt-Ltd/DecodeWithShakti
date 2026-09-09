@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireStudent, toErrorResponse } from "@/lib/auth-guards";
+import { requireStudent, blockImpersonation, toErrorResponse } from "@/lib/auth-guards";
 import { resolveEffectivePrice, computeDiscount, isCouponUsable } from "@/lib/pricing";
 import { getPaymentProvider } from "@/lib/payment";
 import { finalizePurchase } from "@/lib/payment/finalize-purchase";
@@ -28,6 +28,7 @@ export async function POST(request: Request) {
     }
 
     const session = await requireStudent();
+    blockImpersonation(session);
     const raw = await request.json();
     const parsed = bodySchema.safeParse(raw);
     if (!parsed.success) {
