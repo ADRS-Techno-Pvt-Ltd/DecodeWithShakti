@@ -107,50 +107,37 @@ export default async function QuestionBankCatalogPage({
       </p>
 
       <div className="mt-7 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-        <div className="flex flex-col gap-5">
-          <div>
-            <p className="mb-3 font-mono text-[11px] font-semibold tracking-wide text-muted-foreground/80 uppercase">
-              Filter by type
-            </p>
-            <div className="flex flex-wrap gap-2.5">
-              {TYPE_OPTIONS.map((o) => (
-                <Link
-                  key={o.value ?? "all"}
-                  href={buildHref({ type: o.value })}
-                  className={cn(
-                    filterPillClass,
-                    typeFilter === o.value ? filterPillActive : filterPillInactive,
-                  )}
-                >
-                  {o.label}
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <p className="mb-3 font-mono text-[11px] font-semibold tracking-wide text-muted-foreground/80 uppercase">
-              Filter by category
-            </p>
-            <div className="flex flex-wrap gap-2.5">
-              {categories.map((c) => (
-                <Link
-                  key={c.id}
-                  href={buildHref({
-                    category: categorySlug === c.slug ? undefined : c.slug,
-                    subject: undefined,
-                  })}
-                  className={cn(
-                    filterPillClass,
-                    categorySlug === c.slug ? filterPillActive : filterPillInactive,
-                  )}
-                >
-                  {c.name}
-                </Link>
-              ))}
-            </div>
+        {typeFilter !== "mentorship" ? (
+        <div>
+          <p className="mb-3 font-mono text-[11px] font-semibold tracking-wide text-muted-foreground/80 uppercase">
+            Filter by category
+          </p>
+          <div className="flex flex-wrap gap-2.5">
+            <Link
+              href={typeFilter ? `/question-banks?type=${typeFilter}` : "/question-banks"}
+              className={cn(filterPillClass, !categorySlug ? filterPillActive : filterPillInactive)}
+            >
+              All Categories
+            </Link>
+            {categories.map((c) => (
+              <Link
+                key={c.id}
+                href={
+                  typeFilter
+                    ? `/question-banks?category=${c.slug}&type=${typeFilter}`
+                    : `/question-banks?category=${c.slug}`
+                }
+                className={cn(
+                  filterPillClass,
+                  categorySlug === c.slug ? filterPillActive : filterPillInactive,
+                )}
+              >
+                {c.name}
+              </Link>
+            ))}
           </div>
         </div>
+        ) : null}
 
         <div className="shrink-0">
           <p className="mb-3 font-mono text-[11px] font-semibold tracking-wide text-muted-foreground/80 uppercase">
