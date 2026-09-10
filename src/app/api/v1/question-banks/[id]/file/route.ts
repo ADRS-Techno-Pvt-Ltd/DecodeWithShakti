@@ -21,6 +21,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (!existing) {
       return NextResponse.json({ error: "Question bank not found." }, { status: 404 });
     }
+    if (existing.type === "MENTORSHIP") {
+      return NextResponse.json({ error: "Mentorship products do not accept PDF uploads." }, { status: 400 });
+    }
 
     const formData = await request.formData();
     const files = formData

@@ -5,7 +5,7 @@ import { StudentAnswerSheets } from "./student-answer-sheets";
 export default async function StudentAnswerSheetsPage() {
   const session = await auth();
   const purchases = await prisma.purchase.findMany({
-    where: { userId: session!.user.id, status: "SUCCESS" },
+    where: { userId: session!.user.id, status: "SUCCESS", questionBank: { type: "TEST_SERIES" } },
     select: {
       id: true,
       questionBank: {
@@ -60,7 +60,10 @@ export default async function StudentAnswerSheetsPage() {
             title: purchase.questionBank.title,
             slug: purchase.questionBank.slug,
             description: purchase.questionBank.description,
-            fileName: purchase.questionBank.fileName,
+            // TEST_SERIES products require a PDF at creation time. The fallback
+            // keeps this existing student-only view type-safe after Mentorship
+            // made catalog file fields nullable.
+            fileName: purchase.questionBank.fileName ?? "",
             category: purchase.questionBank.category,
           },
           submission: submission

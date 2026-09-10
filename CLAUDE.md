@@ -79,6 +79,7 @@ See `.env.example` for the full list. Key ones:
 - `RESEND_API_KEY`, `EMAIL_FROM` — Resend, used for password-reset + contact-form emails (`EMAIL_FROM` must be on a Resend-verified domain)
 - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` — Cloudinary account used by `src/lib/storage.ts` for all uploaded files, previews, thumbnails, and invoices
 - `MAX_UPLOAD_MB` — max question-bank upload size
+- `NEXT_PUBLIC_WHATSAPP_ADMIN_NUMBER` — admin's WhatsApp number (E.164, no `+`), used client-side to build the `wa.me` Click-to-Chat link shown on a successful Mentorship purchase. Not a secret.
 
 ## Design reference
 

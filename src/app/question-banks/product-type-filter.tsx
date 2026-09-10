@@ -15,6 +15,7 @@ const OPTIONS = [
   { value: ALL, label: "All products" },
   { value: "question_bank", label: "Question banks" },
   { value: "test_series", label: "Test series" },
+  { value: "mentorship", label: "Mentorship" },
 ] as const;
 
 export function ProductTypeFilter({ value }: { value: string }) {

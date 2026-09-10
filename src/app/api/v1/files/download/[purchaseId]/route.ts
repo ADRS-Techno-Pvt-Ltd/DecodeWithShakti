@@ -20,6 +20,9 @@ export async function GET(
     if (!purchase || purchase.userId !== session.user.id || purchase.status !== "SUCCESS") {
       return NextResponse.json({ error: "Not found or not purchased." }, { status: 403 });
     }
+    if (!purchase.questionBank.filePath || !purchase.questionBank.fileName) {
+      return NextResponse.json({ error: "This product has no downloadable file." }, { status: 404 });
+    }
 
     const original = await readStoredFile(purchase.questionBank.filePath);
     const watermarked = await watermarkPdf(original, session.user.email ?? "");

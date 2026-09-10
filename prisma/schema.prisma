@@ -39,6 +39,7 @@ enum AnswerSheetStatus {
 enum ProductType {
   QUESTION_BANK
   TEST_SERIES
+  MENTORSHIP
 }
 
 model User {
@@ -146,9 +147,11 @@ model QuestionBank {
   price            Int
   earlyBirdPrice   Int?
   earlyBirdEndsAt  DateTime?
-  fileName         String
-  filePath         String
-  fileSizeBytes    Int
+  // Mentorship is a service product and has no downloadable PDF. Question Bank
+  // and Test Series creation validation still requires these fields.
+  fileName         String?
+  filePath         String?
+  fileSizeBytes    Int?
   totalPages       Int?
   previewEnabled   Boolean    @default(false)
   previewPageCount Int?

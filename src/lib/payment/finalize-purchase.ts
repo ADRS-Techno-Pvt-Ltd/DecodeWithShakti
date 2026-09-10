@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { generateInvoicePdf } from "@/lib/invoice";
 import { saveInvoiceFile } from "@/lib/storage";
+import { sendMentorshipPurchaseNotifications } from "./mentorship-notifications";
 import type { CallbackResult } from "./provider";
 
 export type FinalizeOutcome =
@@ -82,6 +83,9 @@ export async function finalizePurchase(result: CallbackResult): Promise<Finalize
 
   if (result.status === "SUCCESS") {
     await ensureInvoice(purchase.id);
+    // Notification failure must never invalidate a successful payment —
+    // sendMentorshipPurchaseNotifications never throws (internally try/caught).
+    await sendMentorshipPurchaseNotifications(purchase.id);
   }
 
   return { applied: true };

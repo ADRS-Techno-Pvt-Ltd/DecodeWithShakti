@@ -18,6 +18,7 @@ const filterPillInactive =
 const TYPE_MAP = {
   question_bank: "QUESTION_BANK",
   test_series: "TEST_SERIES",
+  mentorship: "MENTORSHIP",
 } as const;
 
 type TypeFilter = keyof typeof TYPE_MAP;
@@ -26,6 +27,7 @@ const HEADINGS: Record<TypeFilter | "all", { title: string; noun: string }> = {
   all: { title: "Browse Question Banks", noun: "product" },
   question_bank: { title: "Browse Question Banks", noun: "question bank" },
   test_series: { title: "Browse Test Series", noun: "test series" },
+  mentorship: { title: "Browse Mentorship", noun: "mentorship" },
 };
 
 export default async function QuestionBankCatalogPage({
@@ -34,7 +36,7 @@ export default async function QuestionBankCatalogPage({
   const { category, type } = await searchParams;
   const categorySlug = typeof category === "string" ? category : undefined;
   const typeFilter: TypeFilter | undefined =
-    type === "question_bank" || type === "test_series" ? type : undefined;
+    type === "question_bank" || type === "test_series" || type === "mentorship" ? type : undefined;
 
   const [banks, categories] = await Promise.all([
     prisma.questionBank.findMany({
@@ -47,7 +49,7 @@ export default async function QuestionBankCatalogPage({
         ...(categorySlug ? { category: { slug: { startsWith: categorySlug } } } : {}),
         ...(typeFilter ? { type: TYPE_MAP[typeFilter] } : {}),
       },
-      include: { category: true },
+      include: { category: true, subject: true },
       orderBy: { createdAt: "desc" },
     }),
     prisma.category.findMany({ orderBy: { name: "asc" } }),
@@ -126,6 +128,7 @@ export default async function QuestionBankCatalogPage({
                 title={bank.title}
                 description={bank.description}
                 categoryName={bank.category.name}
+                subjectName={bank.subject?.name ?? null}
                 price={bank.price}
                 effectivePrice={effectivePrice}
                 previewEnabled={bank.previewEnabled}

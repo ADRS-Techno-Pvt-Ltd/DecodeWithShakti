@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/dashboard/empty-state";
 import { Reveal } from "@/components/landing/reveal";
 import { ReconcileButton } from "@/components/dashboard/reconcile-button";
 import { RecheckPaymentButton } from "@/components/dashboard/recheck-payment-button";
+import { productTypeLabel } from "@/lib/product-type";
 
 function formatRupees(paise: number): string {
   return `₹${(paise / 100).toFixed(0)}`;
@@ -71,7 +72,7 @@ export default async function AdminSalesPage() {
                     <TableCell className="font-medium">{p.questionBank.title}</TableCell>
                     <TableCell>
                       <Badge variant="secondary">
-                        {p.questionBank.type === "TEST_SERIES" ? "Test Series" : "Question Bank"}
+                        {productTypeLabel(p.questionBank.type)}
                       </Badge>
                     </TableCell>
                     <TableCell>

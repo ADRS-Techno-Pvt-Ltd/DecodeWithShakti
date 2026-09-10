@@ -13,9 +13,12 @@ export async function POST(
     const { id } = await params;
     const questionBank = await prisma.questionBank.findUnique({
       where: { id },
-      select: { id: true, title: true, description: true, categoryId: true },
+      select: { id: true, title: true, description: true, categoryId: true, type: true },
     });
     if (!questionBank) return NextResponse.json({ error: "Question bank not found." }, { status: 404 });
+    if (questionBank.type === "MENTORSHIP") {
+      return NextResponse.json({ error: "Mentorship products do not have answer keys." }, { status: 400 });
+    }
 
     const formData = await request.formData();
     const file = formData.get("file");

@@ -6,6 +6,7 @@ import { BookOpen, Eye } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import type { ProductType } from "./types";
 
 function formatRupees(paise: number): string {
   return `₹${(paise / 100).toFixed(0)}`;
@@ -16,6 +17,7 @@ export function QuestionBankCard({
   title,
   description,
   categoryName,
+  subjectName,
   price,
   effectivePrice,
   previewEnabled,
@@ -26,11 +28,12 @@ export function QuestionBankCard({
   title: string;
   description: string;
   categoryName: string;
+  subjectName: string | null;
   price: number;
   effectivePrice: number;
   previewEnabled: boolean;
   thumbnailUrl: string | null;
-  type: "QUESTION_BANK" | "TEST_SERIES";
+  type: ProductType;
 }) {
   const hasEarlyBird = effectivePrice < price;
   const href = `/question-banks/${slug}`;
@@ -55,8 +58,11 @@ export function QuestionBankCard({
               )}
             </div>
             <div className="flex flex-wrap gap-1.5">
-              <Badge variant="secondary">{type === "TEST_SERIES" ? "Test Series" : "Question Bank"}</Badge>
+              <Badge variant="secondary">
+                {type === "TEST_SERIES" ? "Test Series" : type === "MENTORSHIP" ? "Mentorship" : "Question Bank"}
+              </Badge>
               <Badge variant="outline">{categoryName}</Badge>
+              {subjectName && <Badge variant="outline">{subjectName}</Badge>}
             </div>
             <h3 className="font-heading mt-2.5 font-semibold">{title}</h3>
             <p className="mt-1.5 line-clamp-2 text-sm text-muted-foreground">{description}</p>
