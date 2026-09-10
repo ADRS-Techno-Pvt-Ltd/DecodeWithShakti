@@ -8,6 +8,7 @@ const navItems: NavItem[] = [
   { href: "/dashboard/admin/banners", label: "Banners", icon: <GalleryHorizontal /> },
   { href: "/dashboard/admin/question-banks", label: "Question Banks", icon: <BookOpen /> },
   { href: "/dashboard/admin/test-series", label: "Test Series", icon: <FileCheck2 /> },
+  { href: "/dashboard/admin/mentors", label: "Mentors", icon: <Users /> },
   { href: "/dashboard/admin/answer-sheets", label: "Submitted Answer Sheets", icon: <FileCheck2 /> },
   { href: "/dashboard/admin/videos", label: "Videos", icon: <Video /> },
   { href: "/dashboard/admin/categories", label: "Categories", icon: <FolderOpen /> },

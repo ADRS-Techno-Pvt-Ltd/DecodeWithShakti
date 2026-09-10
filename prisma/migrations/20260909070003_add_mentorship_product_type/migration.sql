@@ -1,0 +1,7 @@
+-- AlterEnum
+ALTER TYPE "ProductType" ADD VALUE 'MENTORSHIP';
+
+-- AlterTable
+ALTER TABLE "QuestionBank" ALTER COLUMN "fileName" DROP NOT NULL,
+ALTER COLUMN "filePath" DROP NOT NULL,
+ALTER COLUMN "fileSizeBytes" DROP NOT NULL;

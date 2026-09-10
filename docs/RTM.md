@@ -58,6 +58,12 @@
 | Subject taxonomy (separate from Category) | `Subject` model + nullable `QuestionBank.subjectId`, migration `add_subject_and_qb_answer_key`, `prisma/seed.ts` | Seed runs idempotently; subjects listed at `GET /api/v1/subjects` | Implemented — 14 CA subjects seeded via upsert |
 | Subject on admin question-bank / test-series form | `question-bank-sheet.tsx`, `features/question-banks/api.ts` (`fetchSubjects`), `dashboard/admin/question-banks/page.tsx`, `lib/validation/question-bank.ts`, `api/v1/question-banks` (create + PATCH) | Create/edit a bank or series with and without a subject; optional field persists | Implemented — optional `<Select>` after Category, wired through FormData + PATCH payload |
 
+## Admin Mentorship Management
+
+| Requirement | Implementing Module / File(s) | Verification Step | Status |
+|---|---|---|---|
+| Admin Mentorship product management | `dashboard/admin/mentors/**`, shared `question-banks/page.tsx` and `question-bank-sheet.tsx`, `api/v1/question-banks` | Admin opens `/dashboard/admin/mentors`, creates/edits/publishes/deletes a Mentorship product with category, subject, pricing, and thumbnail; confirm PDF controls are absent | Implemented — shared Question Bank architecture reused; TypeScript and Next production build pass; live authenticated workflow not exercised |
+
 **Explicitly untraced (out of scope, per BRD § 5):** Phase 2 roadmap items, real Cashfree integration (tracked separately once its follow-up plan exists).
 
 ## Bugs found and fixed during verification

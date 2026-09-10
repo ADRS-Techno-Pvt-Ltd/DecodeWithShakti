@@ -2,7 +2,7 @@ export type Category = { id: string; name: string; slug: string };
 
 export type Subject = { id: string; name: string; slug: string; categoryId: string | null };
 
-export type ProductType = "QUESTION_BANK" | "TEST_SERIES";
+export type ProductType = "QUESTION_BANK" | "TEST_SERIES" | "MENTORSHIP";
 
 export type QuestionBank = {
   id: string;
@@ -13,11 +13,12 @@ export type QuestionBank = {
   categoryId: string;
   category: Category;
   subjectId: string | null;
+  subject: Subject | null;
   price: number;
   earlyBirdPrice: number | null;
   earlyBirdEndsAt: string | null;
-  fileName: string;
-  fileSizeBytes: number;
+  fileName: string | null;
+  fileSizeBytes: number | null;
   totalPages: number | null;
   previewEnabled: boolean;
   previewPageCount: number | null;

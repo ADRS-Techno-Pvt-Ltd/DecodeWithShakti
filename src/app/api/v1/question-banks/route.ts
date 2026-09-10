@@ -24,6 +24,7 @@ export async function GET(request: Request) {
     const admin = searchParams.get("admin") === "true";
     const featured = searchParams.get("featured") === "true";
     const type = searchParams.get("type");
+    const subject = searchParams.get("subject");
 
     if (admin) {
       await requireAdmin();
@@ -34,9 +35,10 @@ export async function GET(request: Request) {
         ...(admin ? {} : { isPublished: true }),
         ...(category ? { category: { slug: category } } : {}),
         ...(featured ? { isFeatured: true } : {}),
-        ...(type === "QUESTION_BANK" || type === "TEST_SERIES" ? { type } : {}),
+        ...(type === "QUESTION_BANK" || type === "TEST_SERIES" || type === "MENTORSHIP" ? { type } : {}),
+        ...(subject ? { subjectId: subject } : {}),
       },
-      include: { category: true },
+      include: { category: true, subject: true },
       orderBy: admin
         ? { createdAt: "desc" }
         : [{ isFeatured: "desc" }, { createdAt: "desc" }] as const,
@@ -68,13 +70,28 @@ async function createQuestionBank(request: Request) {
 
   try {
     const formData = await request.formData();
+    const raw = Object.fromEntries(formData.entries());
+    const parsed = questionBankInputSchema.safeParse(raw);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    }
+    const input = parsed.data;
+
     const files = formData
       .getAll("file")
       .filter((f): f is File => f instanceof File && f.size > 0);
-    if (files.length === 0) {
+    const answerKeyFile = formData.get("answerKey");
+
+    if (input.type === "MENTORSHIP" && (files.length > 0 || (answerKeyFile instanceof File && answerKeyFile.size > 0))) {
+      return NextResponse.json(
+        { error: "Mentorship products cannot include a question bank PDF or answer key." },
+        { status: 400 },
+      );
+    }
+    if (input.type !== "MENTORSHIP" && files.length === 0) {
       return NextResponse.json({ error: "A PDF file is required." }, { status: 400 });
     }
-    if (files.some((f) => f.type !== "application/pdf")) {
+    if (input.type !== "MENTORSHIP" && files.some((f) => f.type !== "application/pdf")) {
       return NextResponse.json({ error: "Only PDF files are accepted." }, { status: 400 });
     }
     const totalUploadBytes = files.reduce((sum, f) => sum + f.size, 0);
@@ -85,10 +102,8 @@ async function createQuestionBank(request: Request) {
       );
     }
     const file = files[0];
-
-    const answerKeyFile = formData.get("answerKey");
     const answerKeyBytes =
-      answerKeyFile instanceof File && answerKeyFile.size > 0
+      input.type !== "MENTORSHIP" && answerKeyFile instanceof File && answerKeyFile.size > 0
         ? await readPdfUpload(answerKeyFile)
         : null;
 
@@ -107,19 +122,12 @@ async function createQuestionBank(request: Request) {
       }
     }
 
-    const raw = Object.fromEntries(formData.entries());
-    const parsed = questionBankInputSchema.safeParse(raw);
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
-    }
-    const input = parsed.data;
+    const bytes = input.type === "MENTORSHIP"
+      ? null
+      : await mergePdfs(await Promise.all(files.map(async (f) => Buffer.from(await f.arrayBuffer()))));
+    const totalPages = bytes ? await getPageCount(bytes) : null;
 
-    const bytes = await mergePdfs(
-      await Promise.all(files.map(async (f) => Buffer.from(await f.arrayBuffer()))),
-    );
-    const totalPages = await getPageCount(bytes);
-
-    if (input.previewPageCount != null && input.previewPageCount > totalPages) {
+    if (input.previewPageCount != null && totalPages != null && input.previewPageCount > totalPages) {
       return NextResponse.json(
         { error: `previewPageCount cannot exceed the document's ${totalPages} pages.` },
         { status: 400 },
@@ -139,11 +147,11 @@ async function createQuestionBank(request: Request) {
       price: input.price,
       earlyBirdPrice: input.earlyBirdPrice ?? null,
       earlyBirdEndsAt: input.earlyBirdEndsAt ?? null,
-      fileName: file.name,
-      filePath: "", // set below once we know the id
-      fileSizeBytes: bytes.length,
+      fileName: file?.name ?? null,
+      filePath: input.type === "MENTORSHIP" ? null : "", // set below once we know the id
+      fileSizeBytes: bytes?.length ?? null,
       totalPages,
-      previewEnabled: input.previewEnabled,
+      previewEnabled: input.type === "MENTORSHIP" ? false : input.previewEnabled,
       previewPageCount: input.previewPageCount ?? null,
       isPublished: input.isPublished,
       isFeatured: input.isFeatured,
@@ -152,10 +160,10 @@ async function createQuestionBank(request: Request) {
     });
     bankId = bank.id;
 
-    const filePath = await saveOriginalFile(bank.id, bytes);
+    const filePath = bytes ? await saveOriginalFile(bank.id, bytes) : null;
     let previewFilePathValue: string | null = null;
 
-    if (input.previewEnabled && input.previewPageCount) {
+    if (bytes && input.previewEnabled && input.previewPageCount) {
       const previewBytes = await buildPreview(bytes, input.previewPageCount);
       previewFilePathValue = await savePreviewFile(bank.id, previewBytes);
     }
@@ -169,7 +177,7 @@ async function createQuestionBank(request: Request) {
     const updated = await prisma.questionBank.update({
       where: { id: bank.id },
       data: { filePath, previewFilePath: previewFilePathValue, thumbnailPath: thumbnailPathValue },
-      include: { category: true },
+      include: { category: true, subject: true },
     });
 
     if (answerKeyFile instanceof File && answerKeyBytes) {

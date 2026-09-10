@@ -25,12 +25,24 @@ export async function PATCH(
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
     const input = parsed.data;
+    const targetType = input.type ?? existing.type;
 
-    const previewEnabled = input.previewEnabled ?? existing.previewEnabled;
+    if (existing.type === "MENTORSHIP" && targetType !== "MENTORSHIP") {
+      return NextResponse.json({ error: "Mentorship products must remain Mentorship products." }, { status: 400 });
+    }
+
+    if (targetType === "MENTORSHIP" && (input.previewEnabled === true || input.previewPageCount != null)) {
+      return NextResponse.json({ error: "Mentorship products cannot have a PDF preview." }, { status: 400 });
+    }
+    if (targetType !== "MENTORSHIP" && !existing.filePath) {
+      return NextResponse.json({ error: "A PDF file is required for Question Bank and Test Series products." }, { status: 400 });
+    }
+
+    const previewEnabled = targetType === "MENTORSHIP" ? false : (input.previewEnabled ?? existing.previewEnabled);
     const previewPageCount = input.previewPageCount ?? existing.previewPageCount ?? undefined;
 
     let previewFilePath = existing.previewFilePath;
-    if (previewEnabled && previewPageCount) {
+    if (previewEnabled && previewPageCount && existing.filePath) {
       const originalBytes = await readStoredFile(existing.filePath);
       const previewBytes = await buildPreview(originalBytes, previewPageCount);
       previewFilePath = await savePreviewFile(existing.id, previewBytes);
@@ -56,7 +68,7 @@ export async function PATCH(
         ...(input.isFeatured != null ? { isFeatured: input.isFeatured } : {}),
         ...(input.features != null ? { features: input.features } : {}),
       },
-      include: { category: true },
+      include: { category: true, subject: true },
     });
 
     await prisma.answerKey.updateMany({
@@ -92,7 +104,7 @@ export async function DELETE(
     ]);
     if (purchaseCount > 0 || submissionCount > 0) {
       return NextResponse.json(
-        { error: "This Test Series has purchases or submissions and cannot be deleted. Unpublish it instead." },
+        { error: "This product has purchases or submissions and cannot be deleted. Unpublish it instead." },
         { status: 409 },
       );
     }
