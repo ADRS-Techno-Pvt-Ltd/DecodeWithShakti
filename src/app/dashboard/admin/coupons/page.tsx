@@ -1,15 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Tag } from "lucide-react";
+import { Tag, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/dashboard/status-badge";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Reveal } from "@/components/landing/reveal";
 import { fetchCoupons, deleteCoupon, type Coupon } from "@/features/coupons/api";
 import { CouponSheet } from "./coupon-sheet";
@@ -64,6 +66,16 @@ export default function AdminCouponsPage() {
           + New Coupon
         </Button>
       </div>
+
+      <Alert className="mb-4">
+        <Info />
+        <AlertDescription>
+          Looking for bundle/multi-item discounts (e.g. &ldquo;buy 2+, save X%&rdquo;)? That lives under{" "}
+          <Link href="/dashboard/admin/promotions">Multi-item Discount</Link>. A coupon and the
+          multi-item discount never apply together on the same order — only one can be active per
+          cart.
+        </AlertDescription>
+      </Alert>
 
       <Reveal delay={60}>
         <div className="rounded-lg border bg-card">

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { FileCheck2, GalleryHorizontal, HelpCircle, LayoutDashboard, BookOpen, Library, Tag, Wallet, FolderOpen, Users, Video } from "lucide-react";
+import { FileCheck2, GalleryHorizontal, HelpCircle, LayoutDashboard, BookOpen, Library, Tag, Wallet, FolderOpen, Users, Video, Percent } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { DashboardShell, type NavItem } from "@/components/dashboard/dashboard-shell";
 
@@ -14,6 +14,7 @@ const navItems: NavItem[] = [
   { href: "/dashboard/admin/categories", label: "Categories", icon: <FolderOpen /> },
   { href: "/dashboard/admin/subjects", label: "Subjects", icon: <Library /> },
   { href: "/dashboard/admin/coupons", label: "Coupons", icon: <Tag /> },
+  { href: "/dashboard/admin/promotions", label: "Multi-item Discount", icon: <Percent /> },
   { href: "/dashboard/admin/sales", label: "Sales", icon: <Wallet /> },
   { href: "/dashboard/admin/users", label: "Users", icon: <Users /> },
   { href: "/dashboard/admin/faqs", label: "FAQ", icon: <HelpCircle /> },

@@ -43,16 +43,17 @@ enum ProductType {
 }
 
 model User {
-  id                   String               @id @default(cuid())
+  id                   String                  @id @default(cuid())
   name                 String
-  email                String               @unique
+  email                String                  @unique
   phone                String?
   caRegistrationNumber String?
   passwordHash         String
-  role                 Role                 @default(STUDENT)
-  createdAt            DateTime             @default(now())
-  updatedAt            DateTime             @updatedAt
+  role                 Role                    @default(STUDENT)
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
   purchases            Purchase[]
+  orders               Order[]
   passwordResetTokens  PasswordResetToken[]
   answerSubmissions    AnswerSheetSubmission[] @relation("AnswerSheetStudent")
   evaluatedSubmissions AnswerSheetSubmission[] @relation("AnswerSheetEvaluator")
@@ -60,14 +61,14 @@ model User {
 }
 
 model Category {
-  id            String         @id @default(cuid())
-  name          String
-  slug          String         @unique
-  questionBanks QuestionBank[]
-  videos        Video[]
+  id                String                  @id @default(cuid())
+  name              String
+  slug              String                  @unique
+  questionBanks     QuestionBank[]
+  videos            Video[]
   answerSubmissions AnswerSheetSubmission[]
   answerKeys        AnswerKey[]
-  subjects      Subject[]
+  subjects          Subject[]
 }
 
 model Subject {
@@ -84,28 +85,28 @@ model Subject {
 }
 
 model AnswerSheetSubmission {
-  id                    String             @id @default(cuid())
-  studentId             String
-  student               User               @relation("AnswerSheetStudent", fields: [studentId], references: [id])
-  questionBankId        String?
-  questionBank          QuestionBank?      @relation(fields: [questionBankId], references: [id], onDelete: Restrict)
-  categoryId            String
-  category              Category           @relation(fields: [categoryId], references: [id])
-  title                 String
-  description           String
-  studentFilePath       String
-  studentFileName       String
-  studentFileSizeBytes  Int
-  evaluatedFilePath     String?
-  evaluatedFileName     String?
+  id                     String            @id @default(cuid())
+  studentId              String
+  student                User              @relation("AnswerSheetStudent", fields: [studentId], references: [id])
+  questionBankId         String?
+  questionBank           QuestionBank?     @relation(fields: [questionBankId], references: [id], onDelete: Restrict)
+  categoryId             String
+  category               Category          @relation(fields: [categoryId], references: [id])
+  title                  String
+  description            String
+  studentFilePath        String
+  studentFileName        String
+  studentFileSizeBytes   Int
+  evaluatedFilePath      String?
+  evaluatedFileName      String?
   evaluatedFileSizeBytes Int?
-  status                AnswerSheetStatus  @default(PENDING_EVALUATION)
-  evaluatedById         String?
-  evaluatedBy           User?              @relation("AnswerSheetEvaluator", fields: [evaluatedById], references: [id])
-  submittedAt           DateTime           @default(now())
-  evaluatedAt           DateTime?
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
+  status                 AnswerSheetStatus @default(PENDING_EVALUATION)
+  evaluatedById          String?
+  evaluatedBy            User?             @relation("AnswerSheetEvaluator", fields: [evaluatedById], references: [id])
+  submittedAt            DateTime          @default(now())
+  evaluatedAt            DateTime?
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
 
   @@unique([studentId, questionBankId])
   @@index([studentId, status, submittedAt])
@@ -114,56 +115,57 @@ model AnswerSheetSubmission {
 }
 
 model AnswerKey {
-  id                   String   @id @default(cuid())
-  title                String
-  description          String
-  questionBankId       String?
-  questionBank         QuestionBank? @relation(fields: [questionBankId], references: [id], onDelete: Restrict)
-  categoryId           String
-  category             Category @relation(fields: [categoryId], references: [id])
-  filePath             String
-  fileName             String
-  fileSizeBytes        Int
-  createdById           String
-  createdBy             User     @relation("AnswerKeyCreator", fields: [createdById], references: [id])
-  isPublished           Boolean  @default(true)
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id             String        @id @default(cuid())
+  title          String
+  description    String
+  questionBankId String?
+  questionBank   QuestionBank? @relation(fields: [questionBankId], references: [id], onDelete: Restrict)
+  categoryId     String
+  category       Category      @relation(fields: [categoryId], references: [id])
+  filePath       String
+  fileName       String
+  fileSizeBytes  Int
+  createdById    String
+  createdBy      User          @relation("AnswerKeyCreator", fields: [createdById], references: [id])
+  isPublished    Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   @@index([categoryId, isPublished, createdAt])
   @@index([questionBankId, isPublished, createdAt])
 }
 
 model QuestionBank {
-  id               String     @id @default(cuid())
-  title            String
-  type             ProductType @default(QUESTION_BANK)
-  slug             String     @unique
-  description      String
-  categoryId       String
-  category         Category   @relation(fields: [categoryId], references: [id])
-  subjectId        String?
-  subject          Subject?   @relation(fields: [subjectId], references: [id])
-  price            Int
-  earlyBirdPrice   Int?
-  earlyBirdEndsAt  DateTime?
+  id                String                  @id @default(cuid())
+  title             String
+  type              ProductType             @default(QUESTION_BANK)
+  slug              String                  @unique
+  description       String
+  categoryId        String
+  category          Category                @relation(fields: [categoryId], references: [id])
+  subjectId         String?
+  subject           Subject?                @relation(fields: [subjectId], references: [id])
+  price             Int
+  earlyBirdPrice    Int?
+  earlyBirdEndsAt   DateTime?
   // Mentorship is a service product and has no downloadable PDF. Question Bank
   // and Test Series creation validation still requires these fields.
-  fileName         String?
-  filePath         String?
-  fileSizeBytes    Int?
-  totalPages       Int?
-  previewEnabled   Boolean    @default(false)
-  previewPageCount Int?
-  previewFilePath  String?
-  thumbnailPath    String?
-  isPublished      Boolean    @default(true)
-  isFeatured       Boolean    @default(false)
-  features         String[]   @default([])
-  createdAt        DateTime   @default(now())
-  updatedAt        DateTime   @updatedAt
-  purchases        Purchase[]
-  answerKeys       AnswerKey[]
+  fileName          String?
+  filePath          String?
+  fileSizeBytes     Int?
+  totalPages        Int?
+  previewEnabled    Boolean                 @default(false)
+  previewPageCount  Int?
+  previewFilePath   String?
+  thumbnailPath     String?
+  isPublished       Boolean                 @default(true)
+  isFeatured        Boolean                 @default(false)
+  features          String[]                @default([])
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  purchases         Purchase[]
+  orderItems        OrderItem[]
+  answerKeys        AnswerKey[]
   answerSubmissions AnswerSheetSubmission[]
 }
 
@@ -198,6 +200,7 @@ model Coupon {
   isActive      Boolean      @default(true)
   createdAt     DateTime     @default(now())
   purchases     Purchase[]
+  orders        Order[]
 }
 
 /// Homepage carousel banner — image-only slide (admin-uploaded), optionally linking
@@ -255,9 +258,67 @@ model Purchase {
   updatedAt          DateTime       @updatedAt
   invoice            Invoice?
   paymentEvents      PaymentEvent[]
+  orderId            String?
+  order              Order?         @relation(fields: [orderId], references: [id])
 
   @@index([status, expiresAt])
   @@index([userId, questionBankId, status])
+  @@index([orderId])
+}
+
+// One row per ProductType (TEST_SERIES, QUESTION_BANK, MENTORSHIP, ...) — seeded
+// with all types disabled/0% on migration, admin turns each on individually.
+model PromotionSetting {
+  id                       String      @id @default(cuid())
+  productType              ProductType @unique
+  multiItemDiscountEnabled Boolean     @default(false)
+  multiItemDiscountPercent Int         @default(0) // 0-100
+  minQualifyingItems       Int         @default(2) // distinct SKUs of this type required to qualify
+  updatedAt                DateTime    @updatedAt
+}
+
+model Order {
+  id                            String         @id @default(cuid()) // == providerOrderId given to payment provider
+  userId                        String
+  user                          User           @relation(fields: [userId], references: [id])
+  status                        PurchaseStatus @default(PENDING) // reuse existing enum
+  paymentProvider               String
+  providerOrderId               String         @unique
+  providerPaymentId             String?
+  paymentMethod                 String?
+  subtotal                      Int
+  couponId                      String?
+  coupon                        Coupon?        @relation(fields: [couponId], references: [id])
+  couponCodeSnapshot            String?
+  couponDiscountAmount          Int            @default(0)
+  bundleDiscountPercentSnapshot Int            @default(0)
+  bundleDiscountAmount          Int            @default(0)
+  amount                        Int // authoritative total, checked against paidAmount
+  expiresAt                     DateTime?
+  failureCode                   String?
+  failureReason                 String?
+  heldForReview                 Boolean        @default(false)
+  reconcileAttempts             Int            @default(0)
+  refundedAt                    DateTime?
+  createdAt                     DateTime       @default(now())
+  updatedAt                     DateTime       @updatedAt
+  items                         OrderItem[]
+  purchases                     Purchase[]
+
+  @@index([status, expiresAt])
+}
+
+model OrderItem {
+  id                String       @id @default(cuid())
+  orderId           String
+  order             Order        @relation(fields: [orderId], references: [id])
+  questionBankId    String
+  questionBank      QuestionBank @relation(fields: [questionBankId], references: [id], onDelete: Restrict)
+  basePriceSnapshot Int
+  amount            Int // this line's prorated share of order total
+  createdAt         DateTime     @default(now())
+
+  @@index([orderId])
 }
 
 model Invoice {

@@ -132,6 +132,9 @@ export default async function QuestionBankDetailPage({
           <Reveal delay={120}>
             <PurchaseCard
               questionBankId={bank.id}
+              title={bank.title}
+              type={bank.type}
+              thumbnailPath={bank.thumbnailPath}
               basePrice={effectivePrice}
               regularPrice={bank.price}
               earlyBirdActive={earlyBirdActive}

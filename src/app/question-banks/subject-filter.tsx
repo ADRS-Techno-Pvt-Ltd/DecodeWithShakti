@@ -11,37 +11,42 @@ import {
 
 const ALL = "all";
 
-const OPTIONS = [
-  { value: ALL, label: "All products" },
-  { value: "question_bank", label: "Question banks" },
-  { value: "test_series", label: "Test series" },
-  { value: "mentorship", label: "Mentorship" },
-] as const;
-
-export function ProductTypeFilter({ value }: { value: string }) {
+export function SubjectFilter({
+  subjects,
+  value,
+  disabled,
+}: {
+  subjects: { slug: string; name: string }[];
+  value: string;
+  disabled: boolean;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   function handleChange(next: string | null) {
     const params = new URLSearchParams(searchParams.toString());
     if (!next || next === ALL) {
-      params.delete("type");
+      params.delete("subject");
     } else {
-      params.set("type", next);
+      params.set("subject", next);
     }
     const qs = params.toString();
     router.push(qs ? `/question-banks?${qs}` : "/question-banks");
   }
 
   return (
-    <Select value={value || ALL} onValueChange={handleChange}>
+    <Select value={value || ALL} onValueChange={handleChange} disabled={disabled}>
       <SelectTrigger className="w-56">
-        <SelectValue />
+        <SelectValue
+          className="capitalize"
+          placeholder={disabled ? "Select a category first" : "All subjects"}
+        />
       </SelectTrigger>
       <SelectContent>
-        {OPTIONS.map((o) => (
-          <SelectItem key={o.value} value={o.value}>
-            {o.label}
+        <SelectItem value={ALL}>All subjects</SelectItem>
+        {subjects.map((s) => (
+          <SelectItem key={s.slug} value={s.slug} className="capitalize">
+            {s.name}
           </SelectItem>
         ))}
       </SelectContent>

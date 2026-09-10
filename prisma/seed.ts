@@ -1,6 +1,6 @@
 import "dotenv/config";
 import bcrypt from "bcryptjs";
-import { PrismaClient } from "../src/generated/prisma/client";
+import { PrismaClient, ProductType } from "../src/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
@@ -120,6 +120,16 @@ async function main() {
   } else {
     console.log(`Skipped FAQ seed (${faqCount} already present).`);
   }
+
+  // Multi-item bundle discount config — one row per ProductType, disabled/0% until an admin opts in.
+  for (const productType of Object.values(ProductType)) {
+    await prisma.promotionSetting.upsert({
+      where: { productType },
+      update: {},
+      create: { productType },
+    });
+  }
+  console.log(`Ensured PromotionSetting rows for: ${Object.values(ProductType).join(", ")}`);
 }
 
 main()
