@@ -72,6 +72,7 @@ export default async function QuestionBankCatalogPage({
       </p>
 
       <div className="mt-7 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+        {typeFilter !== "mentorship" ? (
         <div>
           <p className="mb-3 font-mono text-[11px] font-semibold tracking-wide text-muted-foreground/80 uppercase">
             Filter by category
@@ -101,6 +102,7 @@ export default async function QuestionBankCatalogPage({
             ))}
           </div>
         </div>
+        ) : null}
 
         <div className="shrink-0">
           <p className="mb-3 font-mono text-[11px] font-semibold tracking-wide text-muted-foreground/80 uppercase">

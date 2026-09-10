@@ -651,7 +651,10 @@ export default function LandingPage() {
               </Reveal>
 
               <Reveal delay={120}>
-                <div className="flex h-full flex-col gap-4.5 rounded-[14px] border border-border bg-card p-6.5">
+                <Link
+                  href="/question-banks?type=mentorship"
+                  className="flex h-full flex-col gap-4.5 rounded-[14px] border border-border bg-card p-6.5 transition-colors hover:border-primary/40"
+                >
                   <div>
                     <h3 className="font-heading text-[19px] font-semibold">CA Final mentorship</h3>
                     <p className="mt-2 text-[13.5px] leading-relaxed text-muted-foreground">
@@ -682,7 +685,7 @@ export default function LandingPage() {
                       </span>
                     </div>
                   </div>
-                </div>
+                </Link>
               </Reveal>
             </div>
           </div>
