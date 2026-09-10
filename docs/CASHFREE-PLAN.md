@@ -398,10 +398,19 @@ rate limit. Every poll writes a `PaymentEvent` with `eventId: "poll:<uuid>"`.
 Returns a JSON summary `{ scanned, resolved: {...}, held, errors }` which the
 admin button renders as a toast. Errors on individual rows must not abort the run.
 
-Crontab on the VPS:
+Crontab on the VPS (now **optional** — see below):
 ```
 */10 * * * * curl -fsS -X POST -H "x-cron-secret: $CRON_SECRET" https://<domain>/api/v1/payment/reconcile
 ```
+
+> **Superseded / extended by `docs/PAYMENT-SELF-HEALING.md`:**
+> - `FAILED` / `CANCELLED` are **not** terminal — Cashfree allows several
+>   payment attempts per order, so a later `SUCCESS` (webhook or poll) still
+>   promotes the row. Only `SUCCESS` / `EXPIRED` / `REFUNDED` are terminal.
+> - The sweep body lives in `src/lib/payment/reconcile-core.ts` and runs on an
+>   **in-process timer** (`src/instrumentation.ts`) plus opportunistically on
+>   page loads (`src/lib/payment/heal.ts`). The external crontab above is a
+>   redundant extra trigger, no longer required.
 
 ---
 

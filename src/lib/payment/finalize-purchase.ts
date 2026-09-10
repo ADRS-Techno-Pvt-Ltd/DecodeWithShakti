@@ -1,8 +1,19 @@
 import { prisma } from "@/lib/prisma";
+import type { PurchaseStatus } from "@/generated/prisma/client";
 import { generateInvoicePdf } from "@/lib/invoice";
 import { saveInvoiceFile } from "@/lib/storage";
 import { sendMentorshipPurchaseNotifications } from "./mentorship-notifications";
 import type { CallbackResult } from "./provider";
+
+/**
+ * Cashfree lets a customer make several payment attempts against ONE order: a
+ * failed/dropped attempt fires PAYMENT_FAILED / PAYMENT_USER_DROPPED, and a
+ * later successful attempt on the same order fires PAYMENT_SUCCESS. So FAILED
+ * and CANCELLED are NOT terminal — a genuine SUCCESS (webhook, or a poll seeing
+ * order_status=PAID) must still be able to promote the row. The reverse is not
+ * allowed: a late FAILED/CANCELLED must never pull a row back out of SUCCESS.
+ */
+const PROMOTABLE_TO_SUCCESS: PurchaseStatus[] = ["PENDING", "FAILED", "CANCELLED"];
 
 export type FinalizeOutcome =
   | { applied: true }
@@ -32,13 +43,13 @@ export async function finalizePurchase(result: CallbackResult): Promise<Finalize
   }
 
   // Amount check BEFORE granting anything — a mismatched SUCCESS is held for
-  // review, never auto-finalized. Purchase stays PENDING.
+  // review, never auto-finalized.
   if (
     result.status === "SUCCESS" &&
     result.paidAmount != null &&
     result.paidAmount !== purchase.amount
   ) {
-    if (purchase.status === "PENDING") {
+    if (PROMOTABLE_TO_SUCCESS.includes(purchase.status)) {
       await prisma.purchase.update({
         where: { id: purchase.id },
         data: {
@@ -51,16 +62,25 @@ export async function finalizePurchase(result: CallbackResult): Promise<Finalize
     return { applied: false, reason: "amount-mismatch" };
   }
 
+  // A genuine SUCCESS may arrive after an earlier failed/dropped attempt on the
+  // same Cashfree order, so it can promote a FAILED/CANCELLED row too. Every
+  // other status only ever transitions a still-PENDING row — a late FAILED must
+  // never overwrite a SUCCESS.
+  const promotableFrom: PurchaseStatus[] =
+    result.status === "SUCCESS" ? PROMOTABLE_TO_SUCCESS : ["PENDING"];
+
   const { count } = await prisma.$transaction(async (tx) => {
-    // Conditional update IS the lock: only a row still PENDING transitions.
+    // Conditional update IS the lock: only a row in an allowed prior state transitions.
     const updateResult = await tx.purchase.updateMany({
-      where: { id: purchase.id, status: "PENDING" },
+      where: { id: purchase.id, status: { in: promotableFrom } },
       data: {
         status: result.status,
         providerPaymentId: result.providerPaymentId,
         paymentMethod: result.paymentMethod,
-        failureCode: result.failureCode,
-        failureReason: result.failureReason,
+        // On SUCCESS, wipe any failure detail left by an earlier failed attempt
+        // on the same order; otherwise record this result's failure detail.
+        failureCode: result.status === "SUCCESS" ? null : result.failureCode,
+        failureReason: result.status === "SUCCESS" ? null : result.failureReason,
         // Any earlier hold (e.g. a since-resolved amount mismatch) no longer
         // applies once we've actually reached a terminal status here.
         heldForReview: false,

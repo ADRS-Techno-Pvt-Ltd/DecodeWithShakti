@@ -64,7 +64,19 @@
 |---|---|---|---|
 | Admin Mentorship product management | `dashboard/admin/mentors/**`, shared `question-banks/page.tsx` and `question-bank-sheet.tsx`, `api/v1/question-banks` | Admin opens `/dashboard/admin/mentors`, creates/edits/publishes/deletes a Mentorship product with category, subject, pricing, and thumbnail; confirm PDF controls are absent | Implemented — shared Question Bank architecture reused; TypeScript and Next production build pass; live authenticated workflow not exercised |
 
-**Explicitly untraced (out of scope, per BRD § 5):** Phase 2 roadmap items, real Cashfree integration (tracked separately once its follow-up plan exists).
+## Cashfree Payment Integration
+
+Real Cashfree PG integration (follow-up to FR-17's mock-only phase). See `docs/CASHFREE-PLAN.md` and `docs/PAYMENT-SELF-HEALING.md`.
+
+| Requirement | Implementing Module / File(s) | Verification Step | Status |
+|---|---|---|---|
+| Cashfree provider behind `PaymentProvider` seam | `lib/payment/cashfree-provider.ts`, `lib/payment/index.ts` | Create order → checkout → webhook → SUCCESS in prod | **Live in production** — real orders finalizing via `PAYMENT_SUCCESS_WEBHOOK` |
+| Signature-verified webhook | `api/v1/payment/cashfree/webhook/route.ts` | Forged/unsigned POST → 401, purchase untouched | Implemented — `PGVerifyWebhookSignature`; invalid sigs logged as `SIGNATURE_INVALID` |
+| Multi-attempt orders (`FAILED`/`CANCELLED` not terminal) | `lib/payment/finalize-purchase.ts` (`PROMOTABLE_TO_SUCCESS`) | Force a purchase FAILED, deliver SUCCESS for same order → promotes to SUCCESS once | Implemented — fixes a real prod incident (order `90f9e7ad…`) |
+| Reconcile sweep (stuck PENDING, retried FAILED, missing invoice) | `lib/payment/reconcile-core.ts`, `api/v1/payment/reconcile/route.ts` | POST as admin / cron secret → JSON summary | Implemented — shared by admin button, per-row re-check, and the in-process timer |
+| Self-heal without external cron | `src/instrumentation.ts` (timer), `lib/payment/heal.ts` (opportunistic on page loads) | Boot app → `RECONCILE_SWEEP_LOCK` event appears; load a stale purchase → self-corrects | Implemented — no Render Cron / GitHub Action; `PAYMENT_SELF_HEAL_SWEEP` toggle |
+
+**Explicitly untraced (out of scope, per BRD § 5):** Phase 2 roadmap items; Cashfree refund *automation*, saved cards, EMI, subscriptions, Easy Split.
 
 ## Bugs found and fixed during verification
 

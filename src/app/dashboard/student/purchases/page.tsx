@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Download, Receipt, BookOpen, FileCheck2, MessageCircle } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { healUserPurchases } from "@/lib/payment/heal";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatusBadge } from "@/components/dashboard/status-badge";
@@ -26,6 +27,10 @@ const statusBadge: Record<string, React.ReactNode> = {
 
 export default async function StudentPurchasesPage() {
   const session = await auth();
+
+  // Self-correct any of this student's stuck purchases before listing them.
+  await healUserPurchases(session!.user.id);
+
   const purchases = await prisma.purchase.findMany({
     where: { userId: session!.user.id },
     include: {

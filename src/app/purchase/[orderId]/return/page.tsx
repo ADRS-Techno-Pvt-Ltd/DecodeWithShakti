@@ -4,6 +4,7 @@ import { CheckCircle2, XCircle, Ban, Clock, RotateCcw } from "lucide-react";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireStudent } from "@/lib/auth-guards";
+import { healPurchase } from "@/lib/payment/heal";
 import { Card, CardContent } from "@/components/ui/card";
 import { PendingPoller } from "./pending-poller";
 import { AutoRedirect } from "./auto-redirect";
@@ -25,11 +26,21 @@ export default async function PurchaseReturnPage({
   const { orderId: purchaseId } = await params;
   const session = await requireStudent();
 
+  const owner = await prisma.purchase.findUnique({
+    where: { id: purchaseId },
+    select: { userId: true },
+  });
+  if (!owner || owner.userId !== session.user.id) notFound();
+
+  // Backend-verify against the provider before painting, so a returning buyer
+  // sees the right card immediately; PendingPoller is the live follow-up.
+  await healPurchase(purchaseId);
+
   const purchase = await prisma.purchase.findUnique({
     where: { id: purchaseId },
     include: purchaseInclude,
   });
-  if (!purchase || purchase.userId !== session.user.id) notFound();
+  if (!purchase) notFound();
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-neutral-50 px-4">
