@@ -19,7 +19,24 @@ let cachedClient: Cashfree | null = null;
 function client(): Cashfree {
   if (cachedClient) return cachedClient;
   const env = process.env.CASHFREE_ENV === "production" ? CFEnvironment.PRODUCTION : CFEnvironment.SANDBOX;
-  const cf = new Cashfree(env, process.env.CASHFREE_APP_ID, process.env.CASHFREE_SECRET_KEY);
+  // 7th arg is XEnableErrorAnalytics — off deliberately. Left on (its default),
+  // the constructor calls Sentry.init(), whose httpServerIntegration wraps
+  // `server.emit` in a Proxy guarded by a module-scoped WeakMap. Any bundling
+  // that duplicates @sentry/core defeats that guard, stacking a Proxy layer per
+  // copy until requests blow the stack ("Maximum call stack size exceeded") and
+  // crash-loop the server. next.config.ts keeps cashfree-pg external so there's
+  // only one copy; this flag is the second line of defence — with analytics off
+  // Sentry never initialises, so nothing patches the HTTP server at all. It also
+  // stops this app's stack traces being shipped to Cashfree's own Sentry DSN.
+  const cf = new Cashfree(
+    env,
+    process.env.CASHFREE_APP_ID,
+    process.env.CASHFREE_SECRET_KEY,
+    undefined,
+    undefined,
+    undefined,
+    false,
+  );
   cf.XApiVersion = CASHFREE_API_VERSION;
   cachedClient = cf;
   return cf;
