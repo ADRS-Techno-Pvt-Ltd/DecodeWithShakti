@@ -4,8 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, ShoppingCart } from "lucide-react";
 import { useCashfreeSdk } from "@/lib/payment/use-cashfree-sdk";
+import { useCartStore, type CartItemType } from "@/stores/cart-store";
 
 function formatRupees(paise: number): string {
   return `₹${(paise / 100).toFixed(0)}`;
@@ -57,6 +58,9 @@ function FeatureList({ features }: { features: string[] }) {
 
 export function PurchaseCard({
   questionBankId,
+  title,
+  type,
+  thumbnailPath,
   basePrice,
   regularPrice,
   earlyBirdActive,
@@ -64,6 +68,9 @@ export function PurchaseCard({
   features = [],
 }: {
   questionBankId: string;
+  title: string;
+  type: CartItemType;
+  thumbnailPath: string | null;
   basePrice: number;
   regularPrice: number;
   earlyBirdActive: boolean;
@@ -73,6 +80,8 @@ export function PurchaseCard({
   const router = useRouter();
   const { status } = useSession();
   const cashfree = useCashfreeSdk();
+  const addItem = useCartStore((s) => s.addItem);
+  const inCart = useCartStore((s) => s.has(questionBankId));
   const [couponCode, setCouponCode] = useState("");
   const [validated, setValidated] = useState<{ code: string; discountAmount: number } | null>(
     null,
@@ -165,6 +174,13 @@ export function PurchaseCard({
       toast.error("Something went wrong.");
       setPurchasing(false);
     }
+  }
+
+  function addToCart() {
+    addItem({ questionBankId, title, price: basePrice, thumbnailPath, type });
+    toast.success("Added to cart.", {
+      action: { label: "View cart", onClick: () => router.push("/cart") },
+    });
   }
 
   if (alreadyOwned) {
@@ -266,8 +282,16 @@ export function PurchaseCard({
       >
         {purchasing ? "Processing…" : "Purchase now →"}
       </button>
+      <button
+        type="button"
+        onClick={addToCart}
+        className="mb-3 flex w-full items-center justify-center gap-1.5 rounded-[9px] border border-primary/30 py-2.5 text-[14px] font-medium text-primary-dark transition-colors hover:bg-primary/10"
+      >
+        <ShoppingCart className="h-3.5 w-3.5" />
+        {inCart ? "Update cart" : "Add to cart"}
+      </button>
       <p className="mb-5 text-center text-[11.5px] text-muted-foreground">
-        Secure checkout · invoice generated automatically
+        Secure checkout · invoice generated automatically · combine 2+ items for a bundle discount
       </p>
 
       {features.length > 0 && (

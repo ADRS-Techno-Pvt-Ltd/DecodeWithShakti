@@ -1,13 +1,16 @@
 import Link from "next/link";
-import { Download, Receipt, BookOpen, FileCheck2 } from "lucide-react";
+import { Download, Receipt, BookOpen, FileCheck2, MessageCircle } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { healUserPurchases } from "@/lib/payment/heal";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatusBadge } from "@/components/dashboard/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { Reveal } from "@/components/landing/reveal";
+import { productTypeLabel } from "@/lib/product-type";
+import { buildWhatsAppUrl } from "@/app/purchase/[orderId]/return/whatsapp-notify-mentor";
 
 function formatRupees(paise: number): string {
   return `₹${(paise / 100).toFixed(0)}`;
@@ -24,6 +27,10 @@ const statusBadge: Record<string, React.ReactNode> = {
 
 export default async function StudentPurchasesPage() {
   const session = await auth();
+
+  // Self-correct any of this student's stuck purchases before listing them.
+  await healUserPurchases(session!.user.id);
+
   const purchases = await prisma.purchase.findMany({
     where: { userId: session!.user.id },
     include: {
@@ -32,12 +39,16 @@ export default async function StudentPurchasesPage() {
           answerKeys: {
             where: { isPublished: true, questionBankId: { not: null } },
             select: { id: true },
-            orderBy: { createdAt: "desc" },
-            take: 1,
+            orderBy: { createdAt: "asc" },
+          },
+          files: {
+            select: { id: true },
+            orderBy: { createdAt: "asc" },
           },
         },
       },
       invoice: true,
+      user: { select: { name: true, phone: true } },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -50,7 +61,7 @@ export default async function StudentPurchasesPage() {
         <div className="min-w-0 flex-1">
           <h1 className="font-heading text-xl sm:text-2xl font-bold">My Purchases</h1>
           <p className="text-sm text-muted-foreground">
-            {successCount} question bank{successCount === 1 ? "" : "s"} purchased
+            {successCount} purchase{successCount === 1 ? "" : "s"}
           </p>
         </div>
         <Button 
@@ -103,48 +114,93 @@ export default async function StudentPurchasesPage() {
                       <TableCell>{statusBadge[p.status]}</TableCell>
                       <TableCell>
                         <Badge variant="secondary">
-                          {p.questionBank.type === "TEST_SERIES" ? "Test Series" : "Question Bank"}
+                          {productTypeLabel(p.questionBank.type)}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         {p.status === "SUCCESS" ? (
                           <div className="flex gap-2 whitespace-nowrap">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              render={
-                                <a href={`/api/v1/files/download/${p.id}`} className="gap-1.5">
-                                  <Download className="h-3.5 w-3.5" /> Download
-                                </a>
-                              }
-                            />
-                            {p.questionBank.type === "QUESTION_BANK" &&
-                              p.questionBank.answerKeys[0] && (
+                            {p.questionBank.type === "QUESTION_BANK" && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                render={
+                                  <a href={`/api/v1/files/download/${p.id}`} className="gap-1.5">
+                                    <Download className="h-3.5 w-3.5" /> Download
+                                  </a>
+                                }
+                              />
+                            )}
+                            {p.questionBank.type === "TEST_SERIES" &&
+                              p.questionBank.files.map((paper, index) => (
                                 <Button
+                                  key={paper.id}
                                   variant="outline"
                                   size="sm"
                                   render={
                                     <a
-                                      href={`/api/v1/files/answer-keys/${p.questionBank.answerKeys[0].id}`}
+                                      href={`/api/v1/files/question-bank-papers/${paper.id}`}
+                                      className="gap-1.5"
+                                    >
+                                      <Download className="h-3.5 w-3.5" />
+                                      {p.questionBank.files.length > 1 ? `Paper ${index + 1}` : "Download"}
+                                    </a>
+                                  }
+                                />
+                              ))}
+                            {p.questionBank.type === "QUESTION_BANK" &&
+                              p.questionBank.answerKeys.map((key, index) => (
+                                <Button
+                                  key={key.id}
+                                  variant="outline"
+                                  size="sm"
+                                  render={
+                                    <a
+                                      href={`/api/v1/files/answer-keys/${key.id}`}
                                       target="_blank"
                                       rel="noreferrer"
                                       className="gap-1.5"
                                     >
-                                      <FileCheck2 className="h-3.5 w-3.5" /> Answer Key
+                                      <FileCheck2 className="h-3.5 w-3.5" />
+                                      {p.questionBank.answerKeys.length > 1
+                                        ? `Answer Key ${index + 1}`
+                                        : "Answer Key"}
                                     </a>
                                   }
                                 />
-                              )}
+                              ))}
                             {p.invoice && (
                               <Button
-                                variant="ghost"
+                                variant={p.questionBank.type === "MENTORSHIP" ? "outline" : "ghost"}
                                 size="sm"
                                 render={
                                   <a
                                     href={`/api/v1/files/invoice/${p.invoice.id}`}
                                     className="gap-1.5"
                                   >
-                                    <Receipt className="h-3.5 w-3.5" /> Invoice
+                                    <Receipt className="h-3.5 w-3.5" />
+                                    {p.questionBank.type === "MENTORSHIP" ? "Download Invoice" : "Invoice"}
+                                  </a>
+                                }
+                              />
+                            )}
+                            {p.questionBank.type === "MENTORSHIP" && p.invoice && p.user.phone && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                render={
+                                  <a
+                                    href={buildWhatsAppUrl({
+                                      studentName: p.user.name,
+                                      studentPhone: p.user.phone,
+                                      mentorshipTitle: p.questionBank.title,
+                                      invoiceNumber: p.invoice.invoiceNumber,
+                                    })}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="gap-1.5"
+                                  >
+                                    <MessageCircle className="h-3.5 w-3.5" /> Notify Mentor
                                   </a>
                                 }
                               />

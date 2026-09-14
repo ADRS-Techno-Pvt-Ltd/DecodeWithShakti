@@ -75,7 +75,7 @@ export default async function QuestionBankDetailPage({
         <div className="mb-7">
           <span className="inline-block rounded-[5px] border border-primary/25 bg-accent px-3 py-1.5 font-mono text-[11.5px] tracking-[0.11em] text-primary-dark uppercase">
             {bank.category.name}
-            {bank.subject ? ` · ${bank.subject.name}` : ""} · {bank.type === "TEST_SERIES" ? "Test Series" : "Question Bank"}
+            {bank.subject ? ` · ${bank.subject.name}` : ""} · {bank.type === "TEST_SERIES" ? "Test Series" : bank.type === "MENTORSHIP" ? "Mentorship" : "Question Bank"}
           </span>
         </div>
 
@@ -132,6 +132,9 @@ export default async function QuestionBankDetailPage({
           <Reveal delay={120}>
             <PurchaseCard
               questionBankId={bank.id}
+              title={bank.title}
+              type={bank.type}
+              thumbnailPath={bank.thumbnailPath}
               basePrice={effectivePrice}
               regularPrice={bank.price}
               earlyBirdActive={earlyBirdActive}

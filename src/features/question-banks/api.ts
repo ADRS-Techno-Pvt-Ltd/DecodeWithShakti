@@ -1,4 +1,11 @@
-import type { Category, ProductType, QuestionBank, Subject } from "./types";
+import type {
+  AnswerKeySummary,
+  Category,
+  ProductType,
+  QuestionBank,
+  QuestionBankFileSummary,
+  Subject,
+} from "./types";
 
 async function unwrap<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -93,8 +100,60 @@ export async function replaceQuestionBankFile(
   );
 }
 
-export async function replaceQuestionBankAnswerKey(id: string, file: File): Promise<void> {
+export async function addQuestionBankAnswerKeys(
+  id: string,
+  files: File[],
+): Promise<{ id: string; title: string; fileName: string }[]> {
+  const formData = new FormData();
+  files.forEach((file) => formData.append("file", file));
+  const body = await unwrap<{ answerKeys: { id: string; title: string; fileName: string }[] }>(
+    await fetch(`/api/v1/question-banks/${id}/answer-key`, { method: "POST", body: formData }),
+  );
+  return body.answerKeys;
+}
+
+export async function deleteAnswerKey(id: string): Promise<void> {
+  await unwrap(await fetch(`/api/v1/answer-keys/${id}`, { method: "DELETE" }));
+}
+
+/** Replace one answer key's PDF content in place — its id and download link are unchanged. */
+export async function replaceAnswerKey(id: string, file: File): Promise<AnswerKeySummary> {
   const formData = new FormData();
   formData.set("file", file);
-  await unwrap(await fetch(`/api/v1/question-banks/${id}/answer-key`, { method: "POST", body: formData }));
+  return unwrap(await fetch(`/api/v1/answer-keys/${id}`, { method: "POST", body: formData }));
+}
+
+/** Add one or more new Test Series papers — existing papers are left untouched. */
+export async function addQuestionBankFiles(
+  id: string,
+  files: File[],
+): Promise<QuestionBankFileSummary[]> {
+  const formData = new FormData();
+  files.forEach((file) => formData.append("file", file));
+  const body = await unwrap<{ files: QuestionBankFileSummary[] }>(
+    await fetch(`/api/v1/question-banks/${id}/files`, { method: "POST", body: formData }),
+  );
+  return body.files;
+}
+
+/** Replace one Test Series paper's PDF content in place — its id and position are unchanged. */
+export async function replaceQuestionBankFilePaper(
+  questionBankId: string,
+  fileId: string,
+  file: File,
+): Promise<QuestionBankFileSummary> {
+  const formData = new FormData();
+  formData.set("file", file);
+  return unwrap(
+    await fetch(`/api/v1/question-banks/${questionBankId}/files/${fileId}`, {
+      method: "POST",
+      body: formData,
+    }),
+  );
+}
+
+export async function deleteQuestionBankFilePaper(questionBankId: string, fileId: string): Promise<void> {
+  await unwrap(
+    await fetch(`/api/v1/question-banks/${questionBankId}/files/${fileId}`, { method: "DELETE" }),
+  );
 }

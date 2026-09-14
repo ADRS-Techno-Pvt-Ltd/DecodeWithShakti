@@ -1,3 +1,5 @@
+import { readFileSync } from "fs";
+import { join } from "path";
 import { Resend } from "resend";
 
 let client: Resend | null = null;
@@ -14,8 +16,18 @@ const FROM = process.env.EMAIL_FROM ?? "no-reply@example.com";
 // Absolute base URL for logo/links inside emails (email clients can't resolve
 // relative paths). NEXTAUTH_URL is already the canonical site origin.
 const SITE_URL = (process.env.NEXTAUTH_URL ?? "").replace(/\/$/, "");
-const LOGO_URL = SITE_URL ? `${SITE_URL}/logo.png` : "";
 const SUPPORT_EMAIL = process.env.ADMIN_EMAIL ?? FROM;
+
+// Embedded as a CID inline attachment (not a remote <img src>) so the logo
+// always renders regardless of NEXTAUTH_URL or whether the site is publicly
+// reachable — email clients load it straight from the message itself.
+const LOGO_CID = "brand-logo";
+let LOGO_BUFFER: Buffer | null = null;
+try {
+  LOGO_BUFFER = readFileSync(join(process.cwd(), "public", "logo.png"));
+} catch {
+  LOGO_BUFFER = null;
+}
 
 // ── Brand palette (mirrors src/app/globals.css) ─────────────────────────────
 const BRAND = {
@@ -50,8 +62,8 @@ function renderEmail(opts: {
 }): string {
   const { preheader, heading, intro, paragraphs = [], rows = [], cta, outro } = opts;
 
-  const logo = LOGO_URL
-    ? `<img src="${LOGO_URL}" width="176" alt="${BRAND_NAME}" style="display:block;border:0;outline:none;text-decoration:none;height:auto;max-width:176px;" />`
+  const logo = LOGO_BUFFER
+    ? `<img src="cid:${LOGO_CID}" width="176" alt="${BRAND_NAME}" style="display:block;border:0;outline:none;text-decoration:none;height:auto;max-width:176px;" />`
     : `<span style="font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:700;color:${BRAND.primary};">${BRAND_NAME}</span>`;
 
   const rowsHtml = rows.length
@@ -148,9 +160,14 @@ type SendInput = {
   text: string;
   html: string;
   replyTo?: string;
+  attachments?: { filename: string; content: Buffer }[];
 };
 
-async function send({ to, subject, text, html, replyTo }: SendInput): Promise<void> {
+async function send({ to, subject, text, html, replyTo, attachments }: SendInput): Promise<void> {
+  const allAttachments = [
+    ...(LOGO_BUFFER ? [{ filename: "logo.png", content: LOGO_BUFFER, contentId: LOGO_CID }] : []),
+    ...(attachments ?? []),
+  ];
   const { error } = await getClient().emails.send({
     from: FROM,
     to,
@@ -158,6 +175,7 @@ async function send({ to, subject, text, html, replyTo }: SendInput): Promise<vo
     text,
     html,
     ...(replyTo ? { replyTo } : {}),
+    ...(allAttachments.length ? { attachments: allAttachments } : {}),
   });
   if (error) {
     throw new Error(`Resend failed to send email: ${error.message}`);
@@ -365,5 +383,56 @@ export async function sendAnswerSheetEvaluatedEmail(input: {
         ? { label: "View evaluated answer", url: `${SITE_URL}/dashboard/student/answer-sheets` }
         : undefined,
     }),
+  });
+}
+
+export async function sendMentorshipPurchaseEmail(input: {
+  studentName: string;
+  studentEmail: string;
+  mentorshipTitle: string;
+  mentorshipDescription: string;
+  category: string;
+  amountPaid: string; // pre-formatted, e.g. "₹1,999"
+  purchaseDate: string; // pre-formatted
+  invoiceNumber: string;
+  invoicePdf: Buffer;
+}): Promise<void> {
+  await send({
+    to: input.studentEmail,
+    subject: `Mentorship Purchase Confirmation — ${input.mentorshipTitle}`,
+    text: renderText([
+      `Hello ${input.studentName},`,
+      "",
+      `Your Mentorship purchase was successful.`,
+      "",
+      `Mentorship: ${input.mentorshipTitle}`,
+      `Description: ${input.mentorshipDescription}`,
+      `Category: ${input.category}`,
+      `Amount paid: ${input.amountPaid}`,
+      `Purchase date: ${input.purchaseDate}`,
+      `Invoice number: ${input.invoiceNumber}`,
+      "",
+      "Your invoice is attached to this email as a PDF.",
+      "",
+      "Your mentor will contact/call you soon.",
+    ]),
+    html: renderEmail({
+      preheader: `Your Mentorship purchase (${input.mentorshipTitle}) is confirmed.`,
+      heading: "Mentorship purchase confirmed",
+      intro: `Hello ${esc(input.studentName)}, thank you for purchasing this Mentorship. Your payment was successful.`,
+      rows: [
+        { label: "Mentorship", value: esc(input.mentorshipTitle) },
+        { label: "Category", value: esc(input.category) },
+        { label: "Amount paid", value: esc(input.amountPaid) },
+        { label: "Purchase date", value: esc(input.purchaseDate) },
+        { label: "Invoice number", value: esc(input.invoiceNumber) },
+      ],
+      paragraphs: [
+        esc(input.mentorshipDescription),
+        "Your invoice is attached to this email as a PDF.",
+        "<strong>Your mentor will contact/call you soon.</strong>",
+      ],
+    }),
+    attachments: [{ filename: `${input.invoiceNumber}.pdf`, content: input.invoicePdf }],
   });
 }

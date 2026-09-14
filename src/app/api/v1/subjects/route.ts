@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth-guards";
+import { requireAdmin, toErrorResponse } from "@/lib/auth-guards";
 
 const createSubjectSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
@@ -25,7 +25,7 @@ export async function GET() {
     return NextResponse.json(subjects);
   } catch (error) {
     console.error("Failed to fetch subjects:", error);
-    return NextResponse.json({ error: "Failed to fetch subjects" }, { status: 500 });
+    return toErrorResponse(error);
   }
 }
 
@@ -49,6 +49,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.issues[0].message }, { status: 400 });
     }
     console.error("Failed to create subject:", error);
-    return NextResponse.json({ error: "Failed to create subject" }, { status: 500 });
+    return toErrorResponse(error);
   }
 }

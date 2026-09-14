@@ -4,10 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { ChevronDown, LayoutDashboard, LogOut } from "lucide-react";
+import { ChevronDown, LayoutDashboard, LogOut, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BrandLogo } from "@/components/brand-logo";
 import { cn } from "@/lib/utils";
+import { useCartStore } from "@/stores/cart-store";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,6 +33,7 @@ export function SiteHeader() {
   const { data: session } = useSession();
   const user = session?.user;
   const isAdmin = user?.role === "ADMIN";
+  const cartCount = useCartStore((s) => s.items.length);
 
   // On the landing page use bare "#hash" so Lenis (SmoothScroll) intercepts it;
   // from anywhere else use "/#hash" to route home first, where its hash handler
@@ -146,6 +148,18 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2 shrink-0">
+          <Link
+            href="/cart"
+            aria-label="Cart"
+            className="relative flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-primary"
+          >
+            <ShoppingCart className="h-4.5 w-4.5" />
+            {cartCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 font-mono text-[9.5px] font-semibold text-primary-foreground">
+                {cartCount}
+              </span>
+            )}
+          </Link>
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium hover:bg-muted sm:px-2.5">

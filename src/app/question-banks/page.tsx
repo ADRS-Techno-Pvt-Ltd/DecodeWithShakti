@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { SiteHeader } from "@/components/site-header";
 import { QuestionBankCard } from "@/features/question-banks/question-bank-card";
 import { EmptyState } from "@/components/dashboard/empty-state";
-import { ProductTypeFilter } from "./product-type-filter";
+import { SubjectFilter } from "./subject-filter";
 
 const filterPillClass =
   "rounded-full border px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors";
@@ -18,25 +18,35 @@ const filterPillInactive =
 const TYPE_MAP = {
   question_bank: "QUESTION_BANK",
   test_series: "TEST_SERIES",
+  mentorship: "MENTORSHIP",
 } as const;
 
 type TypeFilter = keyof typeof TYPE_MAP;
+
+const TYPE_OPTIONS: { value: TypeFilter | undefined; label: string }[] = [
+  { value: undefined, label: "All products" },
+  { value: "question_bank", label: "Question banks" },
+  { value: "test_series", label: "Test series" },
+  { value: "mentorship", label: "Mentorship" },
+];
 
 const HEADINGS: Record<TypeFilter | "all", { title: string; noun: string }> = {
   all: { title: "Browse Question Banks", noun: "product" },
   question_bank: { title: "Browse Question Banks", noun: "question bank" },
   test_series: { title: "Browse Test Series", noun: "test series" },
+  mentorship: { title: "Browse Mentorship", noun: "mentorship" },
 };
 
 export default async function QuestionBankCatalogPage({
   searchParams,
 }: PageProps<"/question-banks">) {
-  const { category, type } = await searchParams;
+  const { category, type, subject } = await searchParams;
   const categorySlug = typeof category === "string" ? category : undefined;
+  const subjectSlug = typeof subject === "string" ? subject : undefined;
   const typeFilter: TypeFilter | undefined =
-    type === "question_bank" || type === "test_series" ? type : undefined;
+    type === "question_bank" || type === "test_series" || type === "mentorship" ? type : undefined;
 
-  const [banks, categories] = await Promise.all([
+  const [banks, categories, subjects] = await Promise.all([
     prisma.questionBank.findMany({
       where: {
         isPublished: true,
@@ -46,12 +56,39 @@ export default async function QuestionBankCatalogPage({
         // pass a full exact slug, which only ever matches itself.
         ...(categorySlug ? { category: { slug: { startsWith: categorySlug } } } : {}),
         ...(typeFilter ? { type: TYPE_MAP[typeFilter] } : {}),
+        ...(subjectSlug ? { subject: { slug: subjectSlug } } : {}),
       },
-      include: { category: true },
+      include: { category: true, subject: true },
       orderBy: { createdAt: "desc" },
     }),
-    prisma.category.findMany({ orderBy: { name: "asc" } }),
+    // CA Final pills are hidden for now — exclude them from the filter row.
+    prisma.category.findMany({
+      where: { slug: { not: { startsWith: "ca-final" } } },
+      orderBy: { name: "asc" },
+    }),
+    categorySlug
+      ? prisma.subject.findMany({
+          where: { category: { slug: categorySlug } },
+          orderBy: { name: "asc" },
+        })
+      : Promise.resolve([]),
   ]);
+
+  function buildHref(overrides: {
+    type?: TypeFilter;
+    category?: string;
+    subject?: string;
+  }) {
+    const params = new URLSearchParams();
+    const nextType = "type" in overrides ? overrides.type : typeFilter;
+    const nextCategory = "category" in overrides ? overrides.category : categorySlug;
+    const nextSubject = "subject" in overrides ? overrides.subject : subjectSlug;
+    if (nextType) params.set("type", nextType);
+    if (nextCategory) params.set("category", nextCategory);
+    if (nextSubject) params.set("subject", nextSubject);
+    const qs = params.toString();
+    return qs ? `/question-banks?${qs}` : "/question-banks";
+  }
 
   const heading = HEADINGS[typeFilter ?? "all"];
   const count = banks.length;
@@ -70,6 +107,7 @@ export default async function QuestionBankCatalogPage({
       </p>
 
       <div className="mt-7 flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+        {typeFilter !== "mentorship" ? (
         <div>
           <p className="mb-3 font-mono text-[11px] font-semibold tracking-wide text-muted-foreground/80 uppercase">
             Filter by category
@@ -99,12 +137,17 @@ export default async function QuestionBankCatalogPage({
             ))}
           </div>
         </div>
+        ) : null}
 
         <div className="shrink-0">
           <p className="mb-3 font-mono text-[11px] font-semibold tracking-wide text-muted-foreground/80 uppercase">
-            Filter by type
+            Filter by subject
           </p>
-          <ProductTypeFilter value={typeFilter ?? "all"} />
+          <SubjectFilter
+            subjects={subjects}
+            value={subjectSlug ?? "all"}
+            disabled={!categorySlug}
+          />
         </div>
       </div>
 
@@ -122,10 +165,12 @@ export default async function QuestionBankCatalogPage({
             return (
               <QuestionBankCard
                 key={bank.id}
+                id={bank.id}
                 slug={bank.slug}
                 title={bank.title}
                 description={bank.description}
                 categoryName={bank.category.name}
+                subjectName={bank.subject?.name ?? null}
                 price={bank.price}
                 effectivePrice={effectivePrice}
                 previewEnabled={bank.previewEnabled}

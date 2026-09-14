@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { toast } from "sonner";
-import { Loader2, Plus, X } from "lucide-react";
+import { Loader2, Plus, Trash2, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -24,13 +24,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Category, ProductType, QuestionBank, Subject } from "@/features/question-banks/types";
+import type {
+  AnswerKeySummary,
+  Category,
+  ProductType,
+  QuestionBank,
+  QuestionBankFileSummary,
+  Subject,
+} from "@/features/question-banks/types";
 import {
   createQuestionBank,
   updateQuestionBank,
   replaceQuestionBankThumbnail,
   replaceQuestionBankFile,
-  replaceQuestionBankAnswerKey,
+  addQuestionBankAnswerKeys,
+  deleteAnswerKey,
+  replaceAnswerKey,
+  addQuestionBankFiles,
+  replaceQuestionBankFilePaper,
+  deleteQuestionBankFilePaper,
 } from "@/features/question-banks/api";
 
 type FormValues = {
@@ -81,10 +93,17 @@ export function QuestionBankSheet({
   subjects: Subject[];
   editing: QuestionBank | null;
   onSaved: () => void;
-  mode?: "question-banks" | "test-series";
+  mode?: "question-banks" | "test-series" | "mentorship";
 }) {
   const isTestSeries = mode === "test-series";
+  const isMentorship = mode === "mentorship";
   const [submitting, setSubmitting] = useState(false);
+  const [answerKeys, setAnswerKeys] = useState<AnswerKeySummary[]>([]);
+  const [deletingAnswerKeyId, setDeletingAnswerKeyId] = useState<string | null>(null);
+  const [replacingAnswerKeyId, setReplacingAnswerKeyId] = useState<string | null>(null);
+  const [papers, setPapers] = useState<QuestionBankFileSummary[]>([]);
+  const [deletingPaperId, setDeletingPaperId] = useState<string | null>(null);
+  const [replacingPaperId, setReplacingPaperId] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -121,6 +140,69 @@ export function QuestionBankSheet({
   });
 
   useEffect(() => {
+    setAnswerKeys(editing?.answerKeys ?? []);
+    setPapers(editing?.files ?? []);
+  }, [editing, open]);
+
+  async function handleDeleteAnswerKey(answerKeyId: string) {
+    setDeletingAnswerKeyId(answerKeyId);
+    try {
+      await deleteAnswerKey(answerKeyId);
+      setAnswerKeys((prev) => prev.filter((k) => k.id !== answerKeyId));
+      toast.success("Answer key removed.");
+      onSaved();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not remove answer key.");
+    } finally {
+      setDeletingAnswerKeyId(null);
+    }
+  }
+
+  async function handleReplaceAnswerKey(answerKeyId: string, file: File) {
+    setReplacingAnswerKeyId(answerKeyId);
+    try {
+      const updated = await replaceAnswerKey(answerKeyId, file);
+      setAnswerKeys((prev) => prev.map((k) => (k.id === answerKeyId ? updated : k)));
+      toast.success("Answer key replaced.");
+      onSaved();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not replace answer key.");
+    } finally {
+      setReplacingAnswerKeyId(null);
+    }
+  }
+
+  async function handleDeletePaper(fileId: string) {
+    if (!editing) return;
+    setDeletingPaperId(fileId);
+    try {
+      await deleteQuestionBankFilePaper(editing.id, fileId);
+      setPapers((prev) => prev.filter((p) => p.id !== fileId));
+      toast.success("Paper removed.");
+      onSaved();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not remove paper.");
+    } finally {
+      setDeletingPaperId(null);
+    }
+  }
+
+  async function handleReplacePaper(fileId: string, file: File) {
+    if (!editing) return;
+    setReplacingPaperId(fileId);
+    try {
+      const updated = await replaceQuestionBankFilePaper(editing.id, fileId, file);
+      setPapers((prev) => prev.map((p) => (p.id === fileId ? updated : p)));
+      toast.success("Paper replaced.");
+      onSaved();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not replace paper.");
+    } finally {
+      setReplacingPaperId(null);
+    }
+  }
+
+  useEffect(() => {
     if (editing) {
       reset({
         title: editing.title,
@@ -144,7 +226,7 @@ export function QuestionBankSheet({
     } else {
       reset({
         title: "",
-        type: isTestSeries ? "TEST_SERIES" : "QUESTION_BANK",
+        type: isMentorship ? "MENTORSHIP" : isTestSeries ? "TEST_SERIES" : "QUESTION_BANK",
         description: "",
         categoryId: categories[0]?.id ?? "",
         subjectId: "",
@@ -161,7 +243,7 @@ export function QuestionBankSheet({
         thumbnail: null,
       });
     }
-  }, [editing, categories, reset, open, isTestSeries]);
+  }, [editing, categories, reset, open, isTestSeries, isMentorship]);
 
   const previewEnabled = watch("previewEnabled");
   const productType = watch("type");
@@ -191,13 +273,13 @@ export function QuestionBankSheet({
       if (editing) {
         await updateQuestionBank(editing.id, {
           title: values.title,
-          type: values.type,
+          type: isMentorship ? "MENTORSHIP" : values.type,
           description: values.description,
           categoryId: values.categoryId,
           subjectId: values.subjectId ? values.subjectId : null,
           price: rupeesToPaise(values.price),
-          previewEnabled: values.previewEnabled,
-          previewPageCount: values.previewEnabled ? Number(values.previewPageCount) : undefined,
+          previewEnabled: isMentorship ? false : values.previewEnabled,
+          previewPageCount: isMentorship ? undefined : values.previewEnabled ? Number(values.previewPageCount) : undefined,
           earlyBirdPrice: values.earlyBirdEnabled ? rupeesToPaise(values.earlyBirdPrice) : undefined,
           earlyBirdEndsAt: values.earlyBirdEnabled
             ? new Date(values.earlyBirdEndsAt).toISOString()
@@ -209,28 +291,33 @@ export function QuestionBankSheet({
         if (values.thumbnail && values.thumbnail.length > 0) {
           await replaceQuestionBankThumbnail(editing.id, values.thumbnail[0]);
         }
-        if (values.file && values.file.length > 0) {
-          await replaceQuestionBankFile(editing.id, Array.from(values.file));
+        if (!isMentorship && values.file && values.file.length > 0) {
+          if (isTestSeries) {
+            const added = await addQuestionBankFiles(editing.id, Array.from(values.file));
+            setPapers((prev) => [...prev, ...added]);
+          } else {
+            await replaceQuestionBankFile(editing.id, Array.from(values.file));
+          }
         }
-        if (values.answerKey && values.answerKey.length > 0) {
-          await replaceQuestionBankAnswerKey(editing.id, values.answerKey[0]);
+        if (!isMentorship && values.answerKey && values.answerKey.length > 0) {
+          await addQuestionBankAnswerKeys(editing.id, Array.from(values.answerKey));
         }
         toast.success("Question bank updated.");
       } else {
-        if (!values.file || values.file.length === 0) {
+        if (!isMentorship && (!values.file || values.file.length === 0)) {
           toast.error("Please choose a PDF file.");
           setSubmitting(false);
           return;
         }
         const formData = new FormData();
         formData.set("title", values.title);
-        formData.set("type", values.type);
+        formData.set("type", isMentorship ? "MENTORSHIP" : values.type);
         formData.set("description", values.description);
         formData.set("categoryId", values.categoryId);
         if (values.subjectId) formData.set("subjectId", values.subjectId);
         formData.set("price", String(rupeesToPaise(values.price)));
-        formData.set("previewEnabled", String(values.previewEnabled));
-        if (values.previewEnabled) formData.set("previewPageCount", values.previewPageCount);
+        formData.set("previewEnabled", String(isMentorship ? false : values.previewEnabled));
+        if (!isMentorship && values.previewEnabled) formData.set("previewPageCount", values.previewPageCount);
         if (values.earlyBirdEnabled) {
           formData.set("earlyBirdPrice", String(rupeesToPaise(values.earlyBirdPrice)));
           formData.set("earlyBirdEndsAt", new Date(values.earlyBirdEndsAt).toISOString());
@@ -239,15 +326,15 @@ export function QuestionBankSheet({
         formData.set("isFeatured", String(values.isFeatured));
         formData.set("features", JSON.stringify(features));
         // Multiple PDFs are merged server-side into one stored file, in the order listed.
-        Array.from(values.file).forEach((file) => formData.append("file", file));
-        if (values.answerKey && values.answerKey.length > 0) {
-          formData.set("answerKey", values.answerKey[0]);
+        if (!isMentorship) Array.from(values.file ?? []).forEach((file) => formData.append("file", file));
+        if (!isMentorship) {
+          Array.from(values.answerKey ?? []).forEach((file) => formData.append("answerKey", file));
         }
         if (values.thumbnail && values.thumbnail.length > 0) {
           formData.set("thumbnail", values.thumbnail[0]);
         }
         await createQuestionBank(formData);
-        toast.success("Question bank uploaded.");
+        toast.success(isMentorship ? "Mentor uploaded successfully." : "Question bank uploaded.");
       }
       onSaved();
       onOpenChange(false);
@@ -273,8 +360,8 @@ export function QuestionBankSheet({
     >
       <DialogContent className="flex max-h-[85vh] w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
         <DialogHeader className="border-b px-6 py-4">
-          <DialogTitle>{editing ? (isTestSeries ? "Edit Test Series" : "Edit Question Bank") : (isTestSeries ? "Create Test Series" : "Upload Question Bank")}</DialogTitle>
-          <DialogDescription>PDF only</DialogDescription>
+          <DialogTitle>{editing ? (isMentorship ? "Edit Mentorship" : isTestSeries ? "Edit Test Series" : "Edit Question Bank") : (isMentorship ? "Upload Mentor" : isTestSeries ? "Create Test Series" : "Upload Question Bank")}</DialogTitle>
+          <DialogDescription>{isMentorship ? "Mentorship product details" : "PDF only"}</DialogDescription>
         </DialogHeader>
         <form
           onSubmit={handleSubmit(onSubmit)}
@@ -287,13 +374,14 @@ export function QuestionBankSheet({
 
           <div className="flex flex-col gap-1.5">
             <Label>Type</Label>
-            <Select value={productType} onValueChange={(value) => setValue("type", value as ProductType)}>
+            <Select value={productType} onValueChange={(value) => !isMentorship && setValue("type", value as ProductType)} disabled={isMentorship}>
               <SelectTrigger className="w-full">
-                <SelectValue>{productType === "TEST_SERIES" ? "Test Series" : "Question Bank"}</SelectValue>
+                <SelectValue>{productType === "MENTORSHIP" ? "Mentorship" : productType === "TEST_SERIES" ? "Test Series" : "Question Bank"}</SelectValue>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="QUESTION_BANK">Question Bank</SelectItem>
-                <SelectItem value="TEST_SERIES">Test Series</SelectItem>
+                {!isMentorship && <SelectItem value="QUESTION_BANK">Question Bank</SelectItem>}
+                {!isMentorship && <SelectItem value="TEST_SERIES">Test Series</SelectItem>}
+                {isMentorship && <SelectItem value="MENTORSHIP">Mentorship</SelectItem>}
               </SelectContent>
             </Select>
           </div>
@@ -303,8 +391,8 @@ export function QuestionBankSheet({
             <Textarea id="description" rows={3} {...register("description")} />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1.5">
+          <div className={isMentorship ? "flex flex-col gap-3" : "grid grid-cols-2 gap-3"}>
+            {!isMentorship && <div className="flex flex-col gap-1.5">
               <Label>Category</Label>
               <Select
                 value={watch("categoryId")}
@@ -338,20 +426,29 @@ export function QuestionBankSheet({
                   ))}
                 </SelectContent>
               </Select>
-            </div>
+            </div>}
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="price">Price (₹)</Label>
-              <Input
-                id="price"
-                type="number"
-                step="0.01"
-                min="0"
-                {...register("price", { required: true })}
-              />
+              {isMentorship ? (
+                <Input
+                  id="price"
+                  type="text"
+                  inputMode="decimal"
+                  {...register("price", { required: true })}
+                />
+              ) : (
+                <Input
+                  id="price"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  {...register("price", { required: true })}
+                />
+              )}
             </div>
           </div>
 
-          <div className="flex flex-col gap-1.5">
+          {!isMentorship && <div className="flex flex-col gap-1.5">
             <Label>Subject (optional)</Label>
             <Select
               value={watch("subjectId") || "none"}
@@ -380,11 +477,11 @@ export function QuestionBankSheet({
             <span className="text-muted-foreground text-xs">
               Only subjects for the selected category are shown.
             </span>
-          </div>
+          </div>}
 
-          <div className="flex flex-col gap-1.5">
+          {!isMentorship && !isTestSeries && <div className="flex flex-col gap-1.5">
             <Label htmlFor="file">
-              {isTestSeries ? "Test Series File" : "Question Bank File"} (PDF) {editing ? "(replace)" : ""}
+              Question Bank File (PDF) {editing ? "(replace)" : ""}
             </Label>
             <input
               id="file"
@@ -399,17 +496,128 @@ export function QuestionBankSheet({
                 ? "Leave empty to keep the current file. Select one or more PDFs to replace it — multiple files are merged into a single document in the order listed, and the preview is regenerated."
                 : "Select one or more PDFs. Multiple files are merged into a single document in the order listed."}
             </span>
-          </div>
+          </div>}
 
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="answerKey">Answer key / solutions PDF (optional)</Label>
-            <Input id="answerKey" type="file" accept="application/pdf" {...register("answerKey")} />
+          {!isMentorship && isTestSeries && <div className="flex flex-col gap-1.5">
+            <Label htmlFor="file">Test Series Papers (PDF)</Label>
+            {papers.length > 0 && (
+              <ul className="flex flex-col gap-1.5 rounded-md border p-2">
+                {papers.map((paper) => (
+                  <li key={paper.id} className="flex items-center justify-between gap-2 text-sm">
+                    <span className="truncate">{paper.fileName}</span>
+                    <div className="flex items-center gap-1">
+                      <label className="text-muted-foreground hover:text-foreground cursor-pointer text-xs underline underline-offset-2">
+                        {replacingPaperId === paper.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          "Replace"
+                        )}
+                        <input
+                          type="file"
+                          accept="application/pdf"
+                          className="hidden"
+                          disabled={replacingPaperId === paper.id}
+                          onChange={(event) => {
+                            const file = event.target.files?.[0];
+                            event.target.value = "";
+                            if (file) void handleReplacePaper(paper.id, file);
+                          }}
+                        />
+                      </label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Remove paper"
+                        disabled={deletingPaperId === paper.id}
+                        onClick={() => void handleDeletePaper(paper.id)}
+                      >
+                        {deletingPaperId === paper.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <input
+              id="file"
+              type="file"
+              accept="application/pdf"
+              multiple
+              className="h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base outline-none file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
+              {...register("file")}
+            />
             <span className="text-muted-foreground text-xs">
-              {productType === "TEST_SERIES"
-                ? "Linked to this Test Series and unlocked for a student only after they submit their answer sheet."
-                : "Linked to this question bank and available to students to download immediately after purchase."}
+              {editing
+                ? "Select one or more PDFs to add as new papers — existing papers above are kept as-is; use Replace or the trash icon to change one."
+                : "Select one or more PDFs. Each is kept as its own separately downloadable paper — they are not merged."}
             </span>
-          </div>
+          </div>}
+
+          {!isMentorship && <div className="flex flex-col gap-1.5">
+            <Label htmlFor="answerKey">Answer key / solutions PDF (optional)</Label>
+            {answerKeys.length > 0 && (
+              <ul className="flex flex-col gap-1.5 rounded-md border p-2">
+                {answerKeys.map((key) => (
+                  <li key={key.id} className="flex items-center justify-between gap-2 text-sm">
+                    <span className="truncate">{key.fileName}</span>
+                    <div className="flex items-center gap-1">
+                      <label className="text-muted-foreground hover:text-foreground cursor-pointer text-xs underline underline-offset-2">
+                        {replacingAnswerKeyId === key.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          "Replace"
+                        )}
+                        <input
+                          type="file"
+                          accept="application/pdf"
+                          className="hidden"
+                          disabled={replacingAnswerKeyId === key.id}
+                          onChange={(event) => {
+                            const file = event.target.files?.[0];
+                            event.target.value = "";
+                            if (file) void handleReplaceAnswerKey(key.id, file);
+                          }}
+                        />
+                      </label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Remove answer key"
+                        disabled={deletingAnswerKeyId === key.id}
+                        onClick={() => void handleDeleteAnswerKey(key.id)}
+                      >
+                        {deletingAnswerKeyId === key.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <input
+              id="answerKey"
+              type="file"
+              accept="application/pdf"
+              multiple
+              className="h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base outline-none file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
+              {...register("answerKey")}
+            />
+            <span className="text-muted-foreground text-xs">
+              Select one or more PDFs — each is kept as a separate, individually downloadable file (e.g. one per paper).{" "}
+              {productType === "TEST_SERIES"
+                ? "Unlocked for a student only after they submit their answer sheet."
+                : "Available to students to download immediately after purchase."}
+            </span>
+          </div>}
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="thumbnail">
@@ -443,7 +651,7 @@ export function QuestionBankSheet({
             )}
           </div>
 
-          <div className="rounded-lg border p-3.5">
+          {!isMentorship && <div className="rounded-lg border p-3.5">
             <div className="flex items-center gap-2.5">
               <Switch
                 checked={previewEnabled}
@@ -473,7 +681,7 @@ export function QuestionBankSheet({
                 )}
               </div>
             )}
-          </div>
+          </div>}
 
           <div className="rounded-lg border p-3.5">
             <div className="flex items-center gap-2.5">
@@ -518,7 +726,7 @@ export function QuestionBankSheet({
             )}
           </div>
 
-          <div className="rounded-lg border p-3.5">
+          {!isMentorship && <div className="rounded-lg border p-3.5">
             <div className="flex items-center gap-2.5">
               <Switch
                 checked={watch("isFeatured")}
@@ -529,7 +737,7 @@ export function QuestionBankSheet({
             <p className="text-muted-foreground mt-1.5 text-xs">
               Featured banks fill the &ldquo;Priced per bank&rdquo; section on the home page.
             </p>
-          </div>
+          </div>}
 
           <div className="rounded-lg border p-3.5">
             <div className="flex flex-col gap-1">
@@ -590,7 +798,7 @@ export function QuestionBankSheet({
             Cancel
           </Button>
           <Button onClick={handleSubmit(onSubmit)} disabled={submitting}>
-            {submitting ? "Saving…" : isTestSeries ? "Save Test Series" : "Save Question Bank"}
+            {submitting ? "Saving…" : isMentorship ? "Save Mentorship" : isTestSeries ? "Save Test Series" : "Save Question Bank"}
           </Button>
         </DialogFooter>
       </DialogContent>

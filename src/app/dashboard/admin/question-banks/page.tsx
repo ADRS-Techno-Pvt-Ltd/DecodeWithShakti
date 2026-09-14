@@ -15,15 +15,17 @@ import { Reveal } from "@/components/landing/reveal";
 import { fetchAdminQuestionBanks, fetchCategories, fetchSubjects, deleteQuestionBank } from "@/features/question-banks/api";
 import type { ProductType } from "@/features/question-banks/types";
 import type { QuestionBank } from "@/features/question-banks/types";
+import { productTypeLabel } from "@/lib/product-type";
 import { QuestionBankSheet } from "./question-bank-sheet";
 
 function formatRupees(paise: number): string {
   return `₹${(paise / 100).toFixed(0)}`;
 }
 
-export function AdminQuestionBanksPage({ mode = "question-banks" }: { mode?: "question-banks" | "test-series" }) {
+export function AdminQuestionBanksPage({ mode = "question-banks" }: { mode?: "question-banks" | "test-series" | "mentorship" }) {
   const isTestSeries = mode === "test-series";
-  const productType: ProductType = isTestSeries ? "TEST_SERIES" : "QUESTION_BANK";
+  const isMentorship = mode === "mentorship";
+  const productType: ProductType = isMentorship ? "MENTORSHIP" : isTestSeries ? "TEST_SERIES" : "QUESTION_BANK";
   const queryClient = useQueryClient();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<QuestionBank | null>(null);
@@ -50,7 +52,7 @@ export function AdminQuestionBanksPage({ mode = "question-banks" }: { mode?: "qu
     if (!deleteTarget) return;
     try {
       await deleteQuestionBank(deleteTarget.id);
-      toast.success("Question bank deleted.");
+      toast.success(isMentorship ? "Mentorship deleted." : "Question bank deleted.");
       queryClient.invalidateQueries({ queryKey: ["admin-question-banks"] });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not delete question bank.");
@@ -61,12 +63,12 @@ export function AdminQuestionBanksPage({ mode = "question-banks" }: { mode?: "qu
     <div>
       <div className="mb-6 flex items-end justify-between">
         <div>
-          <h1 className="font-heading text-2xl font-bold">{isTestSeries ? "Test Series" : "Question Banks"}</h1>
+          <h1 className="font-heading text-2xl font-bold">{isMentorship ? "Mentors" : isTestSeries ? "Test Series" : "Question Banks"}</h1>
           <p className="text-muted-foreground text-sm">
             {banks ? `${banks.filter((b) => b.isPublished).length} published · ${banks.filter((b) => !b.isPublished).length} unpublished` : "Loading…"}
           </p>
         </div>
-        <Button onClick={openCreate}>{isTestSeries ? "+ Create Test Series" : "+ Upload Question Bank"}</Button>
+        <Button onClick={openCreate}>{isMentorship ? "+ Upload Mentor" : isTestSeries ? "+ Create Test Series" : "+ Upload Question Bank"}</Button>
       </div>
 
       <Reveal delay={60}>
@@ -80,18 +82,20 @@ export function AdminQuestionBanksPage({ mode = "question-banks" }: { mode?: "qu
           ) : !banks || banks.length === 0 ? (
             <EmptyState
               icon={<BookOpen />}
-              title="No question banks yet"
-              description={isTestSeries ? "Create your first Test Series with a question paper and optional answer key." : "Upload your first PDF question bank to publish it to the catalog."}
-              action={<Button onClick={openCreate}>{isTestSeries ? "+ Create Test Series" : "+ Upload Question Bank"}</Button>}
+              title={isMentorship ? "No mentorship products yet" : "No question banks yet"}
+              description={isMentorship ? "Upload your first mentor-led offering to publish it to the catalog." : isTestSeries ? "Create your first Test Series with a question paper and optional answer key." : "Upload your first PDF question bank to publish it to the catalog."}
+              action={<Button onClick={openCreate}>{isMentorship ? "+ Upload Mentor" : isTestSeries ? "+ Create Test Series" : "+ Upload Question Bank"}</Button>}
             />
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Title</TableHead>
+                  <TableHead>Type</TableHead>
                   <TableHead>Category</TableHead>
+                  {!isMentorship && <TableHead>Subject</TableHead>}
                   <TableHead>Price</TableHead>
-                  <TableHead>Preview</TableHead>
+                  {!isMentorship && <TableHead>Preview</TableHead>}
                   <TableHead>Status</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
@@ -100,7 +104,9 @@ export function AdminQuestionBanksPage({ mode = "question-banks" }: { mode?: "qu
                 {banks.map((bank) => (
                   <TableRow key={bank.id}>
                     <TableCell className="font-semibold">{bank.title}</TableCell>
+                    <TableCell>{productTypeLabel(bank.type)}</TableCell>
                     <TableCell>{bank.category.name}</TableCell>
+                    {!isMentorship && <TableCell>{bank.subject?.name ?? "—"}</TableCell>}
                     <TableCell>
                       {formatRupees(bank.price)}
                       {bank.earlyBirdPrice != null && (
@@ -110,13 +116,13 @@ export function AdminQuestionBanksPage({ mode = "question-banks" }: { mode?: "qu
                         </span>
                       )}
                     </TableCell>
-                    <TableCell>
+                    {!isMentorship && <TableCell>
                       {bank.previewEnabled ? (
                         <StatusBadge tone="success">On · {bank.previewPageCount} pages</StatusBadge>
                       ) : (
                         <Badge variant="secondary">Off</Badge>
                       )}
-                    </TableCell>
+                    </TableCell>}
                     <TableCell>
                       <div className="flex flex-wrap gap-1.5">
                         {bank.isPublished ? (
@@ -156,7 +162,7 @@ export function AdminQuestionBanksPage({ mode = "question-banks" }: { mode?: "qu
       <ConfirmDialog
         open={deleteTarget !== null}
         onOpenChange={(next) => !next && setDeleteTarget(null)}
-        title="Delete this question bank?"
+        title={isMentorship ? "Delete this mentorship?" : "Delete this question bank?"}
         description={
           deleteTarget ? (
             <>
@@ -165,7 +171,7 @@ export function AdminQuestionBanksPage({ mode = "question-banks" }: { mode?: "qu
             </>
           ) : null
         }
-        confirmLabel="Delete question bank"
+        confirmLabel={isMentorship ? "Delete mentorship" : "Delete question bank"}
         onConfirm={confirmDelete}
       />
     </div>

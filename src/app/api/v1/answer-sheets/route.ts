@@ -5,49 +5,68 @@ import { deleteAnswerSheetFiles, saveStudentAnswerSheetFile } from "@/lib/storag
 import { sendAnswerSheetSubmittedEmails } from "@/lib/email";
 import { answerSubmissionInputSchema, readPdfUpload } from "@/features/answer-sheets/validation";
 
-function serializeSubmission(submission: {
+type SubmissionWithFiles = {
   id: string;
   title: string;
   description: string;
-  status: "PENDING_EVALUATION" | "EVALUATED";
   submittedAt: Date;
-  evaluatedAt: Date | null;
-  studentFileName: string;
-  evaluatedFileName: string | null;
   questionBank: { id: string; title: string; slug: string } | null;
   category: { id: string; name: string; slug: string };
-}) {
+  files: {
+    id: string;
+    studentFileName: string;
+    evaluatedFileName: string | null;
+    status: "PENDING_EVALUATION" | "EVALUATED";
+    evaluatedAt: Date | null;
+  }[];
+};
+
+function serializeSubmission(submission: SubmissionWithFiles) {
   return {
     id: submission.id,
     title: submission.title,
     description: submission.description,
-    status: submission.status,
     submittedAt: submission.submittedAt.toISOString(),
-    evaluatedAt: submission.evaluatedAt?.toISOString() ?? null,
-    studentFileName: submission.studentFileName,
-    evaluatedFileName: submission.evaluatedFileName,
+    // Derived: only fully evaluated once every uploaded paper has been.
+    status: submission.files.length > 0 && submission.files.every((f) => f.status === "EVALUATED")
+      ? ("EVALUATED" as const)
+      : ("PENDING_EVALUATION" as const),
+    evaluatedAt:
+      submission.files
+        .map((f) => f.evaluatedAt)
+        .filter((d): d is Date => d != null)
+        .sort((a, b) => b.getTime() - a.getTime())[0]
+        ?.toISOString() ?? null,
     questionBank: submission.questionBank,
     category: submission.category,
+    files: submission.files.map((f) => ({
+      id: f.id,
+      studentFileName: f.studentFileName,
+      evaluatedFileName: f.evaluatedFileName,
+      status: f.status,
+    })),
   };
 }
+
+const submissionSelect = {
+  id: true,
+  title: true,
+  description: true,
+  submittedAt: true,
+  questionBank: { select: { id: true, title: true, slug: true } },
+  category: { select: { id: true, name: true, slug: true } },
+  files: {
+    select: { id: true, studentFileName: true, evaluatedFileName: true, status: true, evaluatedAt: true },
+    orderBy: { createdAt: "asc" as const },
+  },
+} as const;
 
 export async function GET() {
   try {
     const session = await requireStudent();
     const submissions = await prisma.answerSheetSubmission.findMany({
       where: { studentId: session.user.id },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        status: true,
-        submittedAt: true,
-        evaluatedAt: true,
-        studentFileName: true,
-        evaluatedFileName: true,
-        questionBank: { select: { id: true, title: true, slug: true } },
-        category: { select: { id: true, name: true, slug: true } },
-      },
+      select: submissionSelect,
       orderBy: { submittedAt: "desc" },
     });
 
@@ -59,6 +78,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   let submissionId: string | undefined;
+  const fileIds: string[] = [];
   try {
     const session = await requireStudent();
     blockImpersonation(session);
@@ -84,7 +104,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Purchase this Test Series before uploading an answer." }, { status: 403 });
     }
 
-    const bytes = await readPdfUpload(formData.get("file"));
+    const files = formData.getAll("file").filter((f): f is File => f instanceof File && f.size > 0);
+    if (files.length === 0) {
+      return NextResponse.json({ error: "At least one PDF file is required." }, { status: 400 });
+    }
+    const buffers = await Promise.all(files.map((file) => readPdfUpload(file)));
 
     const existing = await prisma.answerSheetSubmission.findUnique({
       where: { studentId_questionBankId: { studentId: session.user.id, questionBankId: questionBank.id } },
@@ -96,11 +120,6 @@ export async function POST(request: Request) {
       );
     }
 
-    const file = formData.get("file");
-    if (!(file instanceof File)) {
-      return NextResponse.json({ error: "A PDF file is required." }, { status: 400 });
-    }
-
     const submission = await prisma.answerSheetSubmission.create({
       data: {
         studentId: session.user.id,
@@ -108,29 +127,28 @@ export async function POST(request: Request) {
         categoryId: questionBank.categoryId,
         title: questionBank.title,
         description: questionBank.description,
-        studentFilePath: "",
-        studentFileName: file.name,
-        studentFileSizeBytes: file.size,
       },
     });
     submissionId = submission.id;
 
-    const studentFilePath = await saveStudentAnswerSheetFile(submission.id, bytes);
-    const updated = await prisma.answerSheetSubmission.update({
+    // Papers are kept separate — not merged — so each is evaluated on its own.
+    for (let i = 0; i < files.length; i++) {
+      const record = await prisma.answerSheetSubmissionFile.create({
+        data: {
+          submissionId: submission.id,
+          studentFilePath: "",
+          studentFileName: files[i].name,
+          studentFileSizeBytes: files[i].size,
+        },
+      });
+      fileIds.push(record.id);
+      const studentFilePath = await saveStudentAnswerSheetFile(record.id, buffers[i]);
+      await prisma.answerSheetSubmissionFile.update({ where: { id: record.id }, data: { studentFilePath } });
+    }
+
+    const updated = await prisma.answerSheetSubmission.findUniqueOrThrow({
       where: { id: submission.id },
-      data: { studentFilePath },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        status: true,
-        submittedAt: true,
-        evaluatedAt: true,
-        studentFileName: true,
-        evaluatedFileName: true,
-        questionBank: { select: { id: true, title: true, slug: true } },
-        category: { select: { id: true, name: true, slug: true } },
-      },
+      select: submissionSelect,
     });
 
     const student = await prisma.user.findUnique({
@@ -148,9 +166,11 @@ export async function POST(request: Request) {
 
     return NextResponse.json(serializeSubmission(updated), { status: 201 });
   } catch (error) {
+    for (const fileId of fileIds) {
+      await deleteAnswerSheetFiles(fileId).catch(() => undefined);
+    }
     if (submissionId) {
       await prisma.answerSheetSubmission.delete({ where: { id: submissionId } }).catch(() => undefined);
-      await deleteAnswerSheetFiles(submissionId).catch(() => undefined);
     }
     if (error instanceof Error && error.message.includes("already exists")) {
       return NextResponse.json(

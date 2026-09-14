@@ -28,7 +28,7 @@ function featuresField() {
 
 const questionBankBaseSchema = z.object({
   title: z.string().min(3).max(200),
-  type: z.enum(["QUESTION_BANK", "TEST_SERIES"]).default("QUESTION_BANK"),
+  type: z.enum(["QUESTION_BANK", "TEST_SERIES", "MENTORSHIP"]).default("QUESTION_BANK"),
   description: z.string(),
   categoryId: z.string().min(1, "Category is required"),
   // Optional. "" / "none" (from the form's placeholder option) and missing all mean "no subject".
@@ -47,6 +47,10 @@ const questionBankBaseSchema = z.object({
 });
 
 export const questionBankInputSchema = questionBankBaseSchema
+  .refine((data) => data.type !== "MENTORSHIP" || !data.previewEnabled, {
+    message: "Mentorship products cannot have a PDF preview",
+    path: ["previewEnabled"],
+  })
   .refine((data) => !data.previewEnabled || data.previewPageCount != null, {
     message: "previewPageCount is required when previewEnabled is true",
     path: ["previewPageCount"],

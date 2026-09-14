@@ -4,11 +4,13 @@ import { CheckCircle2, XCircle, Ban, Clock, RotateCcw } from "lucide-react";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireStudent } from "@/lib/auth-guards";
+import { healPurchase } from "@/lib/payment/heal";
 import { Card, CardContent } from "@/components/ui/card";
 import { PendingPoller } from "./pending-poller";
 import { AutoRedirect } from "./auto-redirect";
+import { WhatsAppNotifyMentor } from "./whatsapp-notify-mentor";
 
-const purchaseInclude = { questionBank: true, invoice: true } satisfies Prisma.PurchaseInclude;
+const purchaseInclude = { questionBank: true, invoice: true, user: true } satisfies Prisma.PurchaseInclude;
 type PurchaseWithRelations = Prisma.PurchaseGetPayload<{ include: typeof purchaseInclude }>;
 
 /**
@@ -24,11 +26,21 @@ export default async function PurchaseReturnPage({
   const { orderId: purchaseId } = await params;
   const session = await requireStudent();
 
+  const owner = await prisma.purchase.findUnique({
+    where: { id: purchaseId },
+    select: { userId: true },
+  });
+  if (!owner || owner.userId !== session.user.id) notFound();
+
+  // Backend-verify against the provider before painting, so a returning buyer
+  // sees the right card immediately; PendingPoller is the live follow-up.
+  await healPurchase(purchaseId);
+
   const purchase = await prisma.purchase.findUnique({
     where: { id: purchaseId },
     include: purchaseInclude,
   });
-  if (!purchase || purchase.userId !== session.user.id) notFound();
+  if (!purchase) notFound();
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-neutral-50 px-4">
@@ -50,27 +62,43 @@ function StatusView({ purchase }: { purchase: PurchaseWithRelations }) {
         <PendingPoller purchaseId={purchase.id} questionBankTitle={purchase.questionBank.title} />
       );
 
-    case "SUCCESS":
+    case "SUCCESS": {
+      const isMentorship = purchase.questionBank.type === "MENTORSHIP";
       return (
         <>
-          <AutoRedirect href="/dashboard/student/purchases" delayMs={4000} />
+          {/* Mentorship needs the student to stay on this page long enough to
+              download the invoice and use the WhatsApp action below — skip
+              the auto-redirect for that case only. */}
+          {!isMentorship && <AutoRedirect href="/dashboard/student/purchases" delayMs={4000} />}
           <Icon><CheckCircle2 className="h-12 w-12 text-emerald-600" strokeWidth={1.5} /></Icon>
-          <Heading>Purchase successful</Heading>
+          <Heading>{isMentorship ? "Mentorship purchased successfully!" : "Purchase successful"}</Heading>
           <Message>
             You now have access to &ldquo;{purchase.questionBank.title}&rdquo;. An invoice has
             been generated.
           </Message>
           <div className="mt-6 flex flex-col gap-2.5">
-            <PrimaryFileLink href={`/api/v1/files/download/${purchase.id}`}>Download PDF</PrimaryFileLink>
+            {!isMentorship && (
+              <PrimaryFileLink href={`/api/v1/files/download/${purchase.id}`}>Download PDF</PrimaryFileLink>
+            )}
             {purchase.invoice && (
               <SecondaryFileLink href={`/api/v1/files/invoice/${purchase.invoice.id}`}>
                 Download invoice
               </SecondaryFileLink>
             )}
+            {isMentorship && purchase.invoice && (
+              <WhatsAppNotifyMentor
+                purchaseId={purchase.id}
+                studentName={purchase.user.name}
+                studentPhone={purchase.user.phone ?? "Not provided"}
+                mentorshipTitle={purchase.questionBank.title}
+                invoiceNumber={purchase.invoice.invoiceNumber}
+              />
+            )}
             <SecondaryLink href="/dashboard/student/purchases">Go to My Purchases</SecondaryLink>
           </div>
         </>
       );
+    }
 
     case "FAILED":
       return (

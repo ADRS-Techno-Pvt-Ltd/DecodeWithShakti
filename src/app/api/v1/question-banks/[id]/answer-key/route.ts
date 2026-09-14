@@ -2,57 +2,58 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, toErrorResponse } from "@/lib/auth-guards";
 import { readPdfUpload } from "@/features/answer-sheets/validation";
-import { saveAnswerKeyFile } from "@/lib/storage";
+import { deleteAnswerKeyFiles, saveAnswerKeyFile } from "@/lib/storage";
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const createdAnswerKeyIds: string[] = [];
   try {
     const session = await requireAdmin();
     const { id } = await params;
     const questionBank = await prisma.questionBank.findUnique({
       where: { id },
-      select: { id: true, title: true, description: true, categoryId: true },
+      select: { id: true, title: true, description: true, categoryId: true, type: true },
     });
     if (!questionBank) return NextResponse.json({ error: "Question bank not found." }, { status: 404 });
-
-    const formData = await request.formData();
-    const file = formData.get("file");
-    const bytes = await readPdfUpload(file);
-    if (!(file instanceof File)) {
-      return NextResponse.json({ error: "A PDF file is required." }, { status: 400 });
+    if (questionBank.type === "MENTORSHIP") {
+      return NextResponse.json({ error: "Mentorship products do not have answer keys." }, { status: 400 });
     }
 
-    const existing = await prisma.answerKey.findFirst({ where: { questionBankId: id }, select: { id: true } });
-    const answerKey = existing
-      ? await prisma.answerKey.update({
-          where: { id: existing.id },
-          data: {
-            title: questionBank.title,
-            description: questionBank.description,
-            categoryId: questionBank.categoryId,
-            fileName: file.name,
-            fileSizeBytes: file.size,
-          },
-        })
-      : await prisma.answerKey.create({
-          data: {
-            title: questionBank.title,
-            description: questionBank.description,
-            questionBankId: id,
-            categoryId: questionBank.categoryId,
-            filePath: "",
-            fileName: file.name,
-            fileSizeBytes: file.size,
-            createdById: session.user.id,
-          },
-        });
+    const formData = await request.formData();
+    const files = formData.getAll("file").filter((f): f is File => f instanceof File && f.size > 0);
+    if (files.length === 0) {
+      return NextResponse.json({ error: "At least one PDF file is required." }, { status: 400 });
+    }
 
-    const filePath = await saveAnswerKeyFile(answerKey.id, bytes);
-    await prisma.answerKey.update({ where: { id: answerKey.id }, data: { filePath } });
-    return NextResponse.json({ ok: true });
+    const created: { id: string; title: string; fileName: string }[] = [];
+    for (const file of files) {
+      const bytes = await readPdfUpload(file);
+      const answerKey = await prisma.answerKey.create({
+        data: {
+          title: questionBank.title,
+          description: questionBank.description,
+          questionBankId: id,
+          categoryId: questionBank.categoryId,
+          filePath: "",
+          fileName: file.name,
+          fileSizeBytes: file.size,
+          createdById: session.user.id,
+        },
+      });
+      createdAnswerKeyIds.push(answerKey.id);
+      const filePath = await saveAnswerKeyFile(answerKey.id, bytes);
+      await prisma.answerKey.update({ where: { id: answerKey.id }, data: { filePath } });
+      created.push({ id: answerKey.id, title: answerKey.title, fileName: answerKey.fileName });
+    }
+
+    return NextResponse.json({ ok: true, answerKeys: created });
   } catch (error) {
+    for (const answerKeyId of createdAnswerKeyIds) {
+      await prisma.answerKey.delete({ where: { id: answerKeyId } }).catch(() => undefined);
+      await deleteAnswerKeyFiles(answerKeyId).catch(() => undefined);
+    }
     if (error instanceof Error && (error.message.includes("PDF") || error.message.includes("file"))) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }

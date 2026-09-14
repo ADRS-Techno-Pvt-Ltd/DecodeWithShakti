@@ -1,39 +1,59 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
-import { BookOpen, Eye } from "lucide-react";
+import { toast } from "sonner";
+import { BookOpen, Eye, ShoppingCart, Check } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useCartStore } from "@/stores/cart-store";
+import type { ProductType } from "./types";
 
 function formatRupees(paise: number): string {
   return `₹${(paise / 100).toFixed(0)}`;
 }
 
 export function QuestionBankCard({
+  id,
   slug,
   title,
   description,
   categoryName,
+  subjectName,
   price,
   effectivePrice,
   previewEnabled,
   thumbnailUrl,
   type,
 }: {
+  id: string;
   slug: string;
   title: string;
   description: string;
   categoryName: string;
+  subjectName: string | null;
   price: number;
   effectivePrice: number;
   previewEnabled: boolean;
   thumbnailUrl: string | null;
-  type: "QUESTION_BANK" | "TEST_SERIES";
+  type: ProductType;
 }) {
   const hasEarlyBird = effectivePrice < price;
   const href = `/question-banks/${slug}`;
+  const router = useRouter();
+  const addItem = useCartStore((s) => s.addItem);
+  const inCart = useCartStore((s) => s.has(id));
+
+  function addToCart(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    addItem({ questionBankId: id, title, price: effectivePrice, thumbnailPath: thumbnailUrl, type });
+    toast.success("Added to cart.", {
+      action: { label: "View cart", onClick: () => router.push("/cart") },
+    });
+  }
 
   return (
     <Link href={href} className="block h-full">
@@ -55,8 +75,11 @@ export function QuestionBankCard({
               )}
             </div>
             <div className="flex flex-wrap gap-1.5">
-              <Badge variant="secondary">{type === "TEST_SERIES" ? "Test Series" : "Question Bank"}</Badge>
+              <Badge variant="secondary">
+                {type === "TEST_SERIES" ? "Test Series" : type === "MENTORSHIP" ? "Mentorship" : "Question Bank"}
+              </Badge>
               <Badge variant="outline">{categoryName}</Badge>
+              {subjectName && <Badge variant="outline">{subjectName}</Badge>}
             </div>
             <h3 className="font-heading mt-2.5 font-semibold">{title}</h3>
             <p className="mt-1.5 line-clamp-2 text-sm text-muted-foreground">{description}</p>
@@ -70,14 +93,26 @@ export function QuestionBankCard({
                 {formatRupees(effectivePrice)}
               </span>
             </div>
-            {previewEnabled ? (
-              <div className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-sm font-medium shadow-sm">
-                <Eye className="h-3.5 w-3.5" />
-                Preview
-              </div>
-            ) : hasEarlyBird ? (
-              <Badge className="mt-3 border-gold/40 bg-gold-pale text-gold-ink">Early bird</Badge>
-            ) : null}
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {previewEnabled ? (
+                <div className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-sm font-medium shadow-sm">
+                  <Eye className="h-3.5 w-3.5" />
+                  Preview
+                </div>
+              ) : hasEarlyBird ? (
+                <Badge className="border-gold/40 bg-gold-pale text-gold-ink">Early bird</Badge>
+              ) : null}
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={addToCart}
+              className="mt-3 w-full gap-1.5"
+            >
+              {inCart ? <Check className="h-3.5 w-3.5" /> : <ShoppingCart className="h-3.5 w-3.5" />}
+              {inCart ? "In cart" : "Add to cart"}
+            </Button>
           </CardContent>
         </Card>
       </motion.div>

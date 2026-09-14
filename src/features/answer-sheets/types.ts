@@ -1,16 +1,20 @@
 import type { AnswerSheetStatus } from "./constants";
 
+export type AnswerSheetFileItem = {
+  id: string;
+  studentFileName: string;
+  evaluatedFileName: string | null;
+  status: AnswerSheetStatus;
+};
+
 export type AnswerSheetListItem = {
   id: string;
   title: string;
   description: string;
-  status: AnswerSheetStatus;
   submittedAt: string;
-  evaluatedAt: string | null;
-  studentFileName: string;
-  evaluatedFileName: string | null;
   questionBank: { id: string; title: string; slug: string } | null;
   category: { id: string; name: string; slug: string };
+  files: AnswerSheetFileItem[];
 };
 
 export type AdminAnswerSheetListItem = AnswerSheetListItem & {

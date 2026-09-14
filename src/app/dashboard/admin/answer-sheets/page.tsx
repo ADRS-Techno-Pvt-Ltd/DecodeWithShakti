@@ -7,8 +7,19 @@ export default async function AdminAnswerSheetsPage() {
       category: true,
       questionBank: { select: { id: true, title: true, slug: true } },
       student: { select: { id: true, name: true, email: true } },
+      files: {
+        select: { id: true, studentFileName: true, evaluatedFileName: true, status: true },
+        orderBy: { createdAt: "asc" },
+      },
     },
     orderBy: { submittedAt: "desc" },
   });
-  return <AdminAnswerSheets initialSubmissions={submissions.map((submission) => ({ ...submission, submittedAt: submission.submittedAt.toISOString(), evaluatedAt: submission.evaluatedAt?.toISOString() ?? null }))} />;
+  return (
+    <AdminAnswerSheets
+      initialSubmissions={submissions.map((submission) => ({
+        ...submission,
+        submittedAt: submission.submittedAt.toISOString(),
+      }))}
+    />
+  );
 }

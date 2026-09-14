@@ -8,6 +8,8 @@ import { EmptyState } from "@/components/dashboard/empty-state";
 import { Reveal } from "@/components/landing/reveal";
 import { ReconcileButton } from "@/components/dashboard/reconcile-button";
 import { RecheckPaymentButton } from "@/components/dashboard/recheck-payment-button";
+import { productTypeLabel } from "@/lib/product-type";
+import { healPurchaseIds } from "@/lib/payment/heal";
 
 function formatRupees(paise: number): string {
   return `₹${(paise / 100).toFixed(0)}`;
@@ -23,10 +25,24 @@ const statusBadge: Record<string, React.ReactNode> = {
 };
 
 export default async function AdminSalesPage() {
-  const purchases = await prisma.purchase.findMany({
-    include: { user: true, questionBank: true, invoice: true },
+  const recent = await prisma.purchase.findMany({
     orderBy: { createdAt: "desc" },
     take: 200,
+    select: { id: true, status: true },
+  });
+
+  // Opportunistically re-check the non-settled rows the admin is looking at
+  // (bounded + throttled inside the helper), then read the fresh list.
+  await healPurchaseIds(
+    recent
+      .filter((p) => p.status === "PENDING" || p.status === "FAILED" || p.status === "CANCELLED")
+      .map((p) => p.id),
+  );
+
+  const purchases = await prisma.purchase.findMany({
+    where: { id: { in: recent.map((p) => p.id) } },
+    include: { user: true, questionBank: true, invoice: true },
+    orderBy: { createdAt: "desc" },
   });
 
   return (
@@ -71,7 +87,7 @@ export default async function AdminSalesPage() {
                     <TableCell className="font-medium">{p.questionBank.title}</TableCell>
                     <TableCell>
                       <Badge variant="secondary">
-                        {p.questionBank.type === "TEST_SERIES" ? "Test Series" : "Question Bank"}
+                        {productTypeLabel(p.questionBank.type)}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -116,7 +132,9 @@ export default async function AdminSalesPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      {p.status === "PENDING" && <RecheckPaymentButton purchaseId={p.id} />}
+                      {(p.status === "PENDING" ||
+                        p.status === "FAILED" ||
+                        p.status === "CANCELLED") && <RecheckPaymentButton purchaseId={p.id} />}
                     </TableCell>
                   </TableRow>
                 ))}
