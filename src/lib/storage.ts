@@ -9,13 +9,14 @@ cloudinary.config({
 
 /**
  * Cloudinary folder layout:
- *   question-bank/<questionBankId>/original    (raw, authenticated) — the uploaded PDF
- *   question-bank/<questionBankId>/preview     (raw, authenticated) — the capped preview PDF
- *   question-bank/<questionBankId>/thumbnail   (image, public)       — catalog thumbnail
- *   answer-sheet/<submissionId>/original       (raw, authenticated) — the student's upload
- *   answer-sheet/<submissionId>/evaluated       (raw, authenticated) — the admin's evaluation
- *   answer-key/<answerKeyId>/original          (raw, authenticated) — the official answer key
- *   invoices/<invoiceNumber>                   (raw, authenticated) — the generated invoice PDF
+ *   question-bank/<questionBankId>/original          (raw, authenticated) — the merged Question Bank PDF
+ *   question-bank/<questionBankId>/preview           (raw, authenticated) — the capped preview PDF
+ *   question-bank/<questionBankId>/thumbnail         (image, public)       — catalog thumbnail
+ *   question-bank/<questionBankId>/papers/<fileId>   (raw, authenticated) — one separately-downloadable Test Series paper
+ *   answer-sheet/<fileId>/original                   (raw, authenticated) — one of the student's separately-uploaded papers
+ *   answer-sheet/<fileId>/evaluated                  (raw, authenticated) — that paper's evaluated counterpart
+ *   answer-key/<answerKeyId>/original                (raw, authenticated) — one official answer key
+ *   invoices/<invoiceNumber>                         (raw, authenticated) — the generated invoice PDF
  *
  * PDFs are uploaded as `type: "authenticated"` so they are never reachable without a
  * signed URL — they are only ever streamed back through the authenticated API routes
@@ -62,6 +63,27 @@ export async function saveOriginalFile(questionBankId: string, bytes: Buffer): P
   return result.public_id;
 }
 
+/** One separately-downloadable Test Series paper (`QuestionBankFile` row). */
+export async function saveQuestionBankPaperFile(
+  questionBankId: string,
+  fileId: string,
+  bytes: Buffer,
+): Promise<string> {
+  const result = await uploadBuffer(bytes, {
+    ...RAW_AUTHENTICATED,
+    folder: `${QUESTION_BANK_FOLDER}/${questionBankId}/papers`,
+    public_id: fileId,
+  });
+  return result.public_id;
+}
+
+export async function deleteQuestionBankPaperFile(publicId: string): Promise<void> {
+  await cloudinary.api.delete_resources([publicId], {
+    resource_type: "raw",
+    type: "authenticated",
+  });
+}
+
 export async function savePreviewFile(questionBankId: string, bytes: Uint8Array): Promise<string> {
   const result = await uploadBuffer(bytes, {
     ...RAW_AUTHENTICATED,
@@ -93,24 +115,24 @@ export async function saveInvoiceFile(invoiceNumber: string, bytes: Uint8Array):
 }
 
 export async function saveStudentAnswerSheetFile(
-  submissionId: string,
+  fileId: string,
   bytes: Buffer,
 ): Promise<string> {
   const result = await uploadBuffer(bytes, {
     ...RAW_AUTHENTICATED,
-    folder: `${ANSWER_SHEET_FOLDER}/${submissionId}`,
+    folder: `${ANSWER_SHEET_FOLDER}/${fileId}`,
     public_id: "original",
   });
   return result.public_id;
 }
 
 export async function saveEvaluatedAnswerSheetFile(
-  submissionId: string,
+  fileId: string,
   bytes: Buffer,
 ): Promise<string> {
   const result = await uploadBuffer(bytes, {
     ...RAW_AUTHENTICATED,
-    folder: `${ANSWER_SHEET_FOLDER}/${submissionId}`,
+    folder: `${ANSWER_SHEET_FOLDER}/${fileId}`,
     public_id: "evaluated",
   });
   return result.public_id;
@@ -125,19 +147,19 @@ export async function saveAnswerKeyFile(answerKeyId: string, bytes: Buffer): Pro
   return result.public_id;
 }
 
-export async function deleteAnswerSheetFiles(submissionId: string): Promise<void> {
-  const prefix = `${ANSWER_SHEET_FOLDER}/${submissionId}/`;
+export async function deleteAnswerSheetFiles(fileId: string): Promise<void> {
+  const prefix = `${ANSWER_SHEET_FOLDER}/${fileId}/`;
   await cloudinary.api.delete_resources_by_prefix(prefix, {
     resource_type: "raw",
     type: "authenticated",
   });
-  await cloudinary.api.delete_folder(`${ANSWER_SHEET_FOLDER}/${submissionId}`).catch(() => {
+  await cloudinary.api.delete_folder(`${ANSWER_SHEET_FOLDER}/${fileId}`).catch(() => {
     // The folder may already be gone.
   });
 }
 
-export async function deleteEvaluatedAnswerSheetFile(submissionId: string): Promise<void> {
-  await cloudinary.api.delete_resources([`${ANSWER_SHEET_FOLDER}/${submissionId}/evaluated`], {
+export async function deleteEvaluatedAnswerSheetFile(fileId: string): Promise<void> {
+  await cloudinary.api.delete_resources([`${ANSWER_SHEET_FOLDER}/${fileId}/evaluated`], {
     resource_type: "raw",
     type: "authenticated",
   });

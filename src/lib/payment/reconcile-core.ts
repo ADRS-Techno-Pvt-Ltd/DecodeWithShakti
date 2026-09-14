@@ -113,6 +113,12 @@ export async function reconcileSinglePurchase(purchaseId: string): Promise<Recon
   const provider = getPaymentProvider();
   const summary = emptySummary();
 
+  // Multi-item cart purchases don't have their own Cashfree order — their
+  // providerOrderId is a synthetic `${order.id}:${bank.id}` key, not a real
+  // order id. Re-checking those belongs to the parent Order (Order-level
+  // reconciliation is not implemented yet), so skip rather than 400 Cashfree.
+  if (purchase.orderId != null) return summary;
+
   if (purchase.status === "PENDING") {
     const pastExpiry = purchase.expiresAt != null && purchase.expiresAt < new Date();
     await reconcileOne(purchase, provider, summary, { forceExpireOnPending: pastExpiry });
@@ -179,6 +185,10 @@ export async function runReconcileSweep(
     where: {
       status: "PENDING",
       heldForReview: false,
+      // Multi-item cart purchases don't have their own Cashfree order — their
+      // providerOrderId is a synthetic `${order.id}:${bank.id}` key. The
+      // parent Order is reconciled separately (finalize-order.ts / webhook).
+      orderId: null,
       expiresAt: { not: null, lt: new Date() },
       reconcileAttempts: { lt: MAX_RECONCILE_ATTEMPTS },
     },
@@ -197,6 +207,7 @@ export async function runReconcileSweep(
       status: { in: ["FAILED", "CANCELLED"] },
       paymentProvider: provider.name,
       heldForReview: false,
+      orderId: null,
       reconcileAttempts: { lt: MAX_RECONCILE_ATTEMPTS },
       createdAt: { gt: new Date(Date.now() - RECHECK_WINDOW_MS) },
     },

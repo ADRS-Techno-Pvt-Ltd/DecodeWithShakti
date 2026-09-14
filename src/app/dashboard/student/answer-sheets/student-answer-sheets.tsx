@@ -24,18 +24,22 @@ type Series = {
     title: string;
     slug: string;
     description: string;
-    fileName: string;
     category: { id: string; name: string; slug: string };
+    files: { id: string; fileName: string }[];
   };
   submission: {
     id: string;
     status: "PENDING_EVALUATION" | "EVALUATED";
-    studentFileName: string;
-    evaluatedFileName: string | null;
     submittedAt: string;
     evaluatedAt: string | null;
+    files: {
+      id: string;
+      studentFileName: string;
+      evaluatedFileName: string | null;
+      status: "PENDING_EVALUATION" | "EVALUATED";
+    }[];
   } | null;
-  answerKey: { id: string; title: string; fileName: string } | null;
+  answerKeys: { id: string; title: string; fileName: string }[];
 };
 
 function formatDate(value: string | null): string {
@@ -52,21 +56,21 @@ function statusBadge(item: Series) {
 export function StudentAnswerSheets({ series }: { series: Series[] }) {
   const router = useRouter();
   const [detailId, setDetailId] = useState<string | null>(null);
-  const [files, setFiles] = useState<Record<string, File | null>>({});
+  const [files, setFiles] = useState<Record<string, File[]>>({});
   const [uploading, setUploading] = useState<string | null>(null);
 
   const active = series.find((item) => item.questionBank.id === detailId) ?? null;
 
   async function uploadAnswer(questionBankId: string) {
-    const file = files[questionBankId];
-    if (!file) {
-      toast.error("Choose an answer sheet PDF first.");
+    const selected = files[questionBankId];
+    if (!selected || selected.length === 0) {
+      toast.error("Choose at least one answer sheet PDF first.");
       return;
     }
     setUploading(questionBankId);
     const formData = new FormData();
     formData.set("questionBankId", questionBankId);
-    formData.set("file", file);
+    selected.forEach((file) => formData.append("file", file));
     const response = await fetch("/api/v1/answer-sheets", { method: "POST", body: formData });
     const body = await response.json().catch(() => null);
     setUploading(null);
@@ -75,7 +79,31 @@ export function StudentAnswerSheets({ series }: { series: Series[] }) {
       return;
     }
     toast.success("Answer submitted.");
-    setFiles({ ...files, [questionBankId]: null });
+    setFiles({ ...files, [questionBankId]: [] });
+    router.refresh();
+  }
+
+  async function uploadMoreAnswers(submissionId: string, questionBankId: string) {
+    const selected = files[questionBankId];
+    if (!selected || selected.length === 0) {
+      toast.error("Choose at least one answer sheet PDF first.");
+      return;
+    }
+    setUploading(questionBankId);
+    const formData = new FormData();
+    selected.forEach((file) => formData.append("file", file));
+    const response = await fetch(`/api/v1/answer-sheets/${submissionId}/files`, {
+      method: "POST",
+      body: formData,
+    });
+    const body = await response.json().catch(() => null);
+    setUploading(null);
+    if (!response.ok) {
+      toast.error(typeof body?.error === "string" ? body.error : "Could not upload answer sheet.");
+      return;
+    }
+    toast.success("Answer submitted.");
+    setFiles({ ...files, [questionBankId]: [] });
     router.refresh();
   }
 
@@ -122,16 +150,20 @@ export function StudentAnswerSheets({ series }: { series: Series[] }) {
                   </TableCell>
                   <TableCell>{statusBadge(item)}</TableCell>
                   <TableCell>
-                    <div className="flex justify-end gap-2 whitespace-nowrap">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        render={
-                          <a href={`/api/v1/files/download/${item.purchaseId}`} className="gap-1.5">
-                            <Download className="h-3.5 w-3.5" /> Question Bank
-                          </a>
-                        }
-                      />
+                    <div className="flex flex-wrap justify-end gap-2">
+                      {item.questionBank.files.map((paper, index) => (
+                        <Button
+                          key={paper.id}
+                          variant="outline"
+                          size="sm"
+                          render={
+                            <a href={`/api/v1/files/question-bank-papers/${paper.id}`} className="gap-1.5">
+                              <Download className="h-3.5 w-3.5" />
+                              {item.questionBank.files.length > 1 ? `Paper ${index + 1}` : "Question Bank"}
+                            </a>
+                          }
+                        />
+                      ))}
                       <Button size="sm" onClick={() => setDetailId(item.questionBank.id)}>
                         View Details
                       </Button>
@@ -157,24 +189,10 @@ export function StudentAnswerSheets({ series }: { series: Series[] }) {
                 <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
                   <dt className="text-muted-foreground">Status</dt>
                   <dd>{statusBadge(active)}</dd>
-                  <dt className="text-muted-foreground">File name</dt>
-                  <dd className="break-all">{active.questionBank.fileName}</dd>
                   <dt className="text-muted-foreground">Submitted on</dt>
                   <dd suppressHydrationWarning>{formatDate(active.submission?.submittedAt ?? null)}</dd>
                   <dt className="text-muted-foreground">Evaluated on</dt>
                   <dd suppressHydrationWarning>{formatDate(active.submission?.evaluatedAt ?? null)}</dd>
-                  {active.submission?.studentFileName && (
-                    <>
-                      <dt className="text-muted-foreground">Your answer</dt>
-                      <dd className="break-all">{active.submission.studentFileName}</dd>
-                    </>
-                  )}
-                  {active.submission?.evaluatedFileName && (
-                    <>
-                      <dt className="text-muted-foreground">Evaluated file</dt>
-                      <dd className="break-all">{active.submission.evaluatedFileName}</dd>
-                    </>
-                  )}
                 </dl>
 
                 {active.questionBank.description && (
@@ -182,25 +200,105 @@ export function StudentAnswerSheets({ series }: { series: Series[] }) {
                 )}
 
                 <div className="space-y-3 rounded-md border p-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    render={
-                      <a href={`/api/v1/files/download/${active.purchaseId}`}>
-                        <Download /> Download Question Bank
-                      </a>
-                    }
-                  />
+                  <div className="space-y-2.5">
+                    {active.questionBank.files.map((paper, index) => {
+                      const submittedFile = active.submission?.files[index] ?? null;
+                      const answerKey = active.answerKeys[index] ?? null;
+                      const label = active.questionBank.files.length > 1 ? `Paper ${index + 1}` : "Question Paper";
+                      return (
+                        <div key={paper.id} className="rounded-md border p-3">
+                          <div className="mb-2 flex items-center justify-between gap-2">
+                            <span className="text-sm font-semibold">{label}</span>
+                            {!submittedFile ? (
+                              <StatusBadge tone="muted">Not submitted</StatusBadge>
+                            ) : submittedFile.status === "EVALUATED" ? (
+                              <StatusBadge tone="success">
+                                <CheckCircle2 /> Evaluated
+                              </StatusBadge>
+                            ) : (
+                              <StatusBadge tone="warning">Evaluation Pending</StatusBadge>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              render={
+                                <a href={`/api/v1/files/question-bank-papers/${paper.id}`}>
+                                  <Download /> Question Paper
+                                </a>
+                              }
+                            />
+                            {submittedFile && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                render={
+                                  <a
+                                    href={`/api/v1/files/answer-sheets/${submittedFile.id}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                  >
+                                    <FileText /> My Answer
+                                  </a>
+                                }
+                              />
+                            )}
+                            {submittedFile?.status === "EVALUATED" && (
+                              <Button
+                                size="sm"
+                                render={
+                                  <a
+                                    href={`/api/v1/files/answer-sheets/${submittedFile.id}/evaluated`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                  >
+                                    <FileCheck2 /> Evaluated Copy
+                                  </a>
+                                }
+                              />
+                            )}
+                            {answerKey ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                render={
+                                  <a
+                                    href={`/api/v1/files/answer-keys/${answerKey.id}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                  >
+                                    <FileCheck2 /> Answer Key
+                                  </a>
+                                }
+                              />
+                            ) : (
+                              submittedFile && (
+                                <span className="text-muted-foreground text-xs">Answer key not available yet</span>
+                              )
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
 
                   {!active.submission ? (
                     <div className="space-y-2">
                       <Input
                         type="file"
                         accept="application/pdf,.pdf"
+                        multiple
                         onChange={(event) =>
-                          setFiles({ ...files, [active.questionBank.id]: event.target.files?.[0] ?? null })
+                          setFiles({
+                            ...files,
+                            [active.questionBank.id]: Array.from(event.target.files ?? []),
+                          })
                         }
                       />
+                      <p className="text-muted-foreground text-xs">
+                        Select one or more PDFs — each is kept as its own separately evaluated paper. You cannot add or replace papers after submitting, so double-check your selection first.
+                      </p>
                       <Button
                         onClick={() => void uploadAnswer(active.questionBank.id)}
                         disabled={uploading === active.questionBank.id}
@@ -209,57 +307,38 @@ export function StudentAnswerSheets({ series }: { series: Series[] }) {
                       </Button>
                     </div>
                   ) : (
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        render={
-                          <a
-                            href={`/api/v1/files/answer-sheets/${active.submission.id}`}
-                            target="_blank"
-                            rel="noreferrer"
+                    <div className="space-y-3">
+                      {active.submission.files.length < active.questionBank.files.length && (
+                        <div className="space-y-2 border-t pt-3">
+                          <p className="text-muted-foreground text-xs">
+                            You've submitted {active.submission.files.length} of {active.questionBank.files.length} papers.
+                            Add the rest whenever you're ready.
+                          </p>
+                          <Input
+                            type="file"
+                            accept="application/pdf,.pdf"
+                            multiple
+                            onChange={(event) =>
+                              setFiles({
+                                ...files,
+                                [active.questionBank.id]: Array.from(event.target.files ?? []),
+                              })
+                            }
+                          />
+                          <Button
+                            onClick={() => void uploadMoreAnswers(active.submission!.id, active.questionBank.id)}
+                            disabled={uploading === active.questionBank.id}
                           >
-                            <FileText /> View My Answer
-                          </a>
-                        }
-                      />
-                      {active.submission.status === "EVALUATED" && (
-                        <Button
-                          size="sm"
-                          render={
-                            <a
-                              href={`/api/v1/files/answer-sheets/${active.submission.id}/evaluated`}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              <FileCheck2 /> View Evaluated Answer
-                            </a>
-                          }
-                        />
-                      )}
-                      {active.answerKey && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          render={
-                            <a
-                              href={`/api/v1/files/answer-keys/${active.answerKey.id}`}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              <FileCheck2 /> Download Answer Key
-                            </a>
-                          }
-                        />
+                            {uploading === active.questionBank.id ? (
+                              <Loader2 className="animate-spin" />
+                            ) : (
+                              <Upload />
+                            )}{" "}
+                            Upload More Papers
+                          </Button>
+                        </div>
                       )}
                     </div>
-                  )}
-
-                  {active.submission && !active.answerKey && (
-                    <p className="text-sm text-muted-foreground">Answer Key is not available yet.</p>
-                  )}
-                  {active.submission?.status === "PENDING_EVALUATION" && (
-                    <StatusBadge tone="warning">Evaluation Pending ...</StatusBadge>
                   )}
                 </div>
               </div>

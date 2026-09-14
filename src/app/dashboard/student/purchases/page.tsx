@@ -39,8 +39,11 @@ export default async function StudentPurchasesPage() {
           answerKeys: {
             where: { isPublished: true, questionBankId: { not: null } },
             select: { id: true },
-            orderBy: { createdAt: "desc" },
-            take: 1,
+            orderBy: { createdAt: "asc" },
+          },
+          files: {
+            select: { id: true },
+            orderBy: { createdAt: "asc" },
           },
         },
       },
@@ -117,7 +120,7 @@ export default async function StudentPurchasesPage() {
                       <TableCell>
                         {p.status === "SUCCESS" ? (
                           <div className="flex gap-2 whitespace-nowrap">
-                            {p.questionBank.type !== "MENTORSHIP" && (
+                            {p.questionBank.type === "QUESTION_BANK" && (
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -128,23 +131,44 @@ export default async function StudentPurchasesPage() {
                                 }
                               />
                             )}
-                            {p.questionBank.type === "QUESTION_BANK" &&
-                              p.questionBank.answerKeys[0] && (
+                            {p.questionBank.type === "TEST_SERIES" &&
+                              p.questionBank.files.map((paper, index) => (
                                 <Button
+                                  key={paper.id}
                                   variant="outline"
                                   size="sm"
                                   render={
                                     <a
-                                      href={`/api/v1/files/answer-keys/${p.questionBank.answerKeys[0].id}`}
+                                      href={`/api/v1/files/question-bank-papers/${paper.id}`}
+                                      className="gap-1.5"
+                                    >
+                                      <Download className="h-3.5 w-3.5" />
+                                      {p.questionBank.files.length > 1 ? `Paper ${index + 1}` : "Download"}
+                                    </a>
+                                  }
+                                />
+                              ))}
+                            {p.questionBank.type === "QUESTION_BANK" &&
+                              p.questionBank.answerKeys.map((key, index) => (
+                                <Button
+                                  key={key.id}
+                                  variant="outline"
+                                  size="sm"
+                                  render={
+                                    <a
+                                      href={`/api/v1/files/answer-keys/${key.id}`}
                                       target="_blank"
                                       rel="noreferrer"
                                       className="gap-1.5"
                                     >
-                                      <FileCheck2 className="h-3.5 w-3.5" /> Answer Key
+                                      <FileCheck2 className="h-3.5 w-3.5" />
+                                      {p.questionBank.answerKeys.length > 1
+                                        ? `Answer Key ${index + 1}`
+                                        : "Answer Key"}
                                     </a>
                                   }
                                 />
-                              )}
+                              ))}
                             {p.invoice && (
                               <Button
                                 variant={p.questionBank.type === "MENTORSHIP" ? "outline" : "ghost"}

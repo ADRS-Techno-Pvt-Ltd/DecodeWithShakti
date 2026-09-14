@@ -17,19 +17,27 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { StatusBadge } from "@/components/dashboard/status-badge";
 import { answerSheetCategoryLabel } from "@/features/answer-sheets/constants";
 
+type SubmissionFile = {
+  id: string;
+  studentFileName: string;
+  evaluatedFileName: string | null;
+  status: "PENDING_EVALUATION" | "EVALUATED";
+};
+
 type Submission = {
   id: string;
   title: string;
   description: string;
-  status: "PENDING_EVALUATION" | "EVALUATED";
   submittedAt: string;
-  evaluatedAt: string | null;
-  studentFileName: string;
-  evaluatedFileName: string | null;
   questionBank: { id: string; title: string; slug: string } | null;
   category: { id: string; name: string; slug: string };
   student: { id: string; name: string; email: string };
+  files: SubmissionFile[];
 };
+
+function overallStatus(files: SubmissionFile[]): "PENDING_EVALUATION" | "EVALUATED" {
+  return files.length > 0 && files.every((f) => f.status === "EVALUATED") ? "EVALUATED" : "PENDING_EVALUATION";
+}
 
 function formatDate(value: string | null): string {
   if (!value) return "—";
@@ -42,7 +50,7 @@ function formatDate(value: string | null): string {
   });
 }
 
-function statusBadge(status: Submission["status"]) {
+function statusBadge(status: "PENDING_EVALUATION" | "EVALUATED") {
   return status === "EVALUATED" ? (
     <StatusBadge tone="success">Evaluated</StatusBadge>
   ) : (
@@ -52,24 +60,29 @@ function statusBadge(status: Submission["status"]) {
 
 export function AdminAnswerSheets({ initialSubmissions }: { initialSubmissions: Submission[] }) {
   const [submissions, setSubmissions] = useState(initialSubmissions);
-  const [files, setFiles] = useState<Record<string, File | null>>({});
+  const [pendingFiles, setPendingFiles] = useState<Record<string, File | null>>({});
   const [saving, setSaving] = useState<string | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
 
   const active = submissions.find((item) => item.id === detailId) ?? null;
 
-  async function evaluate(submission: Submission) {
-    const file = files[submission.id];
+  async function evaluate(fileId: string) {
+    const file = pendingFiles[fileId];
     if (!file) return toast.error("Choose the evaluated PDF first.");
-    setSaving(submission.id);
+    setSaving(fileId);
     const data = new FormData();
     data.set("file", file);
-    const response = await fetch(`/api/v1/answer-sheets/${submission.id}`, { method: "PATCH", body: data });
+    const response = await fetch(`/api/v1/answer-sheets/files/${fileId}`, { method: "PATCH", body: data });
     const body = await response.json().catch(() => null);
     setSaving(null);
     if (!response.ok) return toast.error(typeof body?.error === "string" ? body.error : "Evaluation upload failed.");
-    setSubmissions((current) => current.map((item) => (item.id === submission.id ? body : item)));
-    toast.success("Evaluated answer sheet published.");
+    setSubmissions((current) =>
+      current.map((submission) => ({
+        ...submission,
+        files: submission.files.map((f) => (f.id === fileId ? { ...f, ...body } : f)),
+      })),
+    );
+    toast.success("Evaluated paper published.");
   }
 
   return (
@@ -95,6 +108,7 @@ export function AdminAnswerSheets({ initialSubmissions }: { initialSubmissions: 
                   <TableHead className="whitespace-nowrap">Test Series</TableHead>
                   <TableHead className="whitespace-nowrap">Category</TableHead>
                   <TableHead className="whitespace-nowrap">Submitted</TableHead>
+                  <TableHead className="whitespace-nowrap">Papers</TableHead>
                   <TableHead className="whitespace-nowrap">Status</TableHead>
                   <TableHead className="whitespace-nowrap text-right">Actions</TableHead>
                 </TableRow>
@@ -114,7 +128,10 @@ export function AdminAnswerSheets({ initialSubmissions }: { initialSubmissions: 
                     <TableCell suppressHydrationWarning className="whitespace-nowrap text-muted-foreground">
                       {new Date(submission.submittedAt).toLocaleDateString("en-IN")}
                     </TableCell>
-                    <TableCell>{statusBadge(submission.status)}</TableCell>
+                    <TableCell className="whitespace-nowrap text-muted-foreground">
+                      {submission.files.filter((f) => f.status === "EVALUATED").length}/{submission.files.length}
+                    </TableCell>
+                    <TableCell>{statusBadge(overallStatus(submission.files))}</TableCell>
                     <TableCell>
                       <div className="flex justify-end whitespace-nowrap">
                         <Button size="sm" onClick={() => setDetailId(submission.id)}>
@@ -144,79 +161,81 @@ export function AdminAnswerSheets({ initialSubmissions }: { initialSubmissions: 
               <div className="space-y-4">
                 <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
                   <dt className="text-muted-foreground">Status</dt>
-                  <dd>{statusBadge(active.status)}</dd>
+                  <dd>{statusBadge(overallStatus(active.files))}</dd>
                   <dt className="text-muted-foreground">Student</dt>
                   <dd className="break-all">{active.student.name} · {active.student.email}</dd>
                   <dt className="text-muted-foreground">Test Series</dt>
                   <dd className="break-all">{active.questionBank?.title ?? "Legacy submission"}</dd>
                   <dt className="text-muted-foreground">Submitted on</dt>
                   <dd suppressHydrationWarning>{formatDate(active.submittedAt)}</dd>
-                  <dt className="text-muted-foreground">Evaluated on</dt>
-                  <dd suppressHydrationWarning>{formatDate(active.evaluatedAt)}</dd>
-                  <dt className="text-muted-foreground">Answer file</dt>
-                  <dd className="break-all">{active.studentFileName}</dd>
-                  {active.evaluatedFileName && (
-                    <>
-                      <dt className="text-muted-foreground">Evaluated file</dt>
-                      <dd className="break-all">{active.evaluatedFileName}</dd>
-                    </>
-                  )}
                 </dl>
 
                 {active.description && (
                   <p className="text-sm text-muted-foreground">{active.description}</p>
                 )}
 
-                <div className="space-y-3 rounded-md border p-4">
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      render={
-                        <a href={`/api/v1/files/answer-sheets/${active.id}`} target="_blank" rel="noreferrer">
-                          <FileText /> View Answer Sheet
-                        </a>
-                      }
-                    />
-                    {active.status === "EVALUATED" && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        render={
-                          <a
-                            href={`/api/v1/files/answer-sheets/${active.id}/evaluated`}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            <FileCheck2 /> View Evaluation
-                          </a>
-                        }
-                      />
-                    )}
-                  </div>
+                <div className="space-y-3">
+                  {active.files.map((file, index) => (
+                    <div key={file.id} className="space-y-3 rounded-md border p-4">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate text-sm font-medium">
+                          {active.files.length > 1 ? `Paper ${index + 1} — ` : ""}
+                          {file.studentFileName}
+                        </span>
+                        {statusBadge(file.status)}
+                      </div>
 
-                  {active.status === "EVALUATED" ? (
-                    <p className="flex items-center gap-1 text-xs text-success">
-                      <CheckCircle2 className="h-3.5 w-3.5" /> Evaluation published
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      <Input
-                        type="file"
-                        accept="application/pdf,.pdf"
-                        onChange={(event) =>
-                          setFiles({ ...files, [active.id]: event.target.files?.[0] ?? null })
-                        }
-                      />
-                      <Button
-                        size="sm"
-                        onClick={() => void evaluate(active)}
-                        disabled={saving === active.id}
-                      >
-                        {saving === active.id ? <Loader2 className="animate-spin" /> : <Upload />} Upload Evaluated Answer Sheet
-                      </Button>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          render={
+                            <a href={`/api/v1/files/answer-sheets/${file.id}`} target="_blank" rel="noreferrer">
+                              <FileText /> View Answer
+                            </a>
+                          }
+                        />
+                        {file.status === "EVALUATED" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            render={
+                              <a
+                                href={`/api/v1/files/answer-sheets/${file.id}/evaluated`}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                <FileCheck2 /> View Evaluation
+                              </a>
+                            }
+                          />
+                        )}
+                      </div>
+
+                      {file.status === "EVALUATED" ? (
+                        <p className="flex items-center gap-1 text-xs text-success">
+                          <CheckCircle2 className="h-3.5 w-3.5" /> Evaluation published
+                        </p>
+                      ) : (
+                        <div className="space-y-2">
+                          <Input
+                            type="file"
+                            accept="application/pdf,.pdf"
+                            onChange={(event) =>
+                              setPendingFiles({ ...pendingFiles, [file.id]: event.target.files?.[0] ?? null })
+                            }
+                          />
+                          <Button
+                            size="sm"
+                            onClick={() => void evaluate(file.id)}
+                            disabled={saving === file.id}
+                          >
+                            {saving === file.id ? <Loader2 className="animate-spin" /> : <Upload />} Upload Evaluated Paper
+                          </Button>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  ))}
                 </div>
               </div>
             </>

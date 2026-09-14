@@ -9,10 +9,19 @@ import type {
 
 const CASHFREE_API_VERSION = "2025-01-01"; // published contract — SDK's internal default ("2026-01-01") isn't a public API version
 
+// The SDK sets up its own telemetry (Sentry) on construction, which registers
+// process-level listeners (uncaughtException etc.) each time. Building a new
+// Cashfree instance per call — as every poll (self-heal, reconcile sweep,
+// webhook verify) used to — leaked one listener per call and eventually hit
+// Node's MaxListenersExceededWarning. Cache a single instance per process instead.
+let cachedClient: Cashfree | null = null;
+
 function client(): Cashfree {
+  if (cachedClient) return cachedClient;
   const env = process.env.CASHFREE_ENV === "production" ? CFEnvironment.PRODUCTION : CFEnvironment.SANDBOX;
   const cf = new Cashfree(env, process.env.CASHFREE_APP_ID, process.env.CASHFREE_SECRET_KEY);
   cf.XApiVersion = CASHFREE_API_VERSION;
+  cachedClient = cf;
   return cf;
 }
 

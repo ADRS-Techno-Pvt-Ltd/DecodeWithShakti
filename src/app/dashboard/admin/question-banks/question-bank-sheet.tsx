@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { toast } from "sonner";
-import { Loader2, Plus, X } from "lucide-react";
+import { Loader2, Plus, Trash2, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -24,13 +24,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Category, ProductType, QuestionBank, Subject } from "@/features/question-banks/types";
+import type {
+  AnswerKeySummary,
+  Category,
+  ProductType,
+  QuestionBank,
+  QuestionBankFileSummary,
+  Subject,
+} from "@/features/question-banks/types";
 import {
   createQuestionBank,
   updateQuestionBank,
   replaceQuestionBankThumbnail,
   replaceQuestionBankFile,
-  replaceQuestionBankAnswerKey,
+  addQuestionBankAnswerKeys,
+  deleteAnswerKey,
+  replaceAnswerKey,
+  addQuestionBankFiles,
+  replaceQuestionBankFilePaper,
+  deleteQuestionBankFilePaper,
 } from "@/features/question-banks/api";
 
 type FormValues = {
@@ -86,6 +98,12 @@ export function QuestionBankSheet({
   const isTestSeries = mode === "test-series";
   const isMentorship = mode === "mentorship";
   const [submitting, setSubmitting] = useState(false);
+  const [answerKeys, setAnswerKeys] = useState<AnswerKeySummary[]>([]);
+  const [deletingAnswerKeyId, setDeletingAnswerKeyId] = useState<string | null>(null);
+  const [replacingAnswerKeyId, setReplacingAnswerKeyId] = useState<string | null>(null);
+  const [papers, setPapers] = useState<QuestionBankFileSummary[]>([]);
+  const [deletingPaperId, setDeletingPaperId] = useState<string | null>(null);
+  const [replacingPaperId, setReplacingPaperId] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -120,6 +138,69 @@ export function QuestionBankSheet({
     control,
     name: "features",
   });
+
+  useEffect(() => {
+    setAnswerKeys(editing?.answerKeys ?? []);
+    setPapers(editing?.files ?? []);
+  }, [editing, open]);
+
+  async function handleDeleteAnswerKey(answerKeyId: string) {
+    setDeletingAnswerKeyId(answerKeyId);
+    try {
+      await deleteAnswerKey(answerKeyId);
+      setAnswerKeys((prev) => prev.filter((k) => k.id !== answerKeyId));
+      toast.success("Answer key removed.");
+      onSaved();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not remove answer key.");
+    } finally {
+      setDeletingAnswerKeyId(null);
+    }
+  }
+
+  async function handleReplaceAnswerKey(answerKeyId: string, file: File) {
+    setReplacingAnswerKeyId(answerKeyId);
+    try {
+      const updated = await replaceAnswerKey(answerKeyId, file);
+      setAnswerKeys((prev) => prev.map((k) => (k.id === answerKeyId ? updated : k)));
+      toast.success("Answer key replaced.");
+      onSaved();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not replace answer key.");
+    } finally {
+      setReplacingAnswerKeyId(null);
+    }
+  }
+
+  async function handleDeletePaper(fileId: string) {
+    if (!editing) return;
+    setDeletingPaperId(fileId);
+    try {
+      await deleteQuestionBankFilePaper(editing.id, fileId);
+      setPapers((prev) => prev.filter((p) => p.id !== fileId));
+      toast.success("Paper removed.");
+      onSaved();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not remove paper.");
+    } finally {
+      setDeletingPaperId(null);
+    }
+  }
+
+  async function handleReplacePaper(fileId: string, file: File) {
+    if (!editing) return;
+    setReplacingPaperId(fileId);
+    try {
+      const updated = await replaceQuestionBankFilePaper(editing.id, fileId, file);
+      setPapers((prev) => prev.map((p) => (p.id === fileId ? updated : p)));
+      toast.success("Paper replaced.");
+      onSaved();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not replace paper.");
+    } finally {
+      setReplacingPaperId(null);
+    }
+  }
 
   useEffect(() => {
     if (editing) {
@@ -211,10 +292,15 @@ export function QuestionBankSheet({
           await replaceQuestionBankThumbnail(editing.id, values.thumbnail[0]);
         }
         if (!isMentorship && values.file && values.file.length > 0) {
-          await replaceQuestionBankFile(editing.id, Array.from(values.file));
+          if (isTestSeries) {
+            const added = await addQuestionBankFiles(editing.id, Array.from(values.file));
+            setPapers((prev) => [...prev, ...added]);
+          } else {
+            await replaceQuestionBankFile(editing.id, Array.from(values.file));
+          }
         }
         if (!isMentorship && values.answerKey && values.answerKey.length > 0) {
-          await replaceQuestionBankAnswerKey(editing.id, values.answerKey[0]);
+          await addQuestionBankAnswerKeys(editing.id, Array.from(values.answerKey));
         }
         toast.success("Question bank updated.");
       } else {
@@ -241,8 +327,8 @@ export function QuestionBankSheet({
         formData.set("features", JSON.stringify(features));
         // Multiple PDFs are merged server-side into one stored file, in the order listed.
         if (!isMentorship) Array.from(values.file ?? []).forEach((file) => formData.append("file", file));
-        if (!isMentorship && values.answerKey && values.answerKey.length > 0) {
-          formData.set("answerKey", values.answerKey[0]);
+        if (!isMentorship) {
+          Array.from(values.answerKey ?? []).forEach((file) => formData.append("answerKey", file));
         }
         if (values.thumbnail && values.thumbnail.length > 0) {
           formData.set("thumbnail", values.thumbnail[0]);
@@ -393,9 +479,9 @@ export function QuestionBankSheet({
             </span>
           </div>}
 
-          {!isMentorship && <div className="flex flex-col gap-1.5">
+          {!isMentorship && !isTestSeries && <div className="flex flex-col gap-1.5">
             <Label htmlFor="file">
-              {isTestSeries ? "Test Series File" : "Question Bank File"} (PDF) {editing ? "(replace)" : ""}
+              Question Bank File (PDF) {editing ? "(replace)" : ""}
             </Label>
             <input
               id="file"
@@ -412,13 +498,124 @@ export function QuestionBankSheet({
             </span>
           </div>}
 
+          {!isMentorship && isTestSeries && <div className="flex flex-col gap-1.5">
+            <Label htmlFor="file">Test Series Papers (PDF)</Label>
+            {papers.length > 0 && (
+              <ul className="flex flex-col gap-1.5 rounded-md border p-2">
+                {papers.map((paper) => (
+                  <li key={paper.id} className="flex items-center justify-between gap-2 text-sm">
+                    <span className="truncate">{paper.fileName}</span>
+                    <div className="flex items-center gap-1">
+                      <label className="text-muted-foreground hover:text-foreground cursor-pointer text-xs underline underline-offset-2">
+                        {replacingPaperId === paper.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          "Replace"
+                        )}
+                        <input
+                          type="file"
+                          accept="application/pdf"
+                          className="hidden"
+                          disabled={replacingPaperId === paper.id}
+                          onChange={(event) => {
+                            const file = event.target.files?.[0];
+                            event.target.value = "";
+                            if (file) void handleReplacePaper(paper.id, file);
+                          }}
+                        />
+                      </label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Remove paper"
+                        disabled={deletingPaperId === paper.id}
+                        onClick={() => void handleDeletePaper(paper.id)}
+                      >
+                        {deletingPaperId === paper.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <input
+              id="file"
+              type="file"
+              accept="application/pdf"
+              multiple
+              className="h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base outline-none file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
+              {...register("file")}
+            />
+            <span className="text-muted-foreground text-xs">
+              {editing
+                ? "Select one or more PDFs to add as new papers — existing papers above are kept as-is; use Replace or the trash icon to change one."
+                : "Select one or more PDFs. Each is kept as its own separately downloadable paper — they are not merged."}
+            </span>
+          </div>}
+
           {!isMentorship && <div className="flex flex-col gap-1.5">
             <Label htmlFor="answerKey">Answer key / solutions PDF (optional)</Label>
-            <Input id="answerKey" type="file" accept="application/pdf" {...register("answerKey")} />
+            {answerKeys.length > 0 && (
+              <ul className="flex flex-col gap-1.5 rounded-md border p-2">
+                {answerKeys.map((key) => (
+                  <li key={key.id} className="flex items-center justify-between gap-2 text-sm">
+                    <span className="truncate">{key.fileName}</span>
+                    <div className="flex items-center gap-1">
+                      <label className="text-muted-foreground hover:text-foreground cursor-pointer text-xs underline underline-offset-2">
+                        {replacingAnswerKeyId === key.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          "Replace"
+                        )}
+                        <input
+                          type="file"
+                          accept="application/pdf"
+                          className="hidden"
+                          disabled={replacingAnswerKeyId === key.id}
+                          onChange={(event) => {
+                            const file = event.target.files?.[0];
+                            event.target.value = "";
+                            if (file) void handleReplaceAnswerKey(key.id, file);
+                          }}
+                        />
+                      </label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Remove answer key"
+                        disabled={deletingAnswerKeyId === key.id}
+                        onClick={() => void handleDeleteAnswerKey(key.id)}
+                      >
+                        {deletingAnswerKeyId === key.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <input
+              id="answerKey"
+              type="file"
+              accept="application/pdf"
+              multiple
+              className="h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base outline-none file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
+              {...register("answerKey")}
+            />
             <span className="text-muted-foreground text-xs">
+              Select one or more PDFs — each is kept as a separate, individually downloadable file (e.g. one per paper).{" "}
               {productType === "TEST_SERIES"
-                ? "Linked to this Test Series and unlocked for a student only after they submit their answer sheet."
-                : "Linked to this question bank and available to students to download immediately after purchase."}
+                ? "Unlocked for a student only after they submit their answer sheet."
+                : "Available to students to download immediately after purchase."}
             </span>
           </div>}
 

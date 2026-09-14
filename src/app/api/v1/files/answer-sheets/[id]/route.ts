@@ -8,23 +8,28 @@ function safeFileName(name: string): string {
   return cleaned.toLowerCase().endsWith(".pdf") ? cleaned : `${cleaned}.pdf`;
 }
 
+/** `id` is an `AnswerSheetSubmissionFile` id — one of the student's separately uploaded papers. */
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await requireSession();
     const { id } = await params;
-    const submission = await prisma.answerSheetSubmission.findUnique({
+    const file = await prisma.answerSheetSubmissionFile.findUnique({
       where: { id },
-      select: { studentId: true, studentFilePath: true, studentFileName: true },
+      select: {
+        studentFilePath: true,
+        studentFileName: true,
+        submission: { select: { studentId: true } },
+      },
     });
-    if (!submission || (session.user.role !== "ADMIN" && submission.studentId !== session.user.id)) {
+    if (!file || (session.user.role !== "ADMIN" && file.submission.studentId !== session.user.id)) {
       return NextResponse.json({ error: "File not found." }, { status: 404 });
     }
 
-    const bytes = await readStoredFile(submission.studentFilePath);
+    const bytes = await readStoredFile(file.studentFilePath);
     return new NextResponse(new Uint8Array(bytes), {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename="${safeFileName(submission.studentFileName)}"`,
+        "Content-Disposition": `inline; filename="${safeFileName(file.studentFileName)}"`,
       },
     });
   } catch (error) {

@@ -14,23 +14,25 @@ export default async function StudentAnswerSheetsPage() {
           title: true,
           slug: true,
           description: true,
-          fileName: true,
           category: { select: { id: true, name: true, slug: true } },
+          files: {
+            select: { id: true, fileName: true },
+            orderBy: { createdAt: "asc" },
+          },
           answerKeys: {
             where: { isPublished: true, questionBankId: { not: null } },
             select: { id: true, title: true, fileName: true },
-            orderBy: { createdAt: "desc" },
-            take: 1,
+            orderBy: { createdAt: "asc" },
           },
           answerSubmissions: {
             where: { studentId: session!.user.id },
             select: {
               id: true,
-              status: true,
-              studentFileName: true,
-              evaluatedFileName: true,
               submittedAt: true,
-              evaluatedAt: true,
+              files: {
+                select: { id: true, studentFileName: true, evaluatedFileName: true, status: true, evaluatedAt: true },
+                orderBy: { createdAt: "asc" },
+              },
             },
             orderBy: { submittedAt: "desc" },
             take: 1,
@@ -52,7 +54,7 @@ export default async function StudentAnswerSheetsPage() {
     <StudentAnswerSheets
       series={[...purchasesByQuestionBank.values()].map((purchase) => {
         const submission = purchase.questionBank.answerSubmissions[0] ?? null;
-        const answerKey = submission ? purchase.questionBank.answerKeys[0] ?? null : null;
+        const answerKeys = submission ? purchase.questionBank.answerKeys : [];
         return {
           purchaseId: purchase.id,
           questionBank: {
@@ -60,23 +62,32 @@ export default async function StudentAnswerSheetsPage() {
             title: purchase.questionBank.title,
             slug: purchase.questionBank.slug,
             description: purchase.questionBank.description,
-            // TEST_SERIES products require a PDF at creation time. The fallback
-            // keeps this existing student-only view type-safe after Mentorship
-            // made catalog file fields nullable.
-            fileName: purchase.questionBank.fileName ?? "",
             category: purchase.questionBank.category,
+            files: purchase.questionBank.files,
           },
           submission: submission
             ? {
                 id: submission.id,
-                status: submission.status,
-                studentFileName: submission.studentFileName,
-                evaluatedFileName: submission.evaluatedFileName,
                 submittedAt: submission.submittedAt.toISOString(),
-                evaluatedAt: submission.evaluatedAt?.toISOString() ?? null,
+                status:
+                  submission.files.length > 0 && submission.files.every((f) => f.status === "EVALUATED")
+                    ? ("EVALUATED" as const)
+                    : ("PENDING_EVALUATION" as const),
+                evaluatedAt:
+                  submission.files
+                    .map((f) => f.evaluatedAt)
+                    .filter((d): d is Date => d != null)
+                    .sort((a, b) => b.getTime() - a.getTime())[0]
+                    ?.toISOString() ?? null,
+                files: submission.files.map((f) => ({
+                  id: f.id,
+                  studentFileName: f.studentFileName,
+                  evaluatedFileName: f.evaluatedFileName,
+                  status: f.status,
+                })),
               }
             : null,
-          answerKey,
+          answerKeys,
         };
       })}
     />

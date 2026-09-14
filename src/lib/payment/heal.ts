@@ -36,9 +36,16 @@ function throttled(purchaseId: string): boolean {
 }
 
 /** A purchase worth re-checking against the provider. */
-function isHealable(p: Pick<Purchase, "status" | "heldForReview" | "paymentProvider" | "createdAt">): boolean {
+function isHealable(
+  p: Pick<Purchase, "status" | "heldForReview" | "paymentProvider" | "createdAt" | "orderId">,
+): boolean {
   if (p.heldForReview) return false; // an admin must resolve these
   if (p.paymentProvider === "free") return false; // never went to a gateway
+  // Multi-item cart purchases don't have their own Cashfree order — their
+  // providerOrderId is a synthetic `${order.id}:${bank.id}` key, not a real
+  // order id, so polling it directly 400s. The parent Order is healed
+  // separately (finalize-order.ts / webhook), not here.
+  if (p.orderId != null) return false;
   if (p.status === "PENDING") return true;
   if (p.status === "FAILED" || p.status === "CANCELLED") {
     return p.createdAt.getTime() > Date.now() - HEAL_WINDOW_MS;
@@ -81,6 +88,7 @@ function healableWhere() {
   return {
     heldForReview: false,
     paymentProvider: { not: "free" },
+    orderId: null,
     OR: [
       { status: "PENDING" as const },
       {

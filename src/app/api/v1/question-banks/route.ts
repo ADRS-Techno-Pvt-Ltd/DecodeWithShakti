@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, toErrorResponse } from "@/lib/auth-guards";
 import { questionBankInputSchema } from "@/lib/validation/question-bank";
@@ -10,10 +11,12 @@ import {
   saveOriginalFile,
   savePreviewFile,
   saveThumbnailFile,
+  saveQuestionBankPaperFile,
 } from "@/lib/storage";
 import { getPageCount, buildPreview, mergePdfs } from "@/lib/preview";
 import { extForThumbnailMime, thumbnailUrlFor, MAX_THUMBNAIL_BYTES } from "@/lib/thumbnail";
 import { readPdfUpload } from "@/features/answer-sheets/validation";
+import { syncQuestionBankPrimaryFile } from "@/lib/question-bank-files";
 
 const MAX_UPLOAD_BYTES = Number(process.env.MAX_UPLOAD_MB ?? 50) * 1024 * 1024;
 
@@ -38,7 +41,18 @@ export async function GET(request: Request) {
         ...(type === "QUESTION_BANK" || type === "TEST_SERIES" || type === "MENTORSHIP" ? { type } : {}),
         ...(subject ? { subjectId: subject } : {}),
       },
-      include: { category: true, subject: true },
+      include: {
+        category: true,
+        subject: true,
+        answerKeys: {
+          select: { id: true, title: true, fileName: true },
+          orderBy: { createdAt: "asc" },
+        },
+        files: {
+          select: { id: true, fileName: true, fileSizeBytes: true },
+          orderBy: { createdAt: "asc" },
+        },
+      },
       orderBy: admin
         ? { createdAt: "desc" }
         : [{ isFeatured: "desc" }, { createdAt: "desc" }] as const,
@@ -66,7 +80,7 @@ export async function POST(request: Request) {
 async function createQuestionBank(request: Request) {
   const session = await requireAdmin();
   let bankId: string | undefined;
-  let answerKeyId: string | undefined;
+  const answerKeyIds: string[] = [];
 
   try {
     const formData = await request.formData();
@@ -80,13 +94,18 @@ async function createQuestionBank(request: Request) {
     const files = formData
       .getAll("file")
       .filter((f): f is File => f instanceof File && f.size > 0);
-    const answerKeyFile = formData.get("answerKey");
+    const answerKeyFiles = formData
+      .getAll("answerKey")
+      .filter((f): f is File => f instanceof File && f.size > 0);
 
-    if (input.type === "MENTORSHIP" && (files.length > 0 || (answerKeyFile instanceof File && answerKeyFile.size > 0))) {
+    if (input.type === "MENTORSHIP" && (files.length > 0 || answerKeyFiles.length > 0)) {
       return NextResponse.json(
         { error: "Mentorship products cannot include a question bank PDF or answer key." },
         { status: 400 },
       );
+    }
+    if (input.type !== "MENTORSHIP" && answerKeyFiles.some((f) => f.type !== "application/pdf")) {
+      return NextResponse.json({ error: "Answer keys must be PDF files." }, { status: 400 });
     }
     if (input.type !== "MENTORSHIP" && files.length === 0) {
       return NextResponse.json({ error: "A PDF file is required." }, { status: 400 });
@@ -102,10 +121,6 @@ async function createQuestionBank(request: Request) {
       );
     }
     const file = files[0];
-    const answerKeyBytes =
-      input.type !== "MENTORSHIP" && answerKeyFile instanceof File && answerKeyFile.size > 0
-        ? await readPdfUpload(answerKeyFile)
-        : null;
 
     const thumbnail = formData.get("thumbnail");
     let thumbnailExt: string | null = null;
@@ -122,9 +137,18 @@ async function createQuestionBank(request: Request) {
       }
     }
 
+    // Test Series papers are kept as separate, independently downloadable
+    // files. Question Bank uploads still merge into one document — it's sold
+    // as a single product.
+    const isTestSeries = input.type === "TEST_SERIES";
+    const fileBuffers = input.type === "MENTORSHIP"
+      ? []
+      : await Promise.all(files.map(async (f) => Buffer.from(await f.arrayBuffer())));
     const bytes = input.type === "MENTORSHIP"
       ? null
-      : await mergePdfs(await Promise.all(files.map(async (f) => Buffer.from(await f.arrayBuffer()))));
+      : isTestSeries
+        ? fileBuffers[0]
+        : await mergePdfs(fileBuffers);
     const totalPages = bytes ? await getPageCount(bytes) : null;
 
     if (input.previewPageCount != null && totalPages != null && input.previewPageCount > totalPages) {
@@ -160,12 +184,15 @@ async function createQuestionBank(request: Request) {
     });
     bankId = bank.id;
 
-    const filePath = bytes ? await saveOriginalFile(bank.id, bytes) : null;
-    let previewFilePathValue: string | null = null;
-
-    if (bytes && input.previewEnabled && input.previewPageCount) {
-      const previewBytes = await buildPreview(bytes, input.previewPageCount);
-      previewFilePathValue = await savePreviewFile(bank.id, previewBytes);
+    if (isTestSeries) {
+      for (const uploadedFile of files) {
+        const fileBytes = Buffer.from(await uploadedFile.arrayBuffer());
+        const record = await prisma.questionBankFile.create({
+          data: { questionBankId: bank.id, fileName: uploadedFile.name, filePath: "", fileSizeBytes: uploadedFile.size },
+        });
+        const filePath = await saveQuestionBankPaperFile(bank.id, record.id, fileBytes);
+        await prisma.questionBankFile.update({ where: { id: record.id }, data: { filePath } });
+      }
     }
 
     let thumbnailPathValue: string | null = null;
@@ -174,13 +201,31 @@ async function createQuestionBank(request: Request) {
       thumbnailPathValue = await saveThumbnailFile(bank.id, thumbnailBytes);
     }
 
-    const updated = await prisma.questionBank.update({
-      where: { id: bank.id },
-      data: { filePath, previewFilePath: previewFilePathValue, thumbnailPath: thumbnailPathValue },
-      include: { category: true, subject: true },
-    });
+    let updated: Prisma.QuestionBankGetPayload<{ include: { category: true; subject: true } }>;
+    if (isTestSeries) {
+      await syncQuestionBankPrimaryFile(bank.id);
+      updated = await prisma.questionBank.update({
+        where: { id: bank.id },
+        data: { thumbnailPath: thumbnailPathValue },
+        include: { category: true, subject: true },
+      });
+    } else {
+      const filePath = bytes ? await saveOriginalFile(bank.id, bytes) : null;
+      let previewFilePathValue: string | null = null;
+      if (bytes && input.previewEnabled && input.previewPageCount) {
+        const previewBytes = await buildPreview(bytes, input.previewPageCount);
+        previewFilePathValue = await savePreviewFile(bank.id, previewBytes);
+      }
+      updated = await prisma.questionBank.update({
+        where: { id: bank.id },
+        data: { filePath, previewFilePath: previewFilePathValue, thumbnailPath: thumbnailPathValue },
+        include: { category: true, subject: true },
+      });
+    }
 
-    if (answerKeyFile instanceof File && answerKeyBytes) {
+    const createdAnswerKeys: { id: string; title: string; fileName: string }[] = [];
+    for (const answerKeyFile of answerKeyFiles) {
+      const answerKeyBytes = await readPdfUpload(answerKeyFile);
       const answerKey = await prisma.answerKey.create({
         data: {
           title: updated.title,
@@ -193,18 +238,27 @@ async function createQuestionBank(request: Request) {
           createdById: session.user.id,
         },
       });
-      answerKeyId = answerKey.id;
+      answerKeyIds.push(answerKey.id);
       const answerKeyPath = await saveAnswerKeyFile(answerKey.id, answerKeyBytes);
       await prisma.answerKey.update({ where: { id: answerKey.id }, data: { filePath: answerKeyPath } });
+      createdAnswerKeys.push({ id: answerKey.id, title: answerKey.title, fileName: answerKey.fileName });
     }
+
+    const createdFiles = isTestSeries
+      ? await prisma.questionBankFile.findMany({
+          where: { questionBankId: bank.id },
+          select: { id: true, fileName: true, fileSizeBytes: true },
+          orderBy: { createdAt: "asc" },
+        })
+      : [];
 
     const { thumbnailPath, ...bankDto } = updated;
     return NextResponse.json(
-      { ...bankDto, thumbnailUrl: thumbnailUrlFor(thumbnailPath) },
+      { ...bankDto, thumbnailUrl: thumbnailUrlFor(thumbnailPath), answerKeys: createdAnswerKeys, files: createdFiles },
       { status: 201 },
     );
   } catch (error) {
-    if (answerKeyId) {
+    for (const answerKeyId of answerKeyIds) {
       await prisma.answerKey.delete({ where: { id: answerKeyId } }).catch(() => undefined);
       await deleteAnswerKeyFiles(answerKeyId).catch(() => undefined);
     }

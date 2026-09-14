@@ -27,4 +27,10 @@ export type QuestionBank = {
   isFeatured: boolean;
   features: string[];
   createdAt: string;
+  answerKeys: AnswerKeySummary[];
+  files: QuestionBankFileSummary[];
 };
+
+export type AnswerKeySummary = { id: string; title: string; fileName: string };
+
+export type QuestionBankFileSummary = { id: string; fileName: string; fileSizeBytes: number };
