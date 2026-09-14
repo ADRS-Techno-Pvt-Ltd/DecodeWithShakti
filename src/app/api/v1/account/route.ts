@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { requireStudent, toErrorResponse } from "@/lib/auth-guards";
+import { requireStudent, blockImpersonation, toErrorResponse } from "@/lib/auth-guards";
 import { deleteAccountSchema, updateEmailSchema } from "@/lib/validation/auth";
 
 /**
@@ -11,8 +11,9 @@ import { deleteAccountSchema, updateEmailSchema } from "@/lib/validation/auth";
 export async function PATCH(request: Request) {
   try {
     const session = await requireStudent();
+    blockImpersonation(session);
     const body = await request.json();
-    
+
     // Defensive check for schema availability
     if (typeof updateEmailSchema === 'undefined') {
       console.error('updateEmailSchema is undefined - module import issue');
@@ -68,6 +69,7 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const session = await requireStudent();
+    blockImpersonation(session);
     const body = await request.json();
     const parsed = deleteAccountSchema.safeParse(body);
     if (!parsed.success) {

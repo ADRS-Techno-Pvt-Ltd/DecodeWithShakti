@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { FileCheck2, LayoutDashboard, ShoppingBag, UserRound, Video } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { DashboardShell, type NavItem } from "@/components/dashboard/dashboard-shell";
+import { ImpersonationBanner } from "@/components/dashboard/impersonation-banner";
 
 const navItems: NavItem[] = [
   { href: "/dashboard/student", label: "Overview", icon: <LayoutDashboard /> },
@@ -16,13 +17,18 @@ export default async function StudentLayout({ children }: { children: React.Reac
   if (!session?.user || session.user.role !== "STUDENT") redirect("/login");
 
   return (
-    <DashboardShell
-      navItems={navItems}
-      userName={session.user.name ?? "Student"}
-      userEmail={session.user.email ?? ""}
-      roleLabel="Student"
-    >
-      {children}
-    </DashboardShell>
+    <>
+      {session.user.impersonatorId && (
+        <ImpersonationBanner targetName={session.user.name ?? "user"} />
+      )}
+      <DashboardShell
+        navItems={navItems}
+        userName={session.user.name ?? "Student"}
+        userEmail={session.user.email ?? ""}
+        roleLabel={session.user.impersonatorId ? "Student (admin view)" : "Student"}
+      >
+        {children}
+      </DashboardShell>
+    </>
   );
 }

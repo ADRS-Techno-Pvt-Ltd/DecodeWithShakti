@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireStudent, toErrorResponse } from "@/lib/auth-guards";
+import { requireStudent, blockImpersonation, toErrorResponse } from "@/lib/auth-guards";
 import { deleteAnswerSheetFiles, saveStudentAnswerSheetFile } from "@/lib/storage";
 import { sendAnswerSheetSubmittedEmails } from "@/lib/email";
 import { answerSubmissionInputSchema, readPdfUpload } from "@/features/answer-sheets/validation";
@@ -81,6 +81,7 @@ export async function POST(request: Request) {
   const fileIds: string[] = [];
   try {
     const session = await requireStudent();
+    blockImpersonation(session);
     const formData = await request.formData();
     const parsed = answerSubmissionInputSchema.safeParse({ questionBankId: formData.get("questionBankId") });
     if (!parsed.success) {

@@ -13,6 +13,22 @@ const fieldBase =
 const labelBase =
   "mb-2 block font-mono text-[10.5px] tracking-[0.1em] text-muted-foreground uppercase";
 
+const ADMIN_WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_ADMIN_NUMBER ?? "";
+
+function buildContactWhatsAppUrl(data: ContactInput): string {
+  const message = [
+    "Hello, I just sent a message through the Contact form.",
+    "",
+    `Name: ${data.name}`,
+    `Email: ${data.email}`,
+    `Subject: ${data.subject}`,
+    "",
+    data.message,
+  ].join("\n");
+
+  return `https://wa.me/${ADMIN_WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+}
+
 export function ContactForm() {
   const [sent, setSent] = useState(false);
   const [sentTo, setSentTo] = useState("");
@@ -27,6 +43,9 @@ export function ContactForm() {
 
   async function onSubmit(data: ContactInput) {
     setSubmitting(true);
+    // Opened synchronously, in direct response to the submit click, so it still
+    // counts as a user gesture — browsers block a popup opened after an `await`.
+    const whatsappWindow = window.open("", "_blank");
     try {
       const res = await fetch("/api/v1/contact", {
         method: "POST",
@@ -34,15 +53,20 @@ export function ContactForm() {
         body: JSON.stringify(data),
       });
       if (!res.ok) {
+        whatsappWindow?.close();
         const body = await res.json().catch(() => null);
         toast.error(body?.error ?? "Could not send your message right now. Please try again shortly.");
         return;
+      }
+      if (whatsappWindow) {
+        whatsappWindow.location.href = buildContactWhatsAppUrl(data);
       }
       setSentTo(data.email);
       setSent(true);
       reset();
       toast.success("Message sent — a person will reply soon.");
     } catch {
+      whatsappWindow?.close();
       toast.error("Could not send your message right now. Please try again shortly.");
     } finally {
       setSubmitting(false);

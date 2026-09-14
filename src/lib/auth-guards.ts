@@ -36,3 +36,15 @@ export async function requireStudent() {
   if (session.user.role !== "STUDENT") throw new ForbiddenError("Student access required");
   return session;
 }
+
+/**
+ * Reject state-changing actions performed while an admin is impersonating a user
+ * via "View as user". Impersonation is a read-only debugging tool — an admin
+ * must never spend money, change credentials, or submit content as the user.
+ * Call this in mutating student routes right after requireStudent().
+ */
+export function blockImpersonation(session: { user: { impersonatorId?: string | null } }) {
+  if (session.user.impersonatorId) {
+    throw new ForbiddenError("This action is disabled while viewing another user's account.");
+  }
+}

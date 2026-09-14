@@ -1,8 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Users as UsersIcon } from "lucide-react";
+import { signIn } from "next-auth/react";
+import { Eye, Users as UsersIcon } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { StatusBadge } from "@/components/dashboard/status-badge";
@@ -14,6 +17,15 @@ export default function AdminUsersPage() {
     queryKey: ["users"],
     queryFn: fetchAllUsers,
   });
+  const [viewingAs, setViewingAs] = useState<string | null>(null);
+
+  function viewAsUser(user: { id: string; name: string }) {
+    if (!window.confirm(`Sign in as ${user.name} to see their account? This is logged, and checkout / account changes stay disabled.`)) {
+      return;
+    }
+    setViewingAs(user.id);
+    signIn("impersonate", { userId: user.id, redirectTo: "/dashboard/student" });
+  }
 
   function formatDate(date: string) {
     return new Date(date).toLocaleDateString("en-IN", {
@@ -57,6 +69,7 @@ export default function AdminUsersPage() {
                   <TableHead className="text-center">Role</TableHead>
                   <TableHead className="text-center">Purchases</TableHead>
                   <TableHead>Joined</TableHead>
+                  <TableHead className="text-right">Debug</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -78,6 +91,21 @@ export default function AdminUsersPage() {
                     <TableCell className="text-center">{user._count.purchases}</TableCell>
                     <TableCell className="text-muted-foreground text-sm">
                       {formatDate(user.createdAt)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {user.role === "ADMIN" ? (
+                        <span className="text-muted-foreground text-xs">—</span>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={viewingAs === user.id}
+                          onClick={() => viewAsUser(user)}
+                        >
+                          <Eye />
+                          {viewingAs === user.id ? "Opening…" : "View as"}
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
