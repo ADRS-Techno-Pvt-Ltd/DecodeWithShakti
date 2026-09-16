@@ -50,7 +50,7 @@ go look"* trigger. Every finalize decision must be backed by an API read.
 
 `src/app/api/v1/payment/reconcile/route.ts`
 - The admin single-purchase re-check now also handles `FAILED` / `CANCELLED`.
-- The batch sweep gained a pass: recent (< 3 days) `FAILED` / `CANCELLED`
+- The batch sweep gained a pass: recent (< 14 days) `FAILED` / `CANCELLED`
   Cashfree purchases are re-checked; if Cashfree now reports the order paid,
   they finalize.
 
@@ -75,7 +75,7 @@ export async function healPurchase(purchaseId: string): Promise<PurchaseStatus>;
 export async function healUserPurchases(userId: string): Promise<void>;
 ```
 
-- **Non-settled** = `PENDING` or (`FAILED`/`CANCELLED` created < 3 days ago).
+- **Non-settled** = `PENDING` or (`FAILED`/`CANCELLED` created < 14 days ago).
   `SUCCESS` / `EXPIRED` / `REFUNDED` are left alone.
 - **Rate limit:** reuse the pattern already in
   `verify/[orderId]/route.ts` — an in-memory `Map<purchaseId, lastPolledAt>`,

@@ -20,17 +20,27 @@ import { finalizePurchase } from "./finalize-purchase";
 /** Min gap between provider polls for the same purchase (Cashfree guidance: 3-5s). */
 const MIN_POLL_INTERVAL_MS = 3000;
 /** FAILED/CANCELLED older than this are considered settled and left alone. */
-const HEAL_WINDOW_MS = 3 * 24 * 60 * 60 * 1000;
+const HEAL_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
 /** Cap provider calls per invocation so a page load never stalls on a long list. */
 const MAX_CALLS_PER_INVOCATION = 3;
 
 // Process-local throttle. Fine to reset on redeploy — it's a rate limit, not a lock.
+// Bounded so it can't grow unboundedly over the life of a long-running process
+// (this Map growing forever was the cause of a prod OOM crash).
 const lastPolledAt = new Map<string, number>();
+const MAX_TRACKED_PURCHASES = 5000;
+
+function pruneStale(now: number) {
+  for (const [id, polledAt] of lastPolledAt) {
+    if (now - polledAt >= MIN_POLL_INTERVAL_MS) lastPolledAt.delete(id);
+  }
+}
 
 function throttled(purchaseId: string): boolean {
   const now = Date.now();
   const last = lastPolledAt.get(purchaseId) ?? 0;
   if (now - last < MIN_POLL_INTERVAL_MS) return true;
+  if (lastPolledAt.size >= MAX_TRACKED_PURCHASES) pruneStale(now);
   lastPolledAt.set(purchaseId, now);
   return false;
 }

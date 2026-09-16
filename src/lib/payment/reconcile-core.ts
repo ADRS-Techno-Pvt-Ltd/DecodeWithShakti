@@ -15,7 +15,7 @@ import type { PaymentProvider } from "@/lib/payment/provider";
 export const MAX_RECONCILE_ATTEMPTS = 10;
 const BATCH_LIMIT = 50;
 const POLL_DELAY_MS = 250; // stay well under Cashfree's per-minute rate limits across a batch
-const RECHECK_WINDOW_MS = 3 * 24 * 60 * 60 * 1000; // FAILED/CANCELLED older than this are left alone
+const RECHECK_WINDOW_MS = 14 * 24 * 60 * 60 * 1000; // FAILED/CANCELLED older than this are left alone
 const SWEEP_LOCK_BUCKET_MS = 2 * 60 * 1000; // one sweep per this window across all instances
 
 export type ReconcileSummary = {
