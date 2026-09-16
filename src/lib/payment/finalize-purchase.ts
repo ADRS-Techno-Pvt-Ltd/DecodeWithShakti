@@ -147,9 +147,9 @@ async function finalizeRefund(purchaseId: string, result: CallbackResult): Promi
  * the same invoiceSeq/invoiceNumber across retries so Cloudinary's overwrite
  * just replaces the same object.
  */
-export async function ensureInvoice(purchaseId: string): Promise<void> {
+export async function ensureInvoice(purchaseId: string, opts: { force?: boolean } = {}): Promise<void> {
   const existing = await prisma.invoice.findUnique({ where: { purchaseId } });
-  if (existing && existing.filePath) return;
+  if (existing && existing.filePath && !opts.force) return;
 
   const purchase = await prisma.purchase.findUniqueOrThrow({
     where: { id: purchaseId },
