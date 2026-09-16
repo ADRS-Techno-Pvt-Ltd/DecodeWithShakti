@@ -48,6 +48,19 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // `cashfree-pg` calls Sentry.init() at import time (dist/api.js), and
+  // @sentry/core's httpServerIntegration patches `server.emit` with a Proxy,
+  // guarding against double-patching via a MODULE-SCOPED WeakMap. When
+  // Turbopack bundles this package it ends up duplicated across server chunks,
+  // so each copy has its own WeakMap, fails to see the existing patch, and
+  // wraps the previous copy's Proxy. The chain grows on every registration
+  // until an incoming request recursing through every layer dies with
+  // "RangeError: Maximum call stack size exceeded" — crash-looping the whole
+  // server (502s in production). Keeping it external means Node resolves it
+  // once from node_modules: one instance, one WeakMap, one patch.
+  // DO NOT REMOVE without re-checking that Sentry is no longer duplicated:
+  //   grep -l "Handling incoming request" .next/server/chunks/**/*.js
+  serverExternalPackages: ["cashfree-pg"],
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];
   },

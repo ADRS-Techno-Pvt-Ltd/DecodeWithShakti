@@ -5,7 +5,7 @@
   "scripts": {
     "predev": "tsx prisma/ensure-admin.ts",
     "dev": "next dev",
-    "build": "prisma migrate deploy && next build",
+    "build": "prisma generate && prisma migrate deploy && next build",
     "prestart": "prisma migrate deploy && prisma db seed",
     "start": "next start",
     "lint": "eslint",

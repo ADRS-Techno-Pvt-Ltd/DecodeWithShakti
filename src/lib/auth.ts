@@ -1,9 +1,37 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import { getToken } from "next-auth/jwt";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { loginSchema } from "@/lib/validation/auth";
 import { rateLimit } from "@/lib/rate-limit";
+
+/**
+ * Reads the CURRENT session directly from the request's JWT cookie via
+ * `getToken` — deliberately not `auth()`. `auth()` is this same
+ * `NextAuth({...})` call's own exported reader, and calling it from inside an
+ * `authorize()` that this very pipeline is in the middle of invoking is a
+ * self-referential re-entry into the auth stack. `getToken` just decodes the
+ * cookie, so it's safe to call mid-request.
+ */
+async function currentSessionUser(request: Request) {
+  // getToken defaults secureCookie to false (looking for the unprefixed
+  // "authjs.session-token" cookie) unless told otherwise — this app always
+  // issues the "__Secure-" prefixed cookie because NEXTAUTH_URL is https, so
+  // this must be explicit or every lookup here silently returns null.
+  const token = await getToken({
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET,
+    secureCookie: true,
+  });
+  if (!token?.id) return null;
+  return {
+    id: token.id as string,
+    email: (token.email as string | null) ?? null,
+    role: token.role as "ADMIN" | "STUDENT",
+    impersonatorId: (token.impersonatorId as string | null) ?? null,
+  };
+}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: process.env.NEXTAUTH_SECRET,
@@ -48,12 +76,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       id: "impersonate",
       name: "Impersonate",
       credentials: { userId: { label: "User ID", type: "text" } },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         const targetId = typeof credentials?.userId === "string" ? credentials.userId : null;
         if (!targetId) return null;
 
-        const current = await auth();
-        if (!current?.user || current.user.role !== "ADMIN" || current.user.impersonatorId) {
+        const current = await currentSessionUser(request);
+        if (!current || current.role !== "ADMIN" || current.impersonatorId) {
           return null;
         }
 
@@ -61,7 +89,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!target || target.role === "ADMIN") return null;
 
         await prisma.impersonationSession.create({
-          data: { adminId: current.user.id, targetUserId: target.id },
+          data: { adminId: current.id, targetUserId: target.id },
         });
 
         return {
@@ -69,8 +97,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           name: target.name,
           email: target.email,
           role: target.role,
-          impersonatorId: current.user.id,
-          impersonatorEmail: current.user.email ?? null,
+          impersonatorId: current.id,
+          impersonatorEmail: current.email ?? null,
         };
       },
     }),
@@ -83,16 +111,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       id: "stop-impersonate",
       name: "Stop impersonating",
       credentials: {},
-      async authorize() {
-        const current = await auth();
-        const impersonatorId = current?.user?.impersonatorId;
-        if (!current?.user || !impersonatorId) return null;
+      async authorize(_credentials, request) {
+        const current = await currentSessionUser(request);
+        const impersonatorId = current?.impersonatorId;
+        if (!current || !impersonatorId) return null;
 
         const admin = await prisma.user.findUnique({ where: { id: impersonatorId } });
         if (!admin || admin.role !== "ADMIN") return null;
 
         await prisma.impersonationSession.updateMany({
-          where: { adminId: admin.id, targetUserId: current.user.id, endedAt: null },
+          where: { adminId: admin.id, targetUserId: current.id, endedAt: null },
           data: { endedAt: new Date() },
         });
 
