@@ -8,6 +8,7 @@ import { resolveEffectivePrice, isCouponUsable } from "@/lib/pricing";
 import { computeCartPricing, type PromotionRule } from "@/lib/pricing/cart-pricing";
 import { getPaymentProvider } from "@/lib/payment";
 import { finalizeOrder } from "@/lib/payment/finalize-order";
+import { PAYMENTS_DISABLED, PAYMENTS_DISABLED_MESSAGE } from "@/lib/payments-flag";
 
 const PHONE_REGEX = /^[6-9]\d{9}$/;
 
@@ -38,6 +39,9 @@ const ORDER_EXPIRY_MINUTES = Number(process.env.CASHFREE_ORDER_EXPIRY_MINUTES ??
  */
 export async function POST(request: Request) {
   try {
+    if (PAYMENTS_DISABLED) {
+      return NextResponse.json({ error: PAYMENTS_DISABLED_MESSAGE }, { status: 503 });
+    }
     if (!process.env.NEXTAUTH_URL || !/^https?:\/\//.test(process.env.NEXTAUTH_URL)) {
       console.error("cart/create-order: NEXTAUTH_URL is not set to a valid absolute URL.");
       return NextResponse.json({ error: "Server misconfigured. Please contact support." }, { status: 500 });

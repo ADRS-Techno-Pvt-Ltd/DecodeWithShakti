@@ -5,6 +5,7 @@ import { requireStudent, blockImpersonation, toErrorResponse } from "@/lib/auth-
 import { resolveEffectivePrice, computeDiscount, isCouponUsable } from "@/lib/pricing";
 import { getPaymentProvider } from "@/lib/payment";
 import { finalizePurchase } from "@/lib/payment/finalize-purchase";
+import { PAYMENTS_DISABLED, PAYMENTS_DISABLED_MESSAGE } from "@/lib/payments-flag";
 import { z } from "zod";
 
 const PHONE_REGEX = /^[6-9]\d{9}$/;
@@ -19,6 +20,9 @@ const ORDER_EXPIRY_MINUTES = Number(process.env.CASHFREE_ORDER_EXPIRY_MINUTES ??
 
 export async function POST(request: Request) {
   try {
+    if (PAYMENTS_DISABLED) {
+      return NextResponse.json({ error: PAYMENTS_DISABLED_MESSAGE }, { status: 503 });
+    }
     if (!process.env.NEXTAUTH_URL || !/^https?:\/\//.test(process.env.NEXTAUTH_URL)) {
       // Fails fast with a clear cause instead of building "undefined/purchase/.../return"
       // and letting the payment provider reject it opaquely (e.g. Cashfree's

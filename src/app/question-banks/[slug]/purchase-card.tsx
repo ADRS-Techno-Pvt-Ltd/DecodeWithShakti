@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { CheckCircle2, ShoppingCart } from "lucide-react";
 import { useCashfreeSdk } from "@/lib/payment/use-cashfree-sdk";
+import { PAYMENTS_DISABLED } from "@/lib/payments-flag";
 import { useCartStore, type CartItemType } from "@/stores/cart-store";
 
 function formatRupees(paise: number): string {
@@ -116,6 +117,7 @@ export function PurchaseCard({
   }
 
   async function purchase() {
+    if (PAYMENTS_DISABLED) return;
     if (status !== "authenticated") {
       router.push("/login");
       return;
@@ -277,10 +279,10 @@ export function PurchaseCard({
       <button
         type="button"
         onClick={purchase}
-        disabled={purchasing}
+        disabled={PAYMENTS_DISABLED || purchasing}
         className="mb-3 w-full rounded-[9px] bg-primary-light py-3 text-[15px] font-medium text-white transition-[background-color,transform] hover:bg-primary active:scale-[0.98] disabled:opacity-60"
       >
-        {purchasing ? "Processing…" : "Purchase now →"}
+        {PAYMENTS_DISABLED ? "Payments unavailable" : purchasing ? "Processing…" : "Purchase now →"}
       </button>
       <button
         type="button"

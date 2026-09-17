@@ -7,6 +7,7 @@ import { resolveEffectivePrice } from "@/lib/pricing";
 import { thumbnailUrlFor } from "@/lib/thumbnail";
 import { Reveal } from "@/components/landing/reveal";
 import { SiteHeader } from "@/components/site-header";
+import { PaymentsDisabledBanner } from "@/components/payments-disabled-banner";
 import { PurchaseCard } from "./purchase-card";
 
 /** Dotted-paper backdrop, matched to the checkout mockup. */
@@ -72,6 +73,9 @@ export default async function QuestionBankDetailPage({
           <ArrowLeft className="h-4 w-4" />
           Back to catalog
         </Link>
+
+        <PaymentsDisabledBanner />
+
         <div className="mb-7">
           <span className="inline-block rounded-[5px] border border-primary/25 bg-accent px-3 py-1.5 font-mono text-[11.5px] tracking-[0.11em] text-primary-dark uppercase">
             {bank.category.name}

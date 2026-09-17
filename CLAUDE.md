@@ -76,6 +76,7 @@ See `.env.example` for the full list. Key ones:
 - `NEXTAUTH_SECRET`, `NEXTAUTH_URL` — Auth.js
 - `ADMIN_EMAIL`, `ADMIN_PASSWORD` — used once by `prisma/seed.ts` to create the single admin account
 - `PAYMENT_PROVIDER` — `mock` for now; `cashfree` reserved for the follow-up plan
+- `NEXT_PUBLIC_PAYMENTS_DISABLED` / `NEXT_PUBLIC_PAYMENTS_DISABLED_MESSAGE` — sitewide payments kill switch (see `src/lib/payments-flag.ts`); set the former to `"true"` to block checkout everywhere and show the banner/message instead, no code change needed to toggle
 - `RESEND_API_KEY`, `EMAIL_FROM` — Resend, used for password-reset + contact-form emails (`EMAIL_FROM` must be on a Resend-verified domain)
 - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` — Cloudinary account used by `src/lib/storage.ts` for all uploaded files, previews, thumbnails, and invoices
 - `MAX_UPLOAD_MB` — max question-bank upload size

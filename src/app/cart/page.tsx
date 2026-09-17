@@ -8,8 +8,10 @@ import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { BookOpen, Loader2, ShoppingCart, Trash2 } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
+import { PaymentsDisabledBanner } from "@/components/payments-disabled-banner";
 import { useCartStore, cartSubtotal, type CartItem } from "@/stores/cart-store";
 import { useCashfreeSdk } from "@/lib/payment/use-cashfree-sdk";
+import { PAYMENTS_DISABLED } from "@/lib/payments-flag";
 import { CartApiError, createCartOrder, previewCart, type CartPreviewResponse } from "@/features/cart/api";
 
 function formatRupees(paise: number): string {
@@ -85,6 +87,7 @@ export default function CartPage() {
   }
 
   async function checkout() {
+    if (PAYMENTS_DISABLED) return;
     if (status !== "authenticated") {
       router.push("/login");
       return;
@@ -142,6 +145,8 @@ export default function CartPage() {
       <SiteHeader />
       <main className="mx-auto w-full max-w-4xl px-4 py-12 sm:px-6">
         <h1 className="font-heading mb-7 text-[26px] font-medium">Your cart</h1>
+
+        <PaymentsDisabledBanner />
 
         {items.length === 0 ? (
           <div className="flex flex-col items-center gap-3 rounded-[14px] border border-dashed border-border bg-card px-6 py-16 text-center">
@@ -280,10 +285,10 @@ export default function CartPage() {
               <button
                 type="button"
                 onClick={checkout}
-                disabled={checkingOut || previewQuery.isFetching}
+                disabled={PAYMENTS_DISABLED || checkingOut || previewQuery.isFetching}
                 className="w-full rounded-[9px] bg-primary-light py-3 text-[15px] font-medium text-white transition-[background-color,transform] hover:bg-primary active:scale-[0.98] disabled:opacity-60"
               >
-                {checkingOut ? "Processing…" : "Checkout →"}
+                {PAYMENTS_DISABLED ? "Payments unavailable" : checkingOut ? "Processing…" : "Checkout →"}
               </button>
             </div>
           </div>
