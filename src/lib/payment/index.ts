@@ -12,12 +12,20 @@ const REQUIRED_CASHFREE_ENV_VARS = ["CASHFREE_ENV", "CASHFREE_APP_ID", "CASHFREE
 const REQUIRED_RAZORPAY_ENV_VARS = ["RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET", "RAZORPAY_WEBHOOK_SECRET"] as const;
 
 /**
- * Selects the active provider via PAYMENT_PROVIDER. Adding a new provider means
- * implementing it against the PaymentProvider interface and registering it
- * below — nothing else in the app should need to change. See docs/CASHFREE-PLAN.md.
+ * Selects a provider. With no argument, selects the globally active one via
+ * PAYMENT_PROVIDER (used by checkout, webhooks, and the bulk reconcile sweep).
+ * An explicit `nameOverride` builds a specific named provider regardless of
+ * PAYMENT_PROVIDER — used only for re-checking one specific purchase by the
+ * provider that actually created it (e.g. an admin's "Re-check payment" on an
+ * old Cashfree purchase after PAYMENT_PROVIDER has since switched to
+ * razorpay). Requires that provider's env vars to still be configured.
+ *
+ * Adding a new provider means implementing it against the PaymentProvider
+ * interface and registering it below — nothing else in the app should need
+ * to change. See docs/CASHFREE-PLAN.md.
  */
-export function getPaymentProvider(): PaymentProvider {
-  const provider = process.env.PAYMENT_PROVIDER ?? "mock";
+export function getPaymentProvider(nameOverride?: string): PaymentProvider {
+  const provider = nameOverride ?? process.env.PAYMENT_PROVIDER ?? "mock";
 
   if (provider === "mock" && process.env.NODE_ENV === "production" && process.env.ALLOW_MOCK_PAYMENTS !== "true") {
     throw new Error("Refusing to run MockPaymentProvider in production. Set ALLOW_MOCK_PAYMENTS=true to override.");

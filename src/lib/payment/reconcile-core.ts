@@ -110,7 +110,6 @@ export async function reconcileSinglePurchase(purchaseId: string): Promise<Recon
   const purchase = await prisma.purchase.findUnique({ where: { id: purchaseId } });
   if (!purchase) return null;
 
-  const provider = getPaymentProvider();
   const summary = emptySummary();
 
   // Multi-item cart purchases don't have their own Cashfree order — their
@@ -119,28 +118,22 @@ export async function reconcileSinglePurchase(purchaseId: string): Promise<Recon
   // reconciliation is not implemented yet), so skip rather than 400 Cashfree.
   if (purchase.orderId != null) return summary;
 
-  // A purchase created under a since-deactivated provider (e.g. an old
-  // Cashfree order while PAYMENT_PROVIDER is now razorpay) has a
-  // providerOrderId the current provider's API can't resolve at all — skip
-  // rather than burn a reconcileAttempts try and eventually holdForReview a
-  // purchase that isn't actually broken, just stale-provider.
-  if (purchase.paymentProvider !== "free" && purchase.paymentProvider !== provider.name) {
-    summary.errors += 1;
-    console.error(
-      `reconcileSinglePurchase(${purchaseId}): purchase was created under provider "${purchase.paymentProvider}", ` +
-        `but the active provider is "${provider.name}" — skipping rather than polling the wrong gateway.`,
-    );
-    return summary;
-  }
-
-  if (purchase.status === "PENDING") {
-    const pastExpiry = purchase.expiresAt != null && purchase.expiresAt < new Date();
-    await reconcileOne(purchase, provider, summary, { forceExpireOnPending: pastExpiry });
-  } else if (purchase.status === "FAILED" || purchase.status === "CANCELLED") {
-    // A failed/dropped attempt is not terminal on a Cashfree order — a later
-    // attempt on the same order may have succeeded. finalizePurchase promotes
-    // the row only if the provider now reports SUCCESS.
-    await reconcileOne(purchase, provider, summary, { forceExpireOnPending: false });
+  if (purchase.status === "PENDING" || purchase.status === "FAILED" || purchase.status === "CANCELLED") {
+    // This is a single, explicit, admin-targeted action on one known purchase —
+    // unlike the bulk sweep (which stays scoped to the currently active
+    // provider to avoid hammering a deactivated gateway across many rows),
+    // it's safe and correct to poll using the SPECIFIC provider that created
+    // this purchase (e.g. re-checking an old Cashfree purchase after
+    // PAYMENT_PROVIDER has since switched to razorpay) — as long as that
+    // provider's env vars are still configured. If they're not, this throws
+    // and the admin sees a clear error instead of a silent no-op.
+    const provider = getPaymentProvider(purchase.paymentProvider);
+    const forceExpireOnPending =
+      purchase.status === "PENDING" && purchase.expiresAt != null && purchase.expiresAt < new Date();
+    // A failed/dropped attempt is not terminal on a Cashfree/Razorpay order —
+    // a later attempt on the same order may have succeeded. finalizePurchase
+    // promotes the row only if the provider now reports SUCCESS.
+    await reconcileOne(purchase, provider, summary, { forceExpireOnPending });
   } else if (purchase.status === "SUCCESS") {
     await ensureInvoice(purchase.id).then(() => {
       summary.invoicesRepaired += 1;
