@@ -119,6 +119,20 @@ export async function reconcileSinglePurchase(purchaseId: string): Promise<Recon
   // reconciliation is not implemented yet), so skip rather than 400 Cashfree.
   if (purchase.orderId != null) return summary;
 
+  // A purchase created under a since-deactivated provider (e.g. an old
+  // Cashfree order while PAYMENT_PROVIDER is now razorpay) has a
+  // providerOrderId the current provider's API can't resolve at all — skip
+  // rather than burn a reconcileAttempts try and eventually holdForReview a
+  // purchase that isn't actually broken, just stale-provider.
+  if (purchase.paymentProvider !== "free" && purchase.paymentProvider !== provider.name) {
+    summary.errors += 1;
+    console.error(
+      `reconcileSinglePurchase(${purchaseId}): purchase was created under provider "${purchase.paymentProvider}", ` +
+        `but the active provider is "${provider.name}" — skipping rather than polling the wrong gateway.`,
+    );
+    return summary;
+  }
+
   if (purchase.status === "PENDING") {
     const pastExpiry = purchase.expiresAt != null && purchase.expiresAt < new Date();
     await reconcileOne(purchase, provider, summary, { forceExpireOnPending: pastExpiry });
@@ -184,6 +198,12 @@ export async function runReconcileSweep(
   const stalePending = await prisma.purchase.findMany({
     where: {
       status: "PENDING",
+      // Only purchases created under the currently active provider — a
+      // purchase created while a different PAYMENT_PROVIDER was active has a
+      // providerOrderId that provider.getOrderStatus() can't resolve (wrong
+      // gateway entirely), which would just error every sweep until
+      // reconcileAttempts exhausts and wrongly holds it for review.
+      paymentProvider: provider.name,
       heldForReview: false,
       // Multi-item cart purchases don't have their own Cashfree order — their
       // providerOrderId is a synthetic `${order.id}:${bank.id}` key. The

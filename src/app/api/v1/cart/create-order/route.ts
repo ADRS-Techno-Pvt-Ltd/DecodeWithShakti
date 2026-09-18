@@ -26,6 +26,7 @@ const ORDER_EXPIRY_MINUTES = Number(process.env.CASHFREE_ORDER_EXPIRY_MINUTES ??
  *   orderId: string;
  *   redirectUrl: string | null;
  *   sessionId: string | null;
+ *   keyId: string | null;
  *   free: boolean;
  *   expiresAt: string; // ISO
  *   subtotal: number;                    // paise
@@ -236,6 +237,7 @@ export async function POST(request: Request) {
         orderId: order.id,
         redirectUrl: null,
         sessionId: null,
+        keyId: null,
         free: true,
         expiresAt,
         subtotal: pricing.subtotal,
@@ -262,10 +264,22 @@ export async function POST(request: Request) {
         returnUrl: `${process.env.NEXTAUTH_URL}/purchase/order/${order.id}/return`,
       });
 
+      // Cashfree lets us choose our own order_id (= order.id), but Razorpay
+      // generates its own (e.g. "order_XXXX") — persist it so the webhook's
+      // providerOrderId lookup and any self-heal poll hit the right order.
+      if (orderResult.providerOrderId !== order.id) {
+        await prisma.order.update({
+          where: { id: order.id },
+          data: { providerOrderId: orderResult.providerOrderId },
+        });
+      }
+
       return NextResponse.json({
         orderId: order.id,
+        providerOrderId: orderResult.providerOrderId,
         redirectUrl: orderResult.redirectUrl ?? null,
         sessionId: orderResult.sessionId ?? null,
+        keyId: orderResult.keyId ?? null,
         free: false,
         expiresAt,
         subtotal: pricing.subtotal,

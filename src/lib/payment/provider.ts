@@ -24,6 +24,8 @@ export type CreateOrderResult = {
   redirectUrl?: string;
   /** Cashfree payment_session_id, used by the client-side checkout SDK. */
   sessionId?: string;
+  /** Razorpay's public key_id — not a secret, safe to return to the client for checkout.js. */
+  keyId?: string;
   expiresAt?: Date;
 };
 

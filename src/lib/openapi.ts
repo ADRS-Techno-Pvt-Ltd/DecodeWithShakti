@@ -673,10 +673,11 @@ export const openApiDocument = {
         tags: ["Purchase"],
         summary: "Create a pending purchase and payment order (student)",
         description:
-          "Creates a PENDING purchase, asks the configured payment provider for an order, and returns either a " +
-          "sessionId (Cashfree — pass to the client-side checkout SDK) or a redirectUrl (mock). If a coupon " +
-          "brings the price to ₹0, the payment gateway is skipped entirely — the purchase is finalized as " +
-          "SUCCESS immediately and `free: true` is returned instead.",
+          "Creates a PENDING purchase, asks the configured payment provider for an order, and returns a " +
+          "sessionId (Cashfree — pass to the client-side checkout SDK), a keyId (Razorpay — pass to " +
+          "checkout.js along with providerOrderId as order_id), or a redirectUrl (mock). If a coupon brings " +
+          "the price to ₹0, the payment gateway is skipped entirely — the purchase is finalized as SUCCESS " +
+          "immediately and `free: true` is returned instead.",
         security: [{ sessionCookie: [] }],
         requestBody: jsonBody({
           type: "object",
@@ -692,7 +693,14 @@ export const openApiDocument = {
             type: "object",
             properties: {
               purchaseId: { type: "string" },
+              providerOrderId: {
+                type: "string",
+                description:
+                  "The payment provider's own order id — equals purchaseId for Cashfree/mock, but Razorpay " +
+                  "generates its own (e.g. order_XXXX). Use THIS as checkout.js's order_id, not purchaseId.",
+              },
               sessionId: { type: "string", nullable: true, description: "Cashfree payment_session_id, for cashfree.checkout()" },
+              keyId: { type: "string", nullable: true, description: "Razorpay key_id, for `new Razorpay({ key, order_id: providerOrderId }).open()`" },
               redirectUrl: { type: "string", nullable: true, description: "Mock provider only" },
               free: { type: "boolean", description: "true when a 100% coupon fully covered the price — already finalized, no checkout needed" },
               expiresAt: { type: "string", format: "date-time" },
@@ -755,6 +763,23 @@ export const openApiDocument = {
           200: jsonResponse("Verified (processed, already-finalized, or unknown order)", Ok),
           401: jsonResponse("Invalid or missing signature", ErrorMessage),
           500: jsonResponse("Unexpected failure — Cashfree will retry", ErrorMessage),
+        },
+      },
+    },
+
+    "/api/v1/payment/razorpay/webhook": {
+      post: {
+        tags: ["Purchase"],
+        summary: "Razorpay payment webhook (server-to-server)",
+        description:
+          "Signature-verified only — no session guard. Verifies x-razorpay-signature (HMAC-SHA256 over the raw " +
+          "body) against RAZORPAY_WEBHOOK_SECRET, then idempotently finalizes the purchase. Always returns 200 " +
+          "once the signature is verified so Razorpay stops retrying; 401 only on a bad signature.",
+        security: [],
+        responses: {
+          200: jsonResponse("Verified (processed, already-finalized, or unknown order)", Ok),
+          401: jsonResponse("Invalid or missing signature", ErrorMessage),
+          500: jsonResponse("Unexpected failure — Razorpay will retry", ErrorMessage),
         },
       },
     },

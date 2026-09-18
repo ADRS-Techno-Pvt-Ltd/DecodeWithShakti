@@ -11,6 +11,7 @@ import { SiteHeader } from "@/components/site-header";
 import { PaymentsDisabledBanner } from "@/components/payments-disabled-banner";
 import { useCartStore, cartSubtotal, type CartItem } from "@/stores/cart-store";
 import { useCashfreeSdk } from "@/lib/payment/use-cashfree-sdk";
+import { useRazorpaySdk } from "@/lib/payment/use-razorpay-sdk";
 import { PAYMENTS_DISABLED } from "@/lib/payments-flag";
 import { CartApiError, createCartOrder, previewCart, type CartPreviewResponse } from "@/features/cart/api";
 
@@ -26,8 +27,9 @@ const TYPE_LABEL: Record<CartItem["type"], string> = {
 
 export default function CartPage() {
   const router = useRouter();
-  const { status } = useSession();
+  const { data: session, status } = useSession();
   const cashfree = useCashfreeSdk();
+  const Razorpay = useRazorpaySdk();
   const items = useCartStore((s) => s.items);
   const removeItem = useCartStore((s) => s.removeItem);
   const addItem = useCartStore((s) => s.addItem);
@@ -119,6 +121,31 @@ export default function CartPage() {
         if (checkoutResult.redirect) return; // hosted page — return_url handler takes over
         if (checkoutResult.error) toast.info("Payment was not completed.");
         router.push(`/purchase/order/${result.orderId}/return`);
+      } else if (result.keyId && Razorpay) {
+        const rzp = new Razorpay({
+          key: result.keyId,
+          order_id: result.providerOrderId ?? result.orderId,
+          name: "Decode With Shakti",
+          description: items.length === 1 ? items[0].title : `${items.length} items`,
+          prefill: {
+            name: session?.user?.name ?? undefined,
+            email: session?.user?.email ?? undefined,
+            contact: needsPhone ? phone : undefined,
+          },
+          // Neither handler nor dismissal proves the real outcome — the return
+          // page always decides by backend-verifying with the provider.
+          handler: () => {
+            useCartStore.getState().clear();
+            router.push(`/purchase/order/${result.orderId}/return`);
+          },
+          modal: {
+            ondismiss: () => {
+              useCartStore.getState().clear();
+              router.push(`/purchase/order/${result.orderId}/return`);
+            },
+          },
+        });
+        rzp.open();
       } else if (result.redirectUrl) {
         useCartStore.getState().clear();
         router.push(result.redirectUrl); // mock path

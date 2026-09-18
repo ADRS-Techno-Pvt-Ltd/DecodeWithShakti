@@ -38,6 +38,7 @@
     "pdf-lib": "^1.17.1",
     "pdfkit": "^0.20.1",
     "prisma": "7.10.0",
+    "razorpay": "^2.9.8",
     "react": "19.2.8",
     "react-day-picker": "^10.0.1",
     "react-dom": "19.2.8",

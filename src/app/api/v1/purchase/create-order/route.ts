@@ -159,10 +159,22 @@ export async function POST(request: Request) {
         returnUrl: `${process.env.NEXTAUTH_URL}/purchase/${purchase.id}/return`,
       });
 
+      // Cashfree lets us choose our own order_id (= purchase.id), but Razorpay
+      // generates its own (e.g. "order_XXXX") — persist it so the webhook's
+      // providerOrderId lookup and any self-heal poll hit the right order.
+      if (orderResult.providerOrderId !== purchase.id) {
+        await prisma.purchase.update({
+          where: { id: purchase.id },
+          data: { providerOrderId: orderResult.providerOrderId },
+        });
+      }
+
       return NextResponse.json({
         purchaseId: purchase.id,
+        providerOrderId: orderResult.providerOrderId,
         redirectUrl: orderResult.redirectUrl ?? null,
         sessionId: orderResult.sessionId ?? null,
+        keyId: orderResult.keyId ?? null,
         expiresAt,
       });
     } catch (err) {

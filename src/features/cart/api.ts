@@ -17,7 +17,8 @@ import type { CartItemType } from "@/stores/cart-store";
  *
  * `create-order` response:
  *   {
- *     orderId: string, redirectUrl: string | null, sessionId: string | null, free: boolean,
+ *     orderId: string, providerOrderId?: string (Razorpay's own order id — needed as checkout.js's order_id, differs from orderId),
+ *     redirectUrl: string | null, sessionId: string | null, keyId: string | null, free: boolean,
  *     expiresAt: string, subtotal, couponDiscountAmount, bundleDiscountAmount,
  *     bundleDiscountPercentApplied, amount,
  *     items: { questionBankId, title, basePrice, amount, purchaseId }[],
@@ -56,8 +57,10 @@ export type CartCreateOrderRequest = {
 
 export type CartCreateOrderResponse = {
   orderId: string;
+  providerOrderId?: string;
   redirectUrl: string | null;
   sessionId: string | null;
+  keyId: string | null;
   free: boolean;
   expiresAt: string | null;
   subtotal?: number;

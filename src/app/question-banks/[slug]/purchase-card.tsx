@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { CheckCircle2, ShoppingCart } from "lucide-react";
 import { useCashfreeSdk } from "@/lib/payment/use-cashfree-sdk";
+import { useRazorpaySdk } from "@/lib/payment/use-razorpay-sdk";
 import { PAYMENTS_DISABLED } from "@/lib/payments-flag";
 import { useCartStore, type CartItemType } from "@/stores/cart-store";
 
@@ -79,8 +80,9 @@ export function PurchaseCard({
   features?: string[];
 }) {
   const router = useRouter();
-  const { status } = useSession();
+  const { data: session, status } = useSession();
   const cashfree = useCashfreeSdk();
+  const Razorpay = useRazorpaySdk();
   const addItem = useCartStore((s) => s.addItem);
   const inCart = useCartStore((s) => s.has(questionBankId));
   const [couponCode, setCouponCode] = useState("");
@@ -166,6 +168,24 @@ export function PurchaseCard({
         if (result.redirect) return; // navigating to a hosted page — return_url handler takes over
         if (result.error) toast.info("Payment was not completed.");
         router.push(`/purchase/${body.purchaseId}/return`);
+      } else if (body.keyId && Razorpay) {
+        const rzp = new Razorpay({
+          key: body.keyId,
+          order_id: body.providerOrderId,
+          name: "Decode With Shakti",
+          description: title,
+          prefill: {
+            name: session?.user?.name ?? undefined,
+            email: session?.user?.email ?? undefined,
+            contact: needsPhone ? phone : undefined,
+          },
+          // Same as the Cashfree branch above — neither handler nor dismissal
+          // proves the payment's real outcome. The return page always decides
+          // by backend-verifying with the provider.
+          handler: () => router.push(`/purchase/${body.purchaseId}/return`),
+          modal: { ondismiss: () => router.push(`/purchase/${body.purchaseId}/return`) },
+        });
+        rzp.open();
       } else if (body.redirectUrl) {
         router.push(body.redirectUrl); // mock path
       } else {

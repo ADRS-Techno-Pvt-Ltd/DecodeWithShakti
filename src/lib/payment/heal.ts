@@ -48,9 +48,14 @@ function throttled(purchaseId: string): boolean {
 /** A purchase worth re-checking against the provider. */
 function isHealable(
   p: Pick<Purchase, "status" | "heldForReview" | "paymentProvider" | "createdAt" | "orderId">,
+  activeProviderName: string,
 ): boolean {
   if (p.heldForReview) return false; // an admin must resolve these
   if (p.paymentProvider === "free") return false; // never went to a gateway
+  // A purchase created while a different PAYMENT_PROVIDER was active has a
+  // providerOrderId the current provider's API can't resolve (wrong gateway
+  // entirely) — polling it would just error every time, not heal anything.
+  if (p.paymentProvider !== activeProviderName) return false;
   // Multi-item cart purchases don't have their own Cashfree order — their
   // providerOrderId is a synthetic `${order.id}:${bank.id}` key, not a real
   // order id, so polling it directly 400s. The parent Order is healed
@@ -63,8 +68,7 @@ function isHealable(
   return false; // SUCCESS / EXPIRED / REFUNDED are terminal
 }
 
-async function pollAndFinalize(providerOrderId: string): Promise<void> {
-  const provider = getPaymentProvider();
+async function pollAndFinalize(providerOrderId: string, provider: ReturnType<typeof getPaymentProvider>): Promise<void> {
   const result = await provider.getOrderStatus(providerOrderId);
   if (result.status !== "PENDING") {
     await finalizePurchase(result);
@@ -79,8 +83,9 @@ export async function healPurchase(purchaseId: string): Promise<PurchaseStatus |
   try {
     const purchase = await prisma.purchase.findUnique({ where: { id: purchaseId } });
     if (!purchase) return null;
-    if (isHealable(purchase) && !throttled(purchase.id)) {
-      await pollAndFinalize(purchase.providerOrderId);
+    const provider = getPaymentProvider();
+    if (isHealable(purchase, provider.name) && !throttled(purchase.id)) {
+      await pollAndFinalize(purchase.providerOrderId, provider);
       const updated = await prisma.purchase.findUnique({
         where: { id: purchaseId },
         select: { status: true },
@@ -94,10 +99,12 @@ export async function healPurchase(purchaseId: string): Promise<PurchaseStatus |
   }
 }
 
-function healableWhere() {
+function healableWhere(activeProviderName: string) {
   return {
     heldForReview: false,
-    paymentProvider: { not: "free" },
+    // See isHealable()'s matching check — a purchase from a different,
+    // no-longer-active provider can't be polled against this provider's API.
+    paymentProvider: activeProviderName,
     orderId: null,
     OR: [
       { status: "PENDING" as const },
@@ -109,14 +116,17 @@ function healableWhere() {
   };
 }
 
-async function healMany(purchases: Pick<Purchase, "id" | "providerOrderId">[]): Promise<void> {
+async function healMany(
+  purchases: Pick<Purchase, "id" | "providerOrderId">[],
+  provider: ReturnType<typeof getPaymentProvider>,
+): Promise<void> {
   let calls = 0;
   for (const purchase of purchases) {
     if (calls >= MAX_CALLS_PER_INVOCATION) break;
     if (throttled(purchase.id)) continue;
     calls += 1;
     try {
-      await pollAndFinalize(purchase.providerOrderId);
+      await pollAndFinalize(purchase.providerOrderId, provider);
     } catch (err) {
       console.error(`healMany: ${purchase.id} failed`, err);
     }
@@ -130,13 +140,14 @@ async function healMany(purchases: Pick<Purchase, "id" | "providerOrderId">[]): 
  */
 export async function healUserPurchases(userId: string): Promise<void> {
   try {
+    const provider = getPaymentProvider();
     const candidates = await prisma.purchase.findMany({
-      where: { userId, ...healableWhere() },
+      where: { userId, ...healableWhere(provider.name) },
       orderBy: { createdAt: "desc" },
       take: 10,
       select: { id: true, providerOrderId: true },
     });
-    await healMany(candidates);
+    await healMany(candidates, provider);
   } catch (err) {
     console.error(`healUserPurchases(${userId}) failed`, err);
   }
@@ -149,13 +160,14 @@ export async function healUserPurchases(userId: string): Promise<void> {
 export async function healPurchaseIds(purchaseIds: string[]): Promise<void> {
   if (purchaseIds.length === 0) return;
   try {
+    const provider = getPaymentProvider();
     const candidates = await prisma.purchase.findMany({
-      where: { id: { in: purchaseIds }, ...healableWhere() },
+      where: { id: { in: purchaseIds }, ...healableWhere(provider.name) },
       orderBy: { createdAt: "desc" },
       take: 10,
       select: { id: true, providerOrderId: true },
     });
-    await healMany(candidates);
+    await healMany(candidates, provider);
   } catch (err) {
     console.error("healPurchaseIds failed", err);
   }
