@@ -108,6 +108,7 @@ export class RazorpayProvider implements PaymentProvider {
       event?: string;
       payload?: {
         payment?: { entity?: RazorpayPaymentEntity };
+        order?: { entity?: { id?: string; amount_paid?: number; status?: string } };
         refund?: { entity?: { id?: string; payment_id?: string } };
       };
     };
@@ -118,8 +119,9 @@ export class RazorpayProvider implements PaymentProvider {
     }
 
     const payment = payload.payload?.payment?.entity;
+    const order = payload.payload?.order?.entity;
     const refund = payload.payload?.refund?.entity;
-    const orderId = payment?.order_id;
+    const orderId = payment?.order_id ?? order?.id;
     if (!orderId) return null; // refund.processed payloads don't always carry order_id — no order, no finalize
 
     // Razorpay, unlike Cashfree (x-idempotency-key) or Stripe (evt_... id), sends
@@ -132,6 +134,23 @@ export class RazorpayProvider implements PaymentProvider {
         return {
           ...toCallbackResult(orderId, "SUCCESS", payment),
           eventId: `${payload.event}:${payment?.id}`,
+          eventType: payload.event,
+          rawPayload: payload,
+        };
+      // order.paid is a redundant, order-level confirmation of the same
+      // success payment.captured already reports — Razorpay's own guidance is
+      // to listen for both, since they're not always delivered together and
+      // one can arrive/land when the other doesn't (this is exactly the kind
+      // of gap that left real cart orders stuck PENDING despite a captured
+      // payment). finalizePurchase/finalizeOrder are idempotent, so handling
+      // both is always safe — whichever arrives first wins, the other is a
+      // no-op via the provider_eventId dedupe or the already-SUCCESS guard.
+      case "order.paid":
+        return {
+          ...toCallbackResult(orderId, "SUCCESS", payment),
+          providerOrderId: orderId,
+          paidAmount: payment?.amount ?? order?.amount_paid,
+          eventId: `${payload.event}:${orderId}`,
           eventType: payload.event,
           rawPayload: payload,
         };
