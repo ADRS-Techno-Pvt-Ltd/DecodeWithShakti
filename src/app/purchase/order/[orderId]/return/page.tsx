@@ -4,6 +4,7 @@ import { CheckCircle2, XCircle, Ban, Clock, RotateCcw } from "lucide-react";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireStudent } from "@/lib/auth-guards";
+import { healOrder } from "@/lib/payment/heal";
 import { Card, CardContent } from "@/components/ui/card";
 import { OrderPendingPoller } from "./order-pending-poller";
 import { AutoRedirect } from "../../../[orderId]/return/auto-redirect";
@@ -33,6 +34,13 @@ export default async function OrderReturnPage({
 }: PageProps<"/purchase/order/[orderId]/return">) {
   const { orderId } = await params;
   const session = await requireStudent();
+
+  const owned = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: { userId: true },
+  });
+  if (!owned || owned.userId !== session.user.id) notFound();
+  await healOrder(orderId);
 
   const order = await prisma.order.findUnique({
     where: { id: orderId },

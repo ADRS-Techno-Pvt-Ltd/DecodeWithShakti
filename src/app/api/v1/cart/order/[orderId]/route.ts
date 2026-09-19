@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { healOrder } from "@/lib/payment/heal";
 import { requireStudent, toErrorResponse } from "@/lib/auth-guards";
 
 /**
@@ -18,6 +19,10 @@ export async function GET(
   try {
     const session = await requireStudent();
     const { orderId } = await params;
+
+    // Ask the provider directly (throttled) so a late/missing webhook can't
+    // leave the order stuck PENDING; ownership is re-checked below.
+    await healOrder(orderId);
 
     const order = await prisma.order.findUnique({
       where: { id: orderId },

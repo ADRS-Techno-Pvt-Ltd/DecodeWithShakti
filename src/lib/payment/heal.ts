@@ -2,6 +2,7 @@ import type { Purchase, PurchaseStatus } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getPaymentProvider } from "@/lib/payment";
 import { finalizePurchase } from "./finalize-purchase";
+import { finalizeOrder } from "./finalize-order";
 
 /**
  * Opportunistic self-heal — Layer B of docs/PAYMENT-SELF-HEALING.md.
@@ -170,5 +171,30 @@ export async function healPurchaseIds(purchaseIds: string[]): Promise<void> {
     await healMany(candidates, provider);
   } catch (err) {
     console.error("healPurchaseIds failed", err);
+  }
+}
+
+/**
+ * Re-check one multi-item Order against the provider (the Order counterpart of
+ * healPurchase). Called from the order return page and its status endpoint so a
+ * late or missing webhook doesn't leave the buyer on "Confirming…" forever.
+ * Never throws; provider calls are throttled per order.
+ */
+export async function healOrder(orderId: string): Promise<void> {
+  try {
+    const order = await prisma.order.findUnique({ where: { id: orderId } });
+    if (!order || order.heldForReview) return;
+    if (order.status !== "PENDING") {
+      const recentlyFailed =
+        (order.status === "FAILED" || order.status === "CANCELLED") &&
+        order.createdAt.getTime() > Date.now() - HEAL_WINDOW_MS;
+      if (!recentlyFailed) return;
+    }
+    const provider = getPaymentProvider();
+    if (order.paymentProvider !== provider.name || throttled(`order:${order.id}`)) return;
+    const result = await provider.getOrderStatus(order.providerOrderId);
+    if (result.status !== "PENDING") await finalizeOrder(result);
+  } catch (err) {
+    console.error(`healOrder(${orderId}) failed`, err);
   }
 }
