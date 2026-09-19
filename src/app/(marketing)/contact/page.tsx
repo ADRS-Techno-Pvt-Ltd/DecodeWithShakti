@@ -1,3 +1,4 @@
+import { BUSINESS } from "@/lib/business-info";
 import Link from "next/link";
 import { Mail, Clock, HelpCircle, ArrowRight } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
@@ -82,6 +83,13 @@ export default function ContactPage() {
                 )}
               </div>
             ))}
+
+            <div className="rounded-[3px_12px_12px_12px] border border-border bg-card p-5 text-[13.5px] leading-[1.7] text-muted-foreground">
+              <h2 className="font-heading mb-1.5 text-[16.5px] font-medium tracking-tight text-foreground">Business details</h2>
+              <p><span className="text-foreground">Legal name:</span> {BUSINESS.legalName}</p>
+              <p><span className="text-foreground">Email:</span> <a href={`mailto:${BUSINESS.email}`} className="text-primary hover:underline">{BUSINESS.email}</a></p>
+              <p><span className="text-foreground">Phone:</span> <a href={BUSINESS.phoneHref} className="text-primary hover:underline">{BUSINESS.phone}</a></p>
+            </div>
 
             <p className="border-l-2 border-accent pl-4 text-[12.5px] leading-[1.55] text-muted-foreground">
               Every message lands in a shared inbox the team reads through each morning — nothing

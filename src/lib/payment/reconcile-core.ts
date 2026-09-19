@@ -1,5 +1,6 @@
 import { Prisma } from "@/generated/prisma/client";
-import type { Purchase } from "@/generated/prisma/client";
+import type { Purchase, Order } from "@/generated/prisma/client";
+import { finalizeOrder } from "@/lib/payment/finalize-order";
 import { prisma } from "@/lib/prisma";
 import { getPaymentProvider } from "@/lib/payment";
 import { finalizePurchase, ensureInvoice } from "@/lib/payment/finalize-purchase";
@@ -16,6 +17,7 @@ export const MAX_RECONCILE_ATTEMPTS = 10;
 const BATCH_LIMIT = 50;
 const POLL_DELAY_MS = 250; // stay well under Cashfree's per-minute rate limits across a batch
 const RECHECK_WINDOW_MS = 14 * 24 * 60 * 60 * 1000; // FAILED/CANCELLED older than this are left alone
+const PENDING_GRACE_MS = 5 * 60 * 1000; // don't poll checkouts the customer is likely still completing
 const SWEEP_LOCK_BUCKET_MS = 2 * 60 * 1000; // one sweep per this window across all instances
 
 export type ReconcileSummary = {
@@ -99,6 +101,104 @@ async function reconcileOne(
       .catch(() => {});
     if (attempts >= MAX_RECONCILE_ATTEMPTS) summary.held += 1;
     console.error(`reconcile: purchase ${purchase.id} failed`, err);
+  }
+}
+
+/** Multi-item cart Order counterpart of reconcileOne — polls the provider order and applies the result. */
+async function reconcileOneOrder(
+  order: Order,
+  provider: PaymentProvider,
+  summary: ReconcileSummary,
+  opts: { forceExpireOnPending: boolean },
+) {
+  summary.scanned += 1;
+  try {
+    const result = await provider.getOrderStatus(order.providerOrderId);
+
+    await prisma.paymentEvent.create({
+      data: {
+        provider: provider.name,
+        eventId: `poll:order:${order.id}:${crypto.randomUUID()}`,
+        eventType: "RECONCILE_POLL",
+        providerOrderId: order.providerOrderId,
+        signatureValid: true,
+        rawPayload: (result.rawPayload as object | undefined) ?? { status: result.status },
+      },
+    });
+
+    if (result.status === "PENDING") {
+      if (opts.forceExpireOnPending) {
+        const count = await prisma.$transaction(async (tx) => {
+          const { count } = await tx.order.updateMany({
+            where: { id: order.id, status: "PENDING" },
+            data: { status: "EXPIRED" },
+          });
+          if (count > 0) {
+            await tx.purchase.updateMany({
+              where: { orderId: order.id, status: "PENDING" },
+              data: { status: "EXPIRED" },
+            });
+          }
+          return count;
+        });
+        if (count > 0) summary.resolved.EXPIRED += 1;
+      }
+    } else {
+      const outcome = await finalizeOrder(result);
+      if (outcome.applied && result.status in summary.resolved) {
+        summary.resolved[result.status as keyof typeof summary.resolved] += 1;
+      }
+    }
+  } catch (err) {
+    summary.errors += 1;
+    const attempts = order.reconcileAttempts + 1;
+    await prisma.order
+      .update({
+        where: { id: order.id },
+        data:
+          attempts >= MAX_RECONCILE_ATTEMPTS
+            ? { reconcileAttempts: attempts, heldForReview: true, failureCode: "reconcile_exhausted" }
+            : { reconcileAttempts: attempts },
+      })
+      .catch(() => {});
+    if (attempts >= MAX_RECONCILE_ATTEMPTS) summary.held += 1;
+    console.error(`reconcile: order ${order.id} failed`, err);
+  }
+}
+
+/** Sweep PENDING orders (and recently FAILED/CANCELLED ones that may have been retried successfully). */
+async function reconcileOrders(provider: PaymentProvider, summary: ReconcileSummary) {
+  const now = new Date();
+  const base = {
+    paymentProvider: provider.name,
+    heldForReview: false,
+    reconcileAttempts: { lt: MAX_RECONCILE_ATTEMPTS },
+  };
+
+  const pending = await prisma.order.findMany({
+    where: { ...base, status: "PENDING", createdAt: { lt: new Date(Date.now() - PENDING_GRACE_MS) } },
+    take: BATCH_LIMIT,
+    orderBy: { createdAt: "asc" },
+  });
+  for (const order of pending) {
+    await reconcileOneOrder(order, provider, summary, {
+      forceExpireOnPending: order.expiresAt != null && order.expiresAt < now,
+    });
+    await sleep(POLL_DELAY_MS);
+  }
+
+  const failed = await prisma.order.findMany({
+    where: {
+      ...base,
+      status: { in: ["FAILED", "CANCELLED"] },
+      createdAt: { gt: new Date(Date.now() - RECHECK_WINDOW_MS) },
+    },
+    take: BATCH_LIMIT,
+    orderBy: { createdAt: "desc" },
+  });
+  for (const order of failed) {
+    await reconcileOneOrder(order, provider, summary, { forceExpireOnPending: false });
+    await sleep(POLL_DELAY_MS);
   }
 }
 
@@ -202,16 +302,24 @@ export async function runReconcileSweep(
       // providerOrderId is a synthetic `${order.id}:${bank.id}` key. The
       // parent Order is reconciled separately (finalize-order.ts / webhook).
       orderId: null,
-      expiresAt: { not: null, lt: new Date() },
+      // Poll every PENDING row older than a grace period, not just expired ones:
+      // a customer may have paid while our webhook was missed. Only rows past
+      // expiresAt are force-expired when the provider still reports no payment.
+      createdAt: { lt: new Date(Date.now() - PENDING_GRACE_MS) },
       reconcileAttempts: { lt: MAX_RECONCILE_ATTEMPTS },
     },
     take: BATCH_LIMIT,
-    orderBy: { expiresAt: "asc" },
+    orderBy: { createdAt: "asc" },
   });
+  const now = new Date();
   for (const purchase of stalePending) {
-    await reconcileOne(purchase, provider, summary, { forceExpireOnPending: true });
+    await reconcileOne(purchase, provider, summary, {
+      forceExpireOnPending: purchase.expiresAt != null && purchase.expiresAt < now,
+    });
     await sleep(POLL_DELAY_MS);
   }
+
+  await reconcileOrders(provider, summary);
 
   // Recently FAILED / CANCELLED orders can still flip to PAID if the customer
   // retried a later attempt on the same Cashfree order.

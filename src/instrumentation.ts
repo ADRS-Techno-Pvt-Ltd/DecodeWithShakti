@@ -11,7 +11,7 @@ export async function register() {
   // Always on; `PAYMENT_SELF_HEAL_SWEEP="off"` is the only kill switch.
   if (process.env.PAYMENT_SELF_HEAL_SWEEP === "off") return;
 
-  const INTERVAL_MS = 3 * 60_000;
+  const INTERVAL_MS = 10 * 60_000;
   const START_DELAY_MS = 30_000; // let the server settle before the first run
 
   const { runReconcileSweep } = await import("@/lib/payment/reconcile-core");

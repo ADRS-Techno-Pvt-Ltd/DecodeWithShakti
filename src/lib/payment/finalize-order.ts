@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import type { PurchaseStatus } from "@/generated/prisma/client";
 import { ensureInvoice } from "./finalize-purchase";
 import { sendMentorshipPurchaseNotifications } from "./mentorship-notifications";
 import type { CallbackResult } from "./provider";
@@ -40,7 +41,7 @@ export async function finalizeOrder(result: CallbackResult): Promise<FinalizeOut
     result.paidAmount != null &&
     result.paidAmount !== order.amount
   ) {
-    if (order.status === "PENDING") {
+    if (["PENDING", "FAILED", "CANCELLED"].includes(order.status)) {
       await prisma.order.update({
         where: { id: order.id },
         data: {
@@ -53,10 +54,16 @@ export async function finalizeOrder(result: CallbackResult): Promise<FinalizeOut
     return { applied: false, reason: "amount-mismatch" };
   }
 
+  // Same rule as finalizePurchase: a genuine SUCCESS can follow an earlier
+  // failed/dropped attempt on the same provider order, so it may promote a
+  // FAILED/CANCELLED order too. Every other status only moves a PENDING one.
+  const promotableFrom: PurchaseStatus[] =
+    result.status === "SUCCESS" ? ["PENDING", "FAILED", "CANCELLED"] : ["PENDING"];
+
   const { count } = await prisma.$transaction(async (tx) => {
-    // Conditional update IS the lock: only an order still PENDING transitions.
+    // Conditional update IS the lock: only an order in an allowed prior state transitions.
     const updateResult = await tx.order.updateMany({
-      where: { id: order.id, status: "PENDING" },
+      where: { id: order.id, status: { in: promotableFrom } },
       data: {
         status: result.status,
         providerPaymentId: result.providerPaymentId,
@@ -69,7 +76,7 @@ export async function finalizeOrder(result: CallbackResult): Promise<FinalizeOut
 
     if (updateResult.count > 0) {
       await tx.purchase.updateMany({
-        where: { orderId: order.id, status: "PENDING" },
+        where: { orderId: order.id, status: { in: promotableFrom } },
         data: {
           status: result.status,
           providerPaymentId: result.providerPaymentId,
