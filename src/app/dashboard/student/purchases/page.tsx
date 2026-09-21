@@ -38,8 +38,14 @@ export default async function StudentPurchasesPage() {
         include: {
           answerKeys: {
             where: { isPublished: true, questionBankId: { not: null } },
-            select: { id: true },
+            select: { id: true, questionBankFileId: true },
             orderBy: { createdAt: "asc" },
+          },
+          // Test Series answer keys unlock once the student has submitted an answer sheet.
+          answerSubmissions: {
+            where: { studentId: session!.user.id },
+            select: { id: true },
+            take: 1,
           },
           files: {
             select: { id: true },
@@ -151,7 +157,8 @@ export default async function StudentPurchasesPage() {
                                   }
                                 />
                               ))}
-                            {p.questionBank.type === "QUESTION_BANK" &&
+                            {(p.questionBank.type === "QUESTION_BANK" ||
+                              (p.questionBank.type === "TEST_SERIES" && p.questionBank.answerSubmissions.length > 0)) &&
                               p.questionBank.answerKeys.map((key, index) => (
                                 <Button
                                   key={key.id}
@@ -166,7 +173,10 @@ export default async function StudentPurchasesPage() {
                                     >
                                       <FileCheck2 className="h-3.5 w-3.5" />
                                       {p.questionBank.answerKeys.length > 1
-                                        ? `Answer Key ${index + 1}`
+                                        ? `Answer Key ${
+                                            p.questionBank.files.findIndex((f) => f.id === key.questionBankFileId) + 1 ||
+                                            index + 1
+                                          }`
                                         : "Answer Key"}
                                     </a>
                                   }
