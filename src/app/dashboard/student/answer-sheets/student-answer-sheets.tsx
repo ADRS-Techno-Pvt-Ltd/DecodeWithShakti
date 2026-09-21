@@ -201,12 +201,19 @@ export function StudentAnswerSheets({ series }: { series: Series[] }) {
 
                 <div className="space-y-3 rounded-md border p-4">
                   <div className="space-y-2.5">
-                    {active.questionBank.files.map((paper, index) => {
+                    {Array.from({
+                      length: Math.max(
+                        active.questionBank.files.length,
+                        active.submission?.files.length ?? 0,
+                        active.answerKeys.length,
+                      ),
+                    }).map((_, index, rows) => {
+                      const paper = active.questionBank.files[index] ?? null;
                       const submittedFile = active.submission?.files[index] ?? null;
                       const answerKey = active.answerKeys[index] ?? null;
-                      const label = active.questionBank.files.length > 1 ? `Paper ${index + 1}` : "Question Paper";
+                      const label = rows.length > 1 ? `Paper ${index + 1}` : "Question Paper";
                       return (
-                        <div key={paper.id} className="rounded-md border p-3">
+                        <div key={paper?.id ?? submittedFile?.id ?? answerKey?.id ?? index} className="rounded-md border p-3">
                           <div className="mb-2 flex items-center justify-between gap-2">
                             <span className="text-sm font-semibold">{label}</span>
                             {!submittedFile ? (
@@ -220,15 +227,17 @@ export function StudentAnswerSheets({ series }: { series: Series[] }) {
                             )}
                           </div>
                           <div className="flex flex-wrap items-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              render={
-                                <a href={`/api/v1/files/question-bank-papers/${paper.id}`}>
-                                  <Download /> Question Paper
-                                </a>
-                              }
-                            />
+                            {paper && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                render={
+                                  <a href={`/api/v1/files/question-bank-papers/${paper.id}`}>
+                                    <Download /> Question Paper
+                                  </a>
+                                }
+                              />
+                            )}
                             {submittedFile && (
                               <Button
                                 variant="outline"
