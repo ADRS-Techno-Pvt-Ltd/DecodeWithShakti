@@ -31,6 +31,6 @@ export type QuestionBank = {
   files: QuestionBankFileSummary[];
 };
 
-export type AnswerKeySummary = { id: string; title: string; fileName: string };
+export type AnswerKeySummary = { id: string; title: string; fileName: string; questionBankFileId?: string | null };
 
 export type QuestionBankFileSummary = { id: string; fileName: string; fileSizeBytes: number };

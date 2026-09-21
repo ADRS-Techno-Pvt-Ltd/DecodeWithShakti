@@ -40,12 +40,25 @@ type Series = {
       status: "PENDING_EVALUATION" | "EVALUATED";
     }[];
   } | null;
-  answerKeys: { id: string; title: string; fileName: string }[];
+  answerKeys: { id: string; title: string; fileName: string; questionBankFileId: string | null }[];
 };
 
 function formatDate(value: string | null): string {
   if (!value) return "—";
   return new Date(value).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+/**
+ * Pairs each row with its answer key: a key linked to a paper goes to that paper; keys with no
+ * link (older uploads) fill the remaining rows in upload order.
+ */
+function assignAnswerKeys(papers: { id: string }[], keys: Series["answerKeys"], rowCount: number) {
+  const linked = new Map(keys.filter((k) => k.questionBankFileId).map((k) => [k.questionBankFileId, k]));
+  const queue = keys.filter((k) => !k.questionBankFileId || !papers.some((p) => p.id === k.questionBankFileId));
+  return Array.from({ length: rowCount }, (_, index) => {
+    const paper = papers[index];
+    return (paper && linked.get(paper.id)) ?? null;
+  }).map((key) => key ?? queue.shift() ?? null);
 }
 
 function statusBadge(item: Series) {
@@ -59,6 +72,7 @@ export function StudentAnswerSheets({ series }: { series: Series[] }) {
   const [detailId, setDetailId] = useState<string | null>(null);
   const [files, setFiles] = useState<Record<string, File[]>>({});
   const [uploading, setUploading] = useState<string | null>(null);
+  const [inputKey, setInputKey] = useState(0);
 
   const active = series.find((item) => item.questionBank.id === detailId) ?? null;
 
@@ -81,6 +95,7 @@ export function StudentAnswerSheets({ series }: { series: Series[] }) {
     }
     toast.success("Answer submitted.");
     setFiles({ ...files, [questionBankId]: [] });
+    setInputKey((key) => key + 1);
     router.refresh();
   }
 
@@ -105,6 +120,7 @@ export function StudentAnswerSheets({ series }: { series: Series[] }) {
     }
     toast.success("Answer submitted.");
     setFiles({ ...files, [questionBankId]: [] });
+    setInputKey((key) => key + 1);
     router.refresh();
   }
 
@@ -214,16 +230,17 @@ export function StudentAnswerSheets({ series }: { series: Series[] }) {
 
                 <div className="space-y-3 rounded-md border p-4">
                   <div className="space-y-2.5">
-                    {Array.from({
-                      length: Math.max(
+                    {(() => {
+                      const rowCount = Math.max(
                         active.questionBank.files.length,
                         active.submission?.files.length ?? 0,
                         active.answerKeys.length,
-                      ),
-                    }).map((_, index, rows) => {
+                      );
+                      const rowKeys = assignAnswerKeys(active.questionBank.files, active.answerKeys, rowCount);
+                      return Array.from({ length: rowCount }).map((_, index, rows) => ({ index, rows, key: rowKeys[index] }));
+                    })().map(({ index, rows, key: answerKey }) => {
                       const paper = active.questionBank.files[index] ?? null;
                       const submittedFile = active.submission?.files[index] ?? null;
-                      const answerKey = active.answerKeys[index] ?? null;
                       const label = rows.length > 1 ? `Paper ${index + 1}` : "Question Paper";
                       return (
                         <div key={paper?.id ?? submittedFile?.id ?? answerKey?.id ?? index} className="rounded-md border p-3">
@@ -314,6 +331,7 @@ export function StudentAnswerSheets({ series }: { series: Series[] }) {
                   {!active.submission ? (
                     <div className="space-y-2">
                       <Input
+                        key={inputKey}
                         type="file"
                         accept="application/pdf,.pdf"
                         multiple
@@ -343,6 +361,7 @@ export function StudentAnswerSheets({ series }: { series: Series[] }) {
                             Add the rest whenever you&apos;re ready.
                           </p>
                           <Input
+                            key={inputKey}
                             type="file"
                             accept="application/pdf,.pdf"
                             multiple

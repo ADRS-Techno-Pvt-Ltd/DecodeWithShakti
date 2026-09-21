@@ -3,14 +3,14 @@ import { prisma } from "@/lib/prisma";
 import { requireStudent, blockImpersonation, toErrorResponse } from "@/lib/auth-guards";
 import { deleteAnswerSheetFiles, saveStudentAnswerSheetFile } from "@/lib/storage";
 import { sendAnswerSheetSubmittedEmails } from "@/lib/email";
-import { answerSubmissionInputSchema, readPdfUpload } from "@/features/answer-sheets/validation";
+import { answerSubmissionInputSchema, readPdfUpload, UploadValidationError } from "@/features/answer-sheets/validation";
 
 type SubmissionWithFiles = {
   id: string;
   title: string;
   description: string;
   submittedAt: Date;
-  questionBank: { id: string; title: string; slug: string } | null;
+  questionBank: { id: string; title: string; slug: string; _count: { files: number } } | null;
   category: { id: string; name: string; slug: string };
   files: {
     id: string;
@@ -27,8 +27,11 @@ function serializeSubmission(submission: SubmissionWithFiles) {
     title: submission.title,
     description: submission.description,
     submittedAt: submission.submittedAt.toISOString(),
-    // Derived: only fully evaluated once every uploaded paper has been.
-    status: submission.files.length > 0 && submission.files.every((f) => f.status === "EVALUATED")
+    // Derived: only fully evaluated once every paper in the series has been submitted and evaluated.
+    // Series with no paper records (legacy) count only what the student uploaded.
+    status: submission.files.length > 0 &&
+      submission.files.length >= (submission.questionBank?._count.files ?? 0) &&
+      submission.files.every((f) => f.status === "EVALUATED")
       ? ("EVALUATED" as const)
       : ("PENDING_EVALUATION" as const),
     evaluatedAt:
@@ -37,7 +40,11 @@ function serializeSubmission(submission: SubmissionWithFiles) {
         .filter((d): d is Date => d != null)
         .sort((a, b) => b.getTime() - a.getTime())[0]
         ?.toISOString() ?? null,
-    questionBank: submission.questionBank,
+    questionBank: submission.questionBank && {
+      id: submission.questionBank.id,
+      title: submission.questionBank.title,
+      slug: submission.questionBank.slug,
+    },
     category: submission.category,
     files: submission.files.map((f) => ({
       id: f.id,
@@ -53,7 +60,7 @@ const submissionSelect = {
   title: true,
   description: true,
   submittedAt: true,
-  questionBank: { select: { id: true, title: true, slug: true } },
+  questionBank: { select: { id: true, title: true, slug: true, _count: { select: { files: true } } } },
   category: { select: { id: true, name: true, slug: true } },
   files: {
     select: { id: true, studentFileName: true, evaluatedFileName: true, status: true, evaluatedAt: true },
@@ -107,6 +114,13 @@ export async function POST(request: Request) {
     const files = formData.getAll("file").filter((f): f is File => f instanceof File && f.size > 0);
     if (files.length === 0) {
       return NextResponse.json({ error: "At least one PDF file is required." }, { status: 400 });
+    }
+    const paperCount = await prisma.questionBankFile.count({ where: { questionBankId: questionBank.id } });
+    if (paperCount > 0 && files.length > paperCount) {
+      return NextResponse.json(
+        { error: `This Test Series has ${paperCount} paper${paperCount === 1 ? "" : "s"} — you selected ${files.length} files.` },
+        { status: 400 },
+      );
     }
     const buffers = await Promise.all(files.map((file) => readPdfUpload(file)));
 
@@ -178,7 +192,7 @@ export async function POST(request: Request) {
         { status: 409 },
       );
     }
-    if (error instanceof Error && (error.message.includes("PDF") || error.message.includes("file"))) {
+    if (error instanceof UploadValidationError) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
     return toErrorResponse(error);

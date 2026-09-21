@@ -19,23 +19,26 @@ export const answerKeyInputSchema = z.object({
 export const MAX_ANSWER_SHEET_BYTES =
   Number(process.env.MAX_UPLOAD_MB ?? 50) * 1024 * 1024;
 
+/** Thrown for user-facing upload problems, so routes can tell them apart from internal errors. */
+export class UploadValidationError extends Error {}
+
 export async function readPdfUpload(value: FormDataEntryValue | null): Promise<Buffer> {
   if (!(value instanceof File)) {
-    throw new Error("A PDF file is required.");
+    throw new UploadValidationError("A PDF file is required.");
   }
   if (value.size === 0) {
-    throw new Error("The PDF file is empty.");
+    throw new UploadValidationError("The PDF file is empty.");
   }
   if (value.size > MAX_ANSWER_SHEET_BYTES) {
-    throw new Error(`File exceeds the ${process.env.MAX_UPLOAD_MB ?? 50}MB limit.`);
+    throw new UploadValidationError(`File exceeds the ${process.env.MAX_UPLOAD_MB ?? 50}MB limit.`);
   }
   if (value.type !== "application/pdf" || !value.name.toLowerCase().endsWith(".pdf")) {
-    throw new Error("Only PDF files are accepted.");
+    throw new UploadValidationError("Only PDF files are accepted.");
   }
 
   const bytes = Buffer.from(await value.arrayBuffer());
   if (bytes.length < 5 || bytes.subarray(0, 5).toString("ascii") !== "%PDF-") {
-    throw new Error("The uploaded file is not a valid PDF.");
+    throw new UploadValidationError("The uploaded file is not a valid PDF.");
   }
   return bytes;
 }

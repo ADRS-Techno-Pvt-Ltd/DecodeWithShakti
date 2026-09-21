@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireSession, toErrorResponse } from "@/lib/auth-guards";
 import { deleteEvaluatedAnswerSheetFile, saveEvaluatedAnswerSheetFile } from "@/lib/storage";
 import { sendAnswerSheetEvaluatedEmail } from "@/lib/email";
-import { readPdfUpload } from "@/features/answer-sheets/validation";
+import { readPdfUpload, UploadValidationError } from "@/features/answer-sheets/validation";
 
 /** Uploads the evaluated PDF for one of a student's separately-submitted papers. */
 export async function PATCH(request: Request, { params }: { params: Promise<{ fileId: string }> }) {
@@ -35,7 +35,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ fi
 
     const evaluatedFilePath = await saveEvaluatedAnswerSheetFile(fileId, bytes);
     evaluatedUploaded = true;
-    const updated = await prisma.answerSheetSubmissionFile.update({
+    const claimed = await prisma.answerSheetSubmissionFile.updateMany({
       where: { id: fileId, status: "PENDING_EVALUATION" },
       data: {
         evaluatedFilePath,
@@ -46,13 +46,22 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ fi
         evaluatedAt: new Date(),
       },
     });
+    if (claimed.count === 0) {
+      // Another request evaluated this paper first — its record owns the stored file, so don't delete it.
+      evaluatedUploaded = false;
+      return NextResponse.json({ error: "This paper has already been evaluated." }, { status: 409 });
+    }
+    const updated = await prisma.answerSheetSubmissionFile.findUniqueOrThrow({ where: { id: fileId } });
 
     // Notify the student once every paper in the submission has been evaluated.
     const siblingFiles = await prisma.answerSheetSubmissionFile.findMany({
       where: { submissionId: file.submissionId },
       select: { status: true },
     });
-    if (siblingFiles.every((f) => f.status === "EVALUATED")) {
+    const paperCount = file.submission.questionBankId
+      ? await prisma.questionBankFile.count({ where: { questionBankId: file.submission.questionBankId } })
+      : 0;
+    if (siblingFiles.length >= paperCount && siblingFiles.every((f) => f.status === "EVALUATED")) {
       await sendAnswerSheetEvaluatedEmail({
         studentName: file.submission.student.name,
         studentEmail: file.submission.student.email,
@@ -71,7 +80,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ fi
     if (fileId && evaluatedUploaded) {
       await deleteEvaluatedAnswerSheetFile(fileId).catch(() => undefined);
     }
-    if (error instanceof Error && (error.message.includes("PDF") || error.message.includes("file"))) {
+    if (error instanceof UploadValidationError) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
     return toErrorResponse(error);

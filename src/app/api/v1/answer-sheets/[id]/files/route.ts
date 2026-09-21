@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireStudent, toErrorResponse } from "@/lib/auth-guards";
+import { requireStudent, blockImpersonation, toErrorResponse } from "@/lib/auth-guards";
 import { deleteAnswerSheetFiles, saveStudentAnswerSheetFile } from "@/lib/storage";
-import { readPdfUpload } from "@/features/answer-sheets/validation";
+import { readPdfUpload, UploadValidationError } from "@/features/answer-sheets/validation";
 
 /**
  * Adds more papers to an existing submission — allowed only while the student
@@ -14,6 +14,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const createdFileIds: string[] = [];
   try {
     const session = await requireStudent();
+    blockImpersonation(session);
     const { id } = await params;
 
     const submission = await prisma.answerSheetSubmission.findUnique({
@@ -81,7 +82,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     for (const fileId of createdFileIds) {
       await deleteAnswerSheetFiles(fileId).catch(() => undefined);
     }
-    if (error instanceof Error && (error.message.includes("PDF") || error.message.includes("file"))) {
+    if (error instanceof UploadValidationError) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
     return toErrorResponse(error);

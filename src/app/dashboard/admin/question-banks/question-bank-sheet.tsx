@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { toast } from "sonner";
 import { Loader2, Plus, Trash2, X } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Dialog,
   DialogContent,
@@ -38,6 +39,7 @@ import {
   replaceQuestionBankThumbnail,
   replaceQuestionBankFile,
   addQuestionBankAnswerKeys,
+  setAnswerKeyPaper,
   deleteAnswerKey,
   replaceAnswerKey,
   addQuestionBankFiles,
@@ -103,6 +105,7 @@ export function QuestionBankSheet({
   const [replacingAnswerKeyId, setReplacingAnswerKeyId] = useState<string | null>(null);
   const [papers, setPapers] = useState<QuestionBankFileSummary[]>([]);
   const [deletingPaperId, setDeletingPaperId] = useState<string | null>(null);
+  const [paperToDelete, setPaperToDelete] = useState<QuestionBankFileSummary | null>(null);
   const [replacingPaperId, setReplacingPaperId] = useState<string | null>(null);
   const {
     register,
@@ -162,7 +165,7 @@ export function QuestionBankSheet({
     setReplacingAnswerKeyId(answerKeyId);
     try {
       const updated = await replaceAnswerKey(answerKeyId, file);
-      setAnswerKeys((prev) => prev.map((k) => (k.id === answerKeyId ? updated : k)));
+      setAnswerKeys((prev) => prev.map((k) => (k.id === answerKeyId ? { ...k, ...updated } : k)));
       toast.success("Answer key replaced.");
       onSaved();
     } catch (err) {
@@ -172,13 +175,29 @@ export function QuestionBankSheet({
     }
   }
 
+  async function handleAnswerKeyPaper(answerKeyId: string, paperId: string) {
+    const previous = answerKeys;
+    setAnswerKeys((prev) =>
+      prev.map((k) => (k.id === answerKeyId ? { ...k, questionBankFileId: paperId || null } : k)),
+    );
+    try {
+      await setAnswerKeyPaper(answerKeyId, paperId || null);
+      toast.success("Answer key linked.");
+      onSaved();
+    } catch (err) {
+      setAnswerKeys(previous);
+      toast.error(err instanceof Error ? err.message : "Could not link answer key.");
+    }
+  }
+
   async function handleDeletePaper(fileId: string) {
     if (!editing) return;
     setDeletingPaperId(fileId);
     try {
       await deleteQuestionBankFilePaper(editing.id, fileId);
       setPapers((prev) => prev.filter((p) => p.id !== fileId));
-      toast.success("Paper removed.");
+      setAnswerKeys((prev) => prev.filter((k) => k.questionBankFileId !== fileId));
+      toast.success("Paper removed, along with its answer key.");
       onSaved();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not remove paper.");
@@ -346,6 +365,7 @@ export function QuestionBankSheet({
   }
 
   return (
+    <>
     <Dialog
       open={open}
       // Only close via the ✕ button, the Cancel button, or a successful save —
@@ -530,7 +550,7 @@ export function QuestionBankSheet({
                         size="icon"
                         aria-label="Remove paper"
                         disabled={deletingPaperId === paper.id}
-                        onClick={() => void handleDeletePaper(paper.id)}
+                        onClick={() => setPaperToDelete(paper)}
                       >
                         {deletingPaperId === paper.id ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -566,6 +586,21 @@ export function QuestionBankSheet({
                   <li key={key.id} className="flex items-center justify-between gap-2 text-sm">
                     <span className="truncate">{key.fileName}</span>
                     <div className="flex items-center gap-1">
+                      {isTestSeries && papers.length > 0 && (
+                        <select
+                          aria-label="Paper this answer key belongs to"
+                          className="h-7 max-w-40 rounded-md border border-input bg-transparent px-1.5 text-xs"
+                          value={key.questionBankFileId ?? ""}
+                          onChange={(event) => void handleAnswerKeyPaper(key.id, event.target.value)}
+                        >
+                          <option value="">Auto (by order)</option>
+                          {papers.map((paper, index) => (
+                            <option key={paper.id} value={paper.id}>
+                              Paper {index + 1} — {paper.fileName}
+                            </option>
+                          ))}
+                        </select>
+                      )}
                       <label className="text-muted-foreground hover:text-foreground cursor-pointer text-xs underline underline-offset-2">
                         {replacingAnswerKeyId === key.id ? (
                           <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -803,5 +838,21 @@ export function QuestionBankSheet({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    <ConfirmDialog
+      open={paperToDelete !== null}
+      onOpenChange={(next) => !next && setPaperToDelete(null)}
+      title="Delete this paper and its answer key?"
+      description={
+        <>
+          <strong>{paperToDelete?.fileName}</strong> will be removed for all students, along with any answer key
+          linked to it. This can&apos;t be undone.
+        </>
+      }
+      confirmLabel="Delete paper"
+      onConfirm={async () => {
+        if (paperToDelete) await handleDeletePaper(paperToDelete.id);
+      }}
+    />
+    </>
   );
 }

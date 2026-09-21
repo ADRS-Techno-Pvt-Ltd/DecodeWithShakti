@@ -45,7 +45,7 @@ export async function GET(request: Request) {
         category: true,
         subject: true,
         answerKeys: {
-          select: { id: true, title: true, fileName: true },
+          select: { id: true, title: true, fileName: true, questionBankFileId: true },
           orderBy: { createdAt: "asc" },
         },
         files: {
@@ -184,12 +184,14 @@ async function createQuestionBank(request: Request) {
     });
     bankId = bank.id;
 
+    const paperIds: string[] = [];
     if (isTestSeries) {
       for (const uploadedFile of files) {
         const fileBytes = Buffer.from(await uploadedFile.arrayBuffer());
         const record = await prisma.questionBankFile.create({
           data: { questionBankId: bank.id, fileName: uploadedFile.name, filePath: "", fileSizeBytes: uploadedFile.size },
         });
+        paperIds.push(record.id);
         const filePath = await saveQuestionBankPaperFile(bank.id, record.id, fileBytes);
         await prisma.questionBankFile.update({ where: { id: record.id }, data: { filePath } });
       }
@@ -224,13 +226,15 @@ async function createQuestionBank(request: Request) {
     }
 
     const createdAnswerKeys: { id: string; title: string; fileName: string }[] = [];
-    for (const answerKeyFile of answerKeyFiles) {
+    for (const [keyIndex, answerKeyFile] of answerKeyFiles.entries()) {
       const answerKeyBytes = await readPdfUpload(answerKeyFile);
       const answerKey = await prisma.answerKey.create({
         data: {
           title: updated.title,
           description: updated.description,
           questionBankId: updated.id,
+          // At creation the i-th key belongs to the i-th paper.
+          questionBankFileId: paperIds[keyIndex] ?? null,
           categoryId: updated.categoryId,
           filePath: "",
           fileName: answerKeyFile.name,

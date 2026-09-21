@@ -22,7 +22,7 @@ export default async function StudentAnswerSheetsPage() {
           },
           answerKeys: {
             where: { isPublished: true, questionBankId: { not: null } },
-            select: { id: true, title: true, fileName: true },
+            select: { id: true, title: true, fileName: true, questionBankFileId: true },
             orderBy: { createdAt: "asc" },
           },
           answerSubmissions: {
@@ -72,7 +72,9 @@ export default async function StudentAnswerSheetsPage() {
                 id: submission.id,
                 submittedAt: submission.submittedAt.toISOString(),
                 status:
-                  submission.files.length > 0 && submission.files.every((f) => f.status === "EVALUATED")
+                  submission.files.length > 0 &&
+                  submission.files.length >= purchase.questionBank.files.length &&
+                  submission.files.every((f) => f.status === "EVALUATED")
                     ? ("EVALUATED" as const)
                     : ("PENDING_EVALUATION" as const),
                 evaluatedAt:

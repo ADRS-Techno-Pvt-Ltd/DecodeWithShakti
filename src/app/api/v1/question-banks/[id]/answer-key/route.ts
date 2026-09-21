@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, toErrorResponse } from "@/lib/auth-guards";
-import { readPdfUpload } from "@/features/answer-sheets/validation";
+import { readPdfUpload, UploadValidationError } from "@/features/answer-sheets/validation";
 import { deleteAnswerKeyFiles, saveAnswerKeyFile } from "@/lib/storage";
 
 export async function POST(
@@ -27,6 +27,16 @@ export async function POST(
       return NextResponse.json({ error: "At least one PDF file is required." }, { status: 400 });
     }
 
+    const rawPaperId = formData.get("questionBankFileId");
+    const questionBankFileId = typeof rawPaperId === "string" && rawPaperId ? rawPaperId : null;
+    if (questionBankFileId) {
+      const paper = await prisma.questionBankFile.findFirst({
+        where: { id: questionBankFileId, questionBankId: id },
+        select: { id: true },
+      });
+      if (!paper) return NextResponse.json({ error: "Paper not found in this Test Series." }, { status: 400 });
+    }
+
     const created: { id: string; title: string; fileName: string }[] = [];
     for (const file of files) {
       const bytes = await readPdfUpload(file);
@@ -35,6 +45,7 @@ export async function POST(
           title: questionBank.title,
           description: questionBank.description,
           questionBankId: id,
+          questionBankFileId,
           categoryId: questionBank.categoryId,
           filePath: "",
           fileName: file.name,
@@ -54,7 +65,7 @@ export async function POST(
       await prisma.answerKey.delete({ where: { id: answerKeyId } }).catch(() => undefined);
       await deleteAnswerKeyFiles(answerKeyId).catch(() => undefined);
     }
-    if (error instanceof Error && (error.message.includes("PDF") || error.message.includes("file"))) {
+    if (error instanceof UploadValidationError) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
     return toErrorResponse(error);

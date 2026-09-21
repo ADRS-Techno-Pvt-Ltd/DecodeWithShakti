@@ -116,6 +116,17 @@ export async function deleteAnswerKey(id: string): Promise<void> {
   await unwrap(await fetch(`/api/v1/answer-keys/${id}`, { method: "DELETE" }));
 }
 
+/** Link an answer key to a Test Series paper (`null` unlinks it back to order-based matching). */
+export async function setAnswerKeyPaper(id: string, questionBankFileId: string | null): Promise<void> {
+  await unwrap(
+    await fetch(`/api/v1/answer-keys/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ questionBankFileId }),
+    }),
+  );
+}
+
 /** Replace one answer key's PDF content in place — its id and download link are unchanged. */
 export async function replaceAnswerKey(id: string, file: File): Promise<AnswerKeySummary> {
   const formData = new FormData();

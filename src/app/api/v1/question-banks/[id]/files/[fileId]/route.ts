@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, toErrorResponse } from "@/lib/auth-guards";
 import { readPdfUpload } from "@/features/answer-sheets/validation";
-import { saveQuestionBankPaperFile, deleteQuestionBankPaperFile } from "@/lib/storage";
+import { saveQuestionBankPaperFile, deleteQuestionBankPaperFile, deleteAnswerKeyFiles } from "@/lib/storage";
 import { syncQuestionBankPrimaryFile } from "@/lib/question-bank-files";
 
 /** Replace one paper's PDF content in place — its id, download link and position are unchanged. */
@@ -59,6 +59,15 @@ export async function DELETE(
     if (!existing || existing.questionBankId !== id) {
       return NextResponse.json({ error: "File not found." }, { status: 404 });
     }
+
+    // The paper's own answer keys go with it — otherwise they'd fall back to order-based matching
+    // and show up next to the wrong paper.
+    const linkedKeys = await prisma.answerKey.findMany({
+      where: { questionBankFileId: fileId },
+      select: { id: true },
+    });
+    await prisma.answerKey.deleteMany({ where: { questionBankFileId: fileId } });
+    await Promise.all(linkedKeys.map((key) => deleteAnswerKeyFiles(key.id).catch(() => undefined)));
 
     await prisma.questionBankFile.delete({ where: { id: fileId } });
     await deleteQuestionBankPaperFile(existing.filePath).catch(() => undefined);

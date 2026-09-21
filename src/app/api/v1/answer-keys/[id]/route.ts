@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, toErrorResponse } from "@/lib/auth-guards";
 import { deleteAnswerKeyFiles, saveAnswerKeyFile } from "@/lib/storage";
-import { readPdfUpload } from "@/features/answer-sheets/validation";
+import { readPdfUpload, UploadValidationError } from "@/features/answer-sheets/validation";
 
 /** Replace one answer key's PDF content in place — its id and download link are unchanged. */
 export async function POST(
@@ -30,9 +30,40 @@ export async function POST(
 
     return NextResponse.json({ id: updated.id, title: updated.title, fileName: updated.fileName });
   } catch (error) {
-    if (error instanceof Error && (error.message.includes("PDF") || error.message.includes("file"))) {
+    if (error instanceof UploadValidationError) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
+    return toErrorResponse(error);
+  }
+}
+
+/** Link this answer key to one paper of its Test Series (or `null` to unlink it back to order-based matching). */
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    await requireAdmin();
+    const { id } = await params;
+    const body = (await request.json().catch(() => null)) as { questionBankFileId?: unknown } | null;
+    const paperId = body?.questionBankFileId;
+    if (paperId !== null && typeof paperId !== "string") {
+      return NextResponse.json({ error: "questionBankFileId must be a string or null." }, { status: 400 });
+    }
+
+    const answerKey = await prisma.answerKey.findUnique({ where: { id }, select: { questionBankId: true } });
+    if (!answerKey) return NextResponse.json({ error: "Answer key not found." }, { status: 404 });
+    if (paperId) {
+      const paper = await prisma.questionBankFile.findFirst({
+        where: { id: paperId, questionBankId: answerKey.questionBankId ?? "" },
+        select: { id: true },
+      });
+      if (!paper) return NextResponse.json({ error: "Paper not found in this Test Series." }, { status: 400 });
+    }
+
+    await prisma.answerKey.update({ where: { id }, data: { questionBankFileId: paperId } });
+    return NextResponse.json({ ok: true });
+  } catch (error) {
     return toErrorResponse(error);
   }
 }
