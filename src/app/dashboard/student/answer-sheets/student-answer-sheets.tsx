@@ -113,7 +113,7 @@ export function StudentAnswerSheets({ series }: { series: Series[] }) {
       <EmptyState
         icon={<FileCheck2 />}
         title="No purchased Test Series"
-        description="Purchase a Question Bank to upload your answer and view its evaluation."
+        description="Purchase a Test Series to upload your answer and view its evaluation."
       />
     );
   }
@@ -159,7 +159,7 @@ export function StudentAnswerSheets({ series }: { series: Series[] }) {
                           render={
                             <a href={`/api/v1/files/download/${item.purchaseId}`} className="gap-1.5">
                               <Download className="h-3.5 w-3.5" />
-                              Question Bank
+                              Test Series
                             </a>
                           }
                         />
@@ -172,7 +172,7 @@ export function StudentAnswerSheets({ series }: { series: Series[] }) {
                           render={
                             <a href={`/api/v1/files/question-bank-papers/${paper.id}`} className="gap-1.5">
                               <Download className="h-3.5 w-3.5" />
-                              {item.questionBank.files.length > 1 ? `Paper ${index + 1}` : "Question Bank"}
+                              {item.questionBank.files.length > 1 ? `Paper ${index + 1}` : "Test Series"}
                             </a>
                           }
                         />
@@ -339,8 +339,8 @@ export function StudentAnswerSheets({ series }: { series: Series[] }) {
                       {active.submission.files.length < active.questionBank.files.length && (
                         <div className="space-y-2 border-t pt-3">
                           <p className="text-muted-foreground text-xs">
-                            You've submitted {active.submission.files.length} of {active.questionBank.files.length} papers.
-                            Add the rest whenever you're ready.
+                            You&apos;ve submitted {active.submission.files.length} of {active.questionBank.files.length} papers.
+                            Add the rest whenever you&apos;re ready.
                           </p>
                           <Input
                             type="file"
