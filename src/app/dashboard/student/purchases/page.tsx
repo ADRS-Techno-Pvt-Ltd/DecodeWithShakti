@@ -120,7 +120,10 @@ export default async function StudentPurchasesPage() {
                       <TableCell>
                         {p.status === "SUCCESS" ? (
                           <div className="flex gap-2 whitespace-nowrap">
-                            {p.questionBank.type === "QUESTION_BANK" && (
+                            {(p.questionBank.type === "QUESTION_BANK" ||
+                              (p.questionBank.type === "TEST_SERIES" &&
+                                p.questionBank.files.length === 0 &&
+                                p.questionBank.filePath)) && (
                               <Button
                                 variant="outline"
                                 size="sm"

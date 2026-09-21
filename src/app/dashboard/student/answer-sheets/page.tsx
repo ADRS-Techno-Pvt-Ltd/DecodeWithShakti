@@ -14,6 +14,7 @@ export default async function StudentAnswerSheetsPage() {
           title: true,
           slug: true,
           description: true,
+          filePath: true,
           category: { select: { id: true, name: true, slug: true } },
           files: {
             select: { id: true, fileName: true },
@@ -64,6 +65,7 @@ export default async function StudentAnswerSheetsPage() {
             description: purchase.questionBank.description,
             category: purchase.questionBank.category,
             files: purchase.questionBank.files,
+            legacyDownloadAvailable: purchase.questionBank.files.length === 0 && !!purchase.questionBank.filePath,
           },
           submission: submission
             ? {

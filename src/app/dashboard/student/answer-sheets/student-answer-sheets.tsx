@@ -26,6 +26,7 @@ type Series = {
     description: string;
     category: { id: string; name: string; slug: string };
     files: { id: string; fileName: string }[];
+    legacyDownloadAvailable: boolean;
   };
   submission: {
     id: string;
@@ -151,6 +152,18 @@ export function StudentAnswerSheets({ series }: { series: Series[] }) {
                   <TableCell>{statusBadge(item)}</TableCell>
                   <TableCell>
                     <div className="flex flex-wrap justify-end gap-2">
+                      {item.questionBank.legacyDownloadAvailable && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          render={
+                            <a href={`/api/v1/files/download/${item.purchaseId}`} className="gap-1.5">
+                              <Download className="h-3.5 w-3.5" />
+                              Question Bank
+                            </a>
+                          }
+                        />
+                      )}
                       {item.questionBank.files.map((paper, index) => (
                         <Button
                           key={paper.id}
@@ -227,12 +240,18 @@ export function StudentAnswerSheets({ series }: { series: Series[] }) {
                             )}
                           </div>
                           <div className="flex flex-wrap items-center gap-2">
-                            {paper && (
+                            {(paper || (index === 0 && active.questionBank.legacyDownloadAvailable)) && (
                               <Button
                                 variant="outline"
                                 size="sm"
                                 render={
-                                  <a href={`/api/v1/files/question-bank-papers/${paper.id}`}>
+                                  <a
+                                    href={
+                                      paper
+                                        ? `/api/v1/files/question-bank-papers/${paper.id}`
+                                        : `/api/v1/files/download/${active.purchaseId}`
+                                    }
+                                  >
                                     <Download /> Question Paper
                                   </a>
                                 }
