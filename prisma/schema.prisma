@@ -60,6 +60,7 @@ model User {
   answerKeys             AnswerKey[]                 @relation("AnswerKeyCreator")
   impersonationsMade     ImpersonationSession[]      @relation("ImpersonationAdmin")
   impersonationsReceived ImpersonationSession[]      @relation("ImpersonationTarget")
+  answerKeyAccesses      AnswerKeyAccess[]
 }
 
 /// Audit trail for admin "View as user". One row per session: written when an
@@ -173,6 +174,29 @@ model AnswerKey {
   @@index([categoryId, isPublished, createdAt])
   @@index([questionBankId, isPublished, createdAt])
   @@index([questionBankFileId])
+  accesses AnswerKeyAccess[]
+}
+
+// Pins a student to the exact answer-key file they first viewed. AnswerKey.filePath
+// can be replaced later by an admin (correction/errata); without this, every student
+// with access would silently see the replacement on their next view, not just students
+// who view it after the replace. Unlike Purchase, an answer key isn't always available
+// at purchase time (often uploaded afterwards) and one purchase can unlock several
+// (one per Test Series paper), so the snapshot is taken lazily on first successful view
+// instead of at purchase-creation time.
+model AnswerKeyAccess {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answerKeyId   String
+  answerKey     AnswerKey @relation(fields: [answerKeyId], references: [id], onDelete: Cascade)
+  filePath      String
+  fileName      String
+  fileSizeBytes Int
+  createdAt     DateTime  @default(now())
+
+  @@unique([userId, answerKeyId])
+  @@index([answerKeyId])
 }
 
 model QuestionBank {

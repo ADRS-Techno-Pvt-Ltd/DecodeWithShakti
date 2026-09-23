@@ -18,6 +18,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       select: {
         filePath: true,
         fileName: true,
+        fileSizeBytes: true,
         isPublished: true,
         questionBankId: true,
         questionBank: { select: { type: true } },
@@ -50,7 +51,28 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       }
     }
 
-    const bytes = await readStoredFile(answerKey.filePath);
+    // Pin the student to whatever file they first viewed — an admin correction/errata
+    // upload later must not retroactively change what they already saw. Upsert with an
+    // empty `update` means an existing pin is never touched, only created once.
+    let filePath = answerKey.filePath;
+    let fileName = answerKey.fileName;
+    if (session.user.role !== "ADMIN") {
+      const access = await prisma.answerKeyAccess.upsert({
+        where: { userId_answerKeyId: { userId: session.user.id, answerKeyId: id } },
+        create: {
+          userId: session.user.id,
+          answerKeyId: id,
+          filePath: answerKey.filePath,
+          fileName: answerKey.fileName,
+          fileSizeBytes: answerKey.fileSizeBytes,
+        },
+        update: {},
+      });
+      filePath = access.filePath;
+      fileName = access.fileName;
+    }
+
+    const bytes = await readStoredFile(filePath);
     // Students get a watermarked copy (viewer's email, diagonal) like the question bank;
     // admins get the clean original. Watermarking happens in memory, never persisted.
     const body =
@@ -60,7 +82,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     return new NextResponse(new Uint8Array(body), {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename="${safeFileName(answerKey.fileName)}"`,
+        "Content-Disposition": `inline; filename="${safeFileName(fileName)}"`,
       },
     });
   } catch (error) {

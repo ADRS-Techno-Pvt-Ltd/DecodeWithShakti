@@ -20,7 +20,10 @@ cloudinary.config({
  *   question-bank/<questionBankId>/papers/<fileId>   (raw, authenticated) — one separately-downloadable Test Series paper
  *   answer-sheet/<fileId>/original                   (raw, authenticated) — one of the student's separately-uploaded papers
  *   answer-sheet/<fileId>/evaluated                  (raw, authenticated) — that paper's evaluated counterpart
- *   answer-key/<answerKeyId>/original                (raw, authenticated) — one official answer key
+ *   answer-key/<answerKeyId>/original-<version>       (raw, authenticated) — one official answer key.
+ *                                                       Versioned the same way as the Question Bank PDF —
+ *                                                       AnswerKeyAccess.filePath pins a student to the
+ *                                                       version they first viewed.
  *   invoices/<invoiceNumber>                         (raw, authenticated) — the generated invoice PDF
  *
  * PDFs are uploaded as `type: "authenticated"` so they are never reachable without a
@@ -147,8 +150,9 @@ export async function saveEvaluatedAnswerSheetFile(
 export async function saveAnswerKeyFile(answerKeyId: string, bytes: Buffer): Promise<string> {
   const result = await uploadBuffer(bytes, {
     ...RAW_AUTHENTICATED,
+    overwrite: false,
     folder: `${ANSWER_KEY_FOLDER}/${answerKeyId}`,
-    public_id: "original",
+    public_id: `original-${randomUUID()}`,
   });
   return result.public_id;
 }
