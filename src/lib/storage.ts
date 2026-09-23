@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { v2 as cloudinary, type UploadApiOptions, type UploadApiResponse } from "cloudinary";
 
 cloudinary.config({
@@ -9,7 +10,11 @@ cloudinary.config({
 
 /**
  * Cloudinary folder layout:
- *   question-bank/<questionBankId>/original          (raw, authenticated) — the merged Question Bank PDF
+ *   question-bank/<questionBankId>/original-<version> (raw, authenticated) — the merged Question Bank PDF.
+ *                                                       Each admin replace uploads a new version instead of
+ *                                                       overwriting — Purchase.fileSnapshotPath (set at
+ *                                                       purchase-creation time) pins existing buyers to the
+ *                                                       version they paid for.
  *   question-bank/<questionBankId>/preview           (raw, authenticated) — the capped preview PDF
  *   question-bank/<questionBankId>/thumbnail         (image, public)       — catalog thumbnail
  *   question-bank/<questionBankId>/papers/<fileId>   (raw, authenticated) — one separately-downloadable Test Series paper
@@ -57,8 +62,9 @@ const RAW_AUTHENTICATED = {
 export async function saveOriginalFile(questionBankId: string, bytes: Buffer): Promise<string> {
   const result = await uploadBuffer(bytes, {
     ...RAW_AUTHENTICATED,
+    overwrite: false,
     folder: `${QUESTION_BANK_FOLDER}/${questionBankId}`,
-    public_id: "original",
+    public_id: `original-${randomUUID()}`,
   });
   return result.public_id;
 }

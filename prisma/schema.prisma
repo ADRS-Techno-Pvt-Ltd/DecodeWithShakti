@@ -294,6 +294,14 @@ model Purchase {
   user               User           @relation(fields: [userId], references: [id])
   questionBankId     String
   questionBank       QuestionBank   @relation(fields: [questionBankId], references: [id], onDelete: Restrict)
+  // The file the buyer actually paid for, captured at purchase time. QuestionBank.filePath
+  // can be replaced later by an admin (corrected upload, new edition) — without this
+  // snapshot, download/[purchaseId] would silently start serving the replacement to
+  // everyone who already bought the old version. Null on purchases made before this
+  // field existed; download falls back to the live QuestionBank file for those.
+  fileSnapshotPath      String?
+  fileSnapshotName      String?
+  fileSnapshotSizeBytes Int?
   basePriceSnapshot  Int
   couponId           String?
   coupon             Coupon?        @relation(fields: [couponId], references: [id])

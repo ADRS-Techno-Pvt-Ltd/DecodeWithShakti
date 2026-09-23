@@ -20,17 +20,22 @@ export async function GET(
     if (!purchase || purchase.userId !== session.user.id || purchase.status !== "SUCCESS") {
       return NextResponse.json({ error: "Not found or not purchased." }, { status: 403 });
     }
-    if (!purchase.questionBank.filePath || !purchase.questionBank.fileName) {
+    // Pin to the exact file the buyer paid for. fileSnapshotPath is only null for
+    // purchases made before this snapshot existed — those fall back to whatever
+    // QuestionBank.filePath currently is, same as pre-snapshot behavior.
+    const filePath = purchase.fileSnapshotPath ?? purchase.questionBank.filePath;
+    const fileName = purchase.fileSnapshotName ?? purchase.questionBank.fileName;
+    if (!filePath || !fileName) {
       return NextResponse.json({ error: "This product has no downloadable file." }, { status: 404 });
     }
 
-    const original = await readStoredFile(purchase.questionBank.filePath);
+    const original = await readStoredFile(filePath);
     const watermarked = await watermarkPdf(original, session.user.email ?? "");
 
     return new NextResponse(new Uint8Array(watermarked), {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${purchase.questionBank.fileName}"`,
+        "Content-Disposition": `attachment; filename="${fileName}"`,
       },
     });
   } catch (err) {

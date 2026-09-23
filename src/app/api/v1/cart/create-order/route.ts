@@ -205,6 +205,9 @@ export async function POST(request: Request) {
           data: {
             userId: session.user.id,
             questionBankId: bank.id,
+            fileSnapshotPath: bank.filePath,
+            fileSnapshotName: bank.fileName,
+            fileSnapshotSizeBytes: bank.fileSizeBytes,
             basePriceSnapshot,
             couponId,
             couponCodeSnapshot,
