@@ -137,6 +137,15 @@ export function SiteHeader() {
             </Link>
           ))}
           <Link
+            href="/free-resources"
+            className={cn(
+              "outline-none whitespace-nowrap border-b-2 border-transparent py-0.5 hover:text-primary",
+              pathname === "/free-resources" && "border-primary font-semibold text-primary",
+            )}
+          >
+            Free Resources
+          </Link>
+          <Link
             href="/contact"
             className={cn(
               "outline-none whitespace-nowrap border-b-2 border-transparent py-0.5 hover:text-primary",

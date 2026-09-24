@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { FileCheck2, GalleryHorizontal, HelpCircle, LayoutDashboard, BookOpen, Library, Tag, Wallet, FolderOpen, Users, Video, Percent } from "lucide-react";
+import { FileCheck2, GalleryHorizontal, HelpCircle, LayoutDashboard, BookOpen, Library, Tag, Wallet, FolderOpen, Users, Video, Percent, FileText } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { DashboardShell, type NavItem } from "@/components/dashboard/dashboard-shell";
 
@@ -9,6 +9,7 @@ const navItems: NavItem[] = [
   { href: "/dashboard/admin/question-banks", label: "Question Banks", icon: <BookOpen /> },
   { href: "/dashboard/admin/test-series", label: "Test Series", icon: <FileCheck2 /> },
   { href: "/dashboard/admin/mentors", label: "Mentors", icon: <Users /> },
+  { href: "/dashboard/admin/free-resources", label: "Free Resources", icon: <FileText /> },
   { href: "/dashboard/admin/answer-sheets", label: "Submitted Answer Sheets", icon: <FileCheck2 /> },
   { href: "/dashboard/admin/videos", label: "Videos", icon: <Video /> },
   { href: "/dashboard/admin/categories", label: "Categories", icon: <FolderOpen /> },
