@@ -20,11 +20,11 @@ export async function GET(
     if (!purchase || purchase.userId !== session.user.id || purchase.status !== "SUCCESS") {
       return NextResponse.json({ error: "Not found or not purchased." }, { status: 403 });
     }
-    // Pin to the exact file the buyer paid for. fileSnapshotPath is only null for
-    // purchases made before this snapshot existed — those fall back to whatever
-    // QuestionBank.filePath currently is, same as pre-snapshot behavior.
-    const filePath = purchase.fileSnapshotPath ?? purchase.questionBank.filePath;
-    const fileName = purchase.fileSnapshotName ?? purchase.questionBank.fileName;
+    // Always serve the current QuestionBank file, not the snapshot taken at purchase
+    // time — an admin replacing the PDF (correction, new edition) should update what
+    // every buyer downloads, old and new purchases alike.
+    const filePath = purchase.questionBank.filePath;
+    const fileName = purchase.questionBank.fileName;
     if (!filePath || !fileName) {
       return NextResponse.json({ error: "This product has no downloadable file." }, { status: 404 });
     }

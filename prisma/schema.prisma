@@ -60,7 +60,6 @@ model User {
   answerKeys             AnswerKey[]                 @relation("AnswerKeyCreator")
   impersonationsMade     ImpersonationSession[]      @relation("ImpersonationAdmin")
   impersonationsReceived ImpersonationSession[]      @relation("ImpersonationTarget")
-  answerKeyAccesses      AnswerKeyAccess[]
 }
 
 /// Audit trail for admin "View as user". One row per session: written when an
@@ -89,6 +88,7 @@ model Category {
   answerSubmissions AnswerSheetSubmission[]
   answerKeys        AnswerKey[]
   subjects          Subject[]
+  freeResources     FreeResource[]
 }
 
 model Subject {
@@ -98,6 +98,7 @@ model Subject {
   categoryId    String?
   category      Category?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   questionBanks QuestionBank[]
+  freeResources FreeResource[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
@@ -174,29 +175,6 @@ model AnswerKey {
   @@index([categoryId, isPublished, createdAt])
   @@index([questionBankId, isPublished, createdAt])
   @@index([questionBankFileId])
-  accesses AnswerKeyAccess[]
-}
-
-// Pins a student to the exact answer-key file they first viewed. AnswerKey.filePath
-// can be replaced later by an admin (correction/errata); without this, every student
-// with access would silently see the replacement on their next view, not just students
-// who view it after the replace. Unlike Purchase, an answer key isn't always available
-// at purchase time (often uploaded afterwards) and one purchase can unlock several
-// (one per Test Series paper), so the snapshot is taken lazily on first successful view
-// instead of at purchase-creation time.
-model AnswerKeyAccess {
-  id            String    @id @default(cuid())
-  userId        String
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  answerKeyId   String
-  answerKey     AnswerKey @relation(fields: [answerKeyId], references: [id], onDelete: Cascade)
-  filePath      String
-  fileName      String
-  fileSizeBytes Int
-  createdAt     DateTime  @default(now())
-
-  @@unique([userId, answerKeyId])
-  @@index([answerKeyId])
 }
 
 model QuestionBank {
@@ -248,6 +226,34 @@ model QuestionBankFile {
   answerKeys     AnswerKey[]
 
   @@index([questionBankId, createdAt])
+}
+
+// Publicly downloadable PDF — no purchase, no login required. Uploaded by an
+// admin from the "Free Resources" sidebar, listed on the public /free-resources
+// page. Deliberately has none of QuestionBank's purchase/preview/pricing fields.
+model FreeResource {
+  id            String    @id @default(cuid())
+  title         String
+  slug          String    @unique
+  description   String
+  categoryId    String?
+  category      Category? @relation(fields: [categoryId], references: [id])
+  subjectId     String?
+  subject       Subject?  @relation(fields: [subjectId], references: [id])
+  fileName      String
+  filePath      String
+  fileSizeBytes Int
+  // Optional solutions/answer key PDF, downloadable alongside the main file.
+  answerKeyFileName      String?
+  answerKeyFilePath      String?
+  answerKeyFileSizeBytes Int?
+  thumbnailPath String?
+  isPublished   Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([categoryId])
+  @@index([subjectId])
 }
 
 model Video {
@@ -318,14 +324,6 @@ model Purchase {
   user               User           @relation(fields: [userId], references: [id])
   questionBankId     String
   questionBank       QuestionBank   @relation(fields: [questionBankId], references: [id], onDelete: Restrict)
-  // The file the buyer actually paid for, captured at purchase time. QuestionBank.filePath
-  // can be replaced later by an admin (corrected upload, new edition) — without this
-  // snapshot, download/[purchaseId] would silently start serving the replacement to
-  // everyone who already bought the old version. Null on purchases made before this
-  // field existed; download falls back to the live QuestionBank file for those.
-  fileSnapshotPath      String?
-  fileSnapshotName      String?
-  fileSnapshotSizeBytes Int?
   basePriceSnapshot  Int
   couponId           String?
   coupon             Coupon?        @relation(fields: [couponId], references: [id])

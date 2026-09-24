@@ -12,9 +12,9 @@ cloudinary.config({
  * Cloudinary folder layout:
  *   question-bank/<questionBankId>/original-<version> (raw, authenticated) — the merged Question Bank PDF.
  *                                                       Each admin replace uploads a new version instead of
- *                                                       overwriting — Purchase.fileSnapshotPath (set at
- *                                                       purchase-creation time) pins existing buyers to the
- *                                                       version they paid for.
+ *                                                       overwriting. Every purchaser is always served the
+ *                                                       current QuestionBank.filePath, so a replace reaches
+ *                                                       old and new buyers alike.
  *   question-bank/<questionBankId>/preview           (raw, authenticated) — the capped preview PDF
  *   question-bank/<questionBankId>/thumbnail         (image, public)       — catalog thumbnail
  *   question-bank/<questionBankId>/papers/<fileId>   (raw, authenticated) — one separately-downloadable Test Series paper
@@ -22,9 +22,15 @@ cloudinary.config({
  *   answer-sheet/<fileId>/evaluated                  (raw, authenticated) — that paper's evaluated counterpart
  *   answer-key/<answerKeyId>/original-<version>       (raw, authenticated) — one official answer key.
  *                                                       Versioned the same way as the Question Bank PDF —
- *                                                       AnswerKeyAccess.filePath pins a student to the
- *                                                       version they first viewed.
+ *                                                       every student is always served the current
+ *                                                       AnswerKey.filePath.
  *   invoices/<invoiceNumber>                         (raw, authenticated) — the generated invoice PDF
+ *   free-resources/<freeResourceId>/original         (raw, authenticated) — a free, publicly downloadable PDF.
+ *                                                       Stored authenticated like every other PDF (never a bare
+ *                                                       public CDN URL), but streamed with no session check via
+ *                                                       `src/app/api/v1/files/free-resources/[id]/route.ts` since
+ *                                                       there's no purchase to gate it behind.
+ *   free-resources/<freeResourceId>/thumbnail        (image, public)       — catalog thumbnail
  *
  * PDFs are uploaded as `type: "authenticated"` so they are never reachable without a
  * signed URL — they are only ever streamed back through the authenticated API routes
@@ -33,6 +39,7 @@ cloudinary.config({
  * delivered straight from Cloudinary's CDN.
  */
 const QUESTION_BANK_FOLDER = "question-bank";
+const FREE_RESOURCE_FOLDER = "free-resources";
 const ANSWER_SHEET_FOLDER = "answer-sheet";
 const ANSWER_KEY_FOLDER = "answer-key";
 const INVOICE_FOLDER = "invoices";
@@ -301,6 +308,62 @@ export async function deleteBannerImageFile(bannerId: string): Promise<void> {
   await cloudinary.api.delete_folder(`${BANNER_FOLDER}/${bannerId}`).catch(() => {
     // folder may not be empty / may already be gone — non-fatal
   });
+}
+
+export async function saveFreeResourceFile(freeResourceId: string, bytes: Buffer): Promise<string> {
+  const result = await uploadBuffer(bytes, {
+    ...RAW_AUTHENTICATED,
+    folder: `${FREE_RESOURCE_FOLDER}/${freeResourceId}`,
+    public_id: "original",
+  });
+  return result.public_id;
+}
+
+export async function saveFreeResourceAnswerKeyFile(freeResourceId: string, bytes: Buffer): Promise<string> {
+  const result = await uploadBuffer(bytes, {
+    ...RAW_AUTHENTICATED,
+    folder: `${FREE_RESOURCE_FOLDER}/${freeResourceId}`,
+    public_id: "answer-key",
+  });
+  return result.public_id;
+}
+
+export async function deleteFreeResourceAnswerKeyFile(freeResourceId: string): Promise<void> {
+  await cloudinary.api.delete_resources([`${FREE_RESOURCE_FOLDER}/${freeResourceId}/answer-key`], {
+    resource_type: "raw",
+    type: "authenticated",
+  });
+}
+
+export async function saveFreeResourceThumbnailFile(freeResourceId: string, bytes: Buffer): Promise<string> {
+  const result = await uploadBuffer(bytes, {
+    resource_type: "image",
+    type: "upload",
+    overwrite: true,
+    invalidate: true,
+    folder: `${FREE_RESOURCE_FOLDER}/${freeResourceId}`,
+    public_id: "thumbnail",
+  });
+  return result.secure_url;
+}
+
+export async function deleteFreeResourceFiles(freeResourceId: string): Promise<void> {
+  const prefix = `${FREE_RESOURCE_FOLDER}/${freeResourceId}/`;
+  await Promise.all([
+    cloudinary.api.delete_resources_by_prefix(prefix, {
+      resource_type: "raw",
+      type: "authenticated",
+    }),
+    cloudinary.api.delete_resources_by_prefix(prefix, {
+      resource_type: "image",
+      type: "upload",
+    }),
+  ]);
+  await cloudinary.api
+    .delete_folder(`${FREE_RESOURCE_FOLDER}/${freeResourceId}`)
+    .catch(() => {
+      // folder may not be empty / may already be gone — non-fatal
+    });
 }
 
 export async function deleteQuestionBankFiles(questionBankId: string): Promise<void> {
