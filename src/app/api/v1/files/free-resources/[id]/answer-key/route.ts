@@ -18,7 +18,7 @@ export async function GET(
   return new NextResponse(new Uint8Array(bytes), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="${resource.slug}-answer-key.pdf"`,
+      "Content-Disposition": `attachment; filename="${resource.slug}-answer-key.pdf"`,
     },
   });
 }

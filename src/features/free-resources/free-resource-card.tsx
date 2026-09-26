@@ -42,7 +42,7 @@ export function FreeResourceCard({
             size="sm"
             className="flex-1 gap-1.5"
             render={
-              <a href={`/api/v1/files/free-resources/${id}`} target="_blank" rel="noopener noreferrer">
+              <a href={`/api/v1/files/free-resources/${id}`}>
                 <Download className="h-3.5 w-3.5" />
                 Download
               </a>
@@ -54,7 +54,7 @@ export function FreeResourceCard({
               size="sm"
               className="flex-1 gap-1.5"
               render={
-                <a href={`/api/v1/files/free-resources/${id}/answer-key`} target="_blank" rel="noopener noreferrer">
+                <a href={`/api/v1/files/free-resources/${id}/answer-key`}>
                   <Download className="h-3.5 w-3.5" />
                   Answer Key
                 </a>
