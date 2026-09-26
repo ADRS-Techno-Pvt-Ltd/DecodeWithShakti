@@ -167,8 +167,6 @@ export default async function StudentPurchasesPage() {
                                   render={
                                     <a
                                       href={`/api/v1/files/answer-keys/${key.id}`}
-                                      target="_blank"
-                                      rel="noreferrer"
                                       className="gap-1.5"
                                     >
                                       <FileCheck2 className="h-3.5 w-3.5" />

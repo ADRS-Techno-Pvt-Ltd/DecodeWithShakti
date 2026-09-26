@@ -62,7 +62,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     return new NextResponse(new Uint8Array(body), {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename="${safeFileName(answerKey.fileName)}"`,
+        "Content-Disposition": `attachment; filename="${safeFileName(answerKey.fileName)}"`,
       },
     });
   } catch (error) {

@@ -308,11 +308,7 @@ export function StudentAnswerSheets({ series }: { series: Series[] }) {
                                 variant="outline"
                                 size="sm"
                                 render={
-                                  <a
-                                    href={`/api/v1/files/answer-keys/${answerKey.id}`}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                  >
+                                  <a href={`/api/v1/files/answer-keys/${answerKey.id}`}>
                                     <FileCheck2 /> Answer Key
                                   </a>
                                 }
