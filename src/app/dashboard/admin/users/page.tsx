@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { signIn } from "next-auth/react";
-import { Eye, Users as UsersIcon } from "lucide-react";
+import { Eye, Search, Users as UsersIcon } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { StatusBadge } from "@/components/dashboard/status-badge";
@@ -18,6 +19,18 @@ export default function AdminUsersPage() {
     queryFn: fetchAllUsers,
   });
   const [viewingAs, setViewingAs] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+
+  const filteredUsers = useMemo(() => {
+    if (!users) return users;
+    const query = search.trim().toLowerCase();
+    if (!query) return users;
+    return users.filter((user) =>
+      [user.name, user.email, user.caRegistrationNumber, user.phone].some((field) =>
+        field?.toLowerCase().includes(query)
+      )
+    );
+  }, [users, search]);
 
   function viewAsUser(user: { id: string; name: string }) {
     if (!window.confirm(`Sign in as ${user.name} to see their account? This is logged, and checkout / account changes stay disabled.`)) {
@@ -44,6 +57,16 @@ export default function AdminUsersPage() {
         </p>
       </div>
 
+      <div className="relative mb-4 max-w-sm">
+        <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by name, email, CA reg. number, or phone"
+          className="pl-9"
+        />
+      </div>
+
       <Reveal delay={60}>
         <div className="rounded-lg border bg-card">
           {isLoading ? (
@@ -57,6 +80,12 @@ export default function AdminUsersPage() {
               icon={<UsersIcon />}
               title="No users yet"
               description="Users will appear here when they register."
+            />
+          ) : !filteredUsers || filteredUsers.length === 0 ? (
+            <EmptyState
+              icon={<UsersIcon />}
+              title="No matching users"
+              description="Try a different search term."
             />
           ) : (
             <Table>
@@ -73,7 +102,7 @@ export default function AdminUsersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map((user) => (
+                {filteredUsers.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.name}</TableCell>
                     <TableCell className="text-muted-foreground">{user.email}</TableCell>
