@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { ChevronDown, LayoutDashboard, LogOut, ShoppingCart } from "lucide-react";
+import { ChevronDown, LayoutDashboard, LogOut, Menu, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BrandLogo } from "@/components/brand-logo";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetClose,
+} from "@/components/ui/sheet";
 
 const sections = [
   { hash: "mentor", label: "Your mentor" },
@@ -50,6 +58,9 @@ export function SiteHeader() {
   // page. Only the landing page has a hero worth seeing through — every other
   // route keeps the solid header.
   const [scrolled, setScrolled] = useState(!onHome);
+
+  // Mobile nav sheet, shown behind the hamburger icon below `lg`.
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   // While a nav click is driving an in-flight Lenis scroll, skip the
   // position-based recalculation below so the clicked link doesn't flicker
@@ -200,9 +211,88 @@ export function SiteHeader() {
             />
           )}
           <Button
-            className="h-9 px-3 text-sm shadow-sm sm:px-5"
+            className="hidden h-9 px-3 text-sm shadow-sm sm:px-5 lg:inline-flex"
             render={<Link href="/question-banks">Let&apos;s Prep</Link>}
           />
+
+          <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+            <SheetTrigger
+              render={
+                <Button variant="ghost" size="icon-sm" aria-label="Open menu" className="lg:hidden" />
+              }
+            >
+              <Menu className="h-5 w-5" />
+            </SheetTrigger>
+            <SheetContent side="right">
+              <SheetHeader>
+                <SheetTitle>Menu</SheetTitle>
+              </SheetHeader>
+              <nav className="flex flex-col gap-1 px-4 pb-4 text-sm font-medium">
+                <SheetClose
+                  render={
+                    <Link
+                      href="/"
+                      className={cn(
+                        "rounded-md px-3 py-2.5 hover:bg-muted hover:text-primary",
+                        onHome && activeHash === null && "bg-muted font-semibold text-primary",
+                      )}
+                    >
+                      Home
+                    </Link>
+                  }
+                />
+                {sections.map((s) => (
+                  <SheetClose
+                    key={s.hash}
+                    render={
+                      <Link
+                        href={sectionHref(s.hash)}
+                        className={cn(
+                          "rounded-md px-3 py-2.5 hover:bg-muted hover:text-primary",
+                          activeHash === s.hash && "bg-muted font-semibold text-primary",
+                        )}
+                      >
+                        {s.label}
+                      </Link>
+                    }
+                  />
+                ))}
+                <SheetClose
+                  render={
+                    <Link
+                      href="/free-resources"
+                      className={cn(
+                        "rounded-md px-3 py-2.5 hover:bg-muted hover:text-primary",
+                        pathname === "/free-resources" && "bg-muted font-semibold text-primary",
+                      )}
+                    >
+                      Free Resources
+                    </Link>
+                  }
+                />
+                <SheetClose
+                  render={
+                    <Link
+                      href="/contact"
+                      className={cn(
+                        "rounded-md px-3 py-2.5 hover:bg-muted hover:text-primary",
+                        pathname === "/contact" && "bg-muted font-semibold text-primary",
+                      )}
+                    >
+                      Contact
+                    </Link>
+                  }
+                />
+              </nav>
+              <div className="mt-auto border-t p-4">
+                <SheetClose
+                  render={
+                    <Button className="w-full shadow-sm" render={<Link href="/question-banks">Let&apos;s Prep</Link>} />
+                  }
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
     </header>
