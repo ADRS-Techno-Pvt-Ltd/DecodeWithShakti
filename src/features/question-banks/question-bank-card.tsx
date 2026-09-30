@@ -77,7 +77,7 @@ export function QuestionBankCard({
         className="h-full"
       >
         <Card className="h-full transition-shadow hover:shadow-md">
-          <CardContent className="p-5">
+          <CardContent className="flex flex-1 flex-col p-5">
             <div className="mb-3 flex aspect-video items-center justify-center overflow-hidden rounded-[10px] bg-muted text-primary">
               {thumbnailUrl ? (
                 <img src={thumbnailUrl} alt="" className="h-full w-full object-contain" />
@@ -94,19 +94,21 @@ export function QuestionBankCard({
             </div>
             <h3 className="font-heading mt-2.5 font-semibold">{title}</h3>
             <p className="mt-1.5 line-clamp-2 text-sm text-muted-foreground">{description}</p>
-            <div className="mt-3 flex items-baseline gap-2">
-              {hasEarlyBird && (
-                <span className="text-sm text-muted-foreground line-through">
-                  {formatRupees(price)}
+            {/* Price row + action sit in a bottom-pinned group so every card in a row lines up. */}
+            <div className="mt-auto pt-3">
+            <div className="flex min-h-8 items-center justify-between gap-2">
+              <div className="flex items-baseline gap-2">
+                {hasEarlyBird && (
+                  <span className="text-sm text-muted-foreground line-through">
+                    {formatRupees(price)}
+                  </span>
+                )}
+                <span className="font-mono text-lg font-semibold">
+                  {effectivePrice === 0 ? "Free" : formatRupees(effectivePrice)}
                 </span>
-              )}
-              <span className="font-mono text-lg font-semibold">
-                {formatRupees(effectivePrice)}
-              </span>
-            </div>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
+              </div>
               {previewEnabled ? (
-                <div className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-sm font-medium shadow-sm">
+                <div className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-2.5 py-1 text-xs font-medium shadow-sm">
                   <Eye className="h-3.5 w-3.5" />
                   Preview
                 </div>
@@ -115,7 +117,7 @@ export function QuestionBankCard({
               ) : null}
             </div>
             {purchasedDownloads ? (
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className="mt-2.5 flex flex-wrap gap-2">
                 <Badge className="border-success/40 bg-success/10 text-success">Purchased</Badge>
                 {purchasedDownloads.map((d) => (
                   <Button
@@ -141,12 +143,13 @@ export function QuestionBankCard({
                 variant="outline"
                 size="sm"
                 onClick={addToCart}
-                className="mt-3 w-full gap-1.5"
+                className="mt-2.5 w-full gap-1.5"
               >
                 {inCart ? <Check className="h-3.5 w-3.5" /> : <ShoppingCart className="h-3.5 w-3.5" />}
                 {inCart ? "In cart" : "Add to cart"}
               </Button>
             )}
+            </div>
           </CardContent>
         </Card>
       </motion.div>
