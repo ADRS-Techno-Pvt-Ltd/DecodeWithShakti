@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { SearchX } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { getPurchasedDownloads } from "@/features/question-banks/purchased-downloads";
 import { resolveEffectivePrice } from "@/lib/pricing";
 import { thumbnailUrlFor } from "@/lib/thumbnail";
 import { cn } from "@/lib/utils";
@@ -90,6 +92,14 @@ export default async function QuestionBankCatalogPage({
     return qs ? `/question-banks?${qs}` : "/question-banks";
   }
 
+  const session = await auth();
+  const purchasedDownloads = session?.user
+    ? await getPurchasedDownloads(
+        session.user.id,
+        banks.map((b) => b.id),
+      )
+    : {};
+
   const heading = HEADINGS[typeFilter ?? "all"];
   const count = banks.length;
   const countNoun =
@@ -176,6 +186,7 @@ export default async function QuestionBankCatalogPage({
                 previewEnabled={bank.previewEnabled}
                 thumbnailUrl={thumbnailUrlFor(bank.thumbnailPath)}
                 type={bank.type}
+                purchasedDownloads={purchasedDownloads[bank.id]}
               />
             );
           })}

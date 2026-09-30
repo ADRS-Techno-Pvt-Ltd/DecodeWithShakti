@@ -4,12 +4,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { toast } from "sonner";
-import { BookOpen, Eye, ShoppingCart, Check } from "lucide-react";
+import { BookOpen, Eye, ShoppingCart, Check, Download, FileCheck2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/stores/cart-store";
 import type { ProductType } from "./types";
+import type { PurchasedDownload } from "./purchased-downloads";
 
 function formatRupees(paise: number): string {
   return `₹${(paise / 100).toFixed(0)}`;
@@ -27,6 +28,7 @@ export function QuestionBankCard({
   previewEnabled,
   thumbnailUrl,
   type,
+  purchasedDownloads,
 }: {
   id: string;
   slug: string;
@@ -39,6 +41,8 @@ export function QuestionBankCard({
   previewEnabled: boolean;
   thumbnailUrl: string | null;
   type: ProductType;
+  /** Set only when the signed-in student owns this product; replaces "Add to cart". */
+  purchasedDownloads?: PurchasedDownload[];
 }) {
   const hasEarlyBird = effectivePrice < price;
   const href = `/question-banks/${slug}`;
@@ -53,6 +57,13 @@ export function QuestionBankCard({
     toast.success("Added to cart.", {
       action: { label: "View cart", onClick: () => router.push("/cart") },
     });
+  }
+
+  // The card is one big <Link>, so downloads are click handlers, not nested anchors.
+  function download(e: React.MouseEvent, url: string) {
+    e.preventDefault();
+    e.stopPropagation();
+    window.location.href = url;
   }
 
   return (
@@ -103,16 +114,39 @@ export function QuestionBankCard({
                 <Badge className="border-gold/40 bg-gold-pale text-gold-ink">Early bird</Badge>
               ) : null}
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={addToCart}
-              className="mt-3 w-full gap-1.5"
-            >
-              {inCart ? <Check className="h-3.5 w-3.5" /> : <ShoppingCart className="h-3.5 w-3.5" />}
-              {inCart ? "In cart" : "Add to cart"}
-            </Button>
+            {purchasedDownloads ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Badge className="border-success/40 bg-success/10 text-success">Purchased</Badge>
+                {purchasedDownloads.map((d) => (
+                  <Button
+                    key={d.href}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => download(e, d.href)}
+                    className="gap-1.5"
+                  >
+                    {d.kind === "answer-key" ? (
+                      <FileCheck2 className="h-3.5 w-3.5" />
+                    ) : (
+                      <Download className="h-3.5 w-3.5" />
+                    )}
+                    {d.label}
+                  </Button>
+                ))}
+              </div>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addToCart}
+                className="mt-3 w-full gap-1.5"
+              >
+                {inCart ? <Check className="h-3.5 w-3.5" /> : <ShoppingCart className="h-3.5 w-3.5" />}
+                {inCart ? "In cart" : "Add to cart"}
+              </Button>
+            )}
           </CardContent>
         </Card>
       </motion.div>

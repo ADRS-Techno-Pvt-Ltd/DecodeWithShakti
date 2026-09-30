@@ -36,7 +36,7 @@ const questionBankBaseSchema = z.object({
     (v) => (v == null || (typeof v === "string" && (v.trim() === "" || v === "none")) ? null : v),
     z.string().min(1).nullable(),
   ).optional(),
-  price: z.coerce.number().int().positive("Price must be a positive integer (paise)"),
+  price: z.coerce.number().int().min(0, "Price cannot be negative (paise; 0 = free)"),
   previewEnabled: booleanField(false),
   previewPageCount: z.coerce.number().int().positive().optional(),
   earlyBirdPrice: z.coerce.number().int().positive().optional(),
